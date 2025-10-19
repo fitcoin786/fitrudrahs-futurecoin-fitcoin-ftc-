@@ -71,4 +71,77 @@ Unit tests for the GUI code are in `src/qt/test/`. To compile and run them:
     qmake BITCOIN_QT_TEST=1 -o Makefile.test bitcoin-qt.pro
     make -f Makefile.test
     ./fitcoin-qt_test
+############################################################
+# Fitrudrah’s Futurecoin Fitcoin (FTC) Integration Portion
+# VN1 HEALTHBAZAR OPC PVT LTD, India 🇮🇳
+# Features: Mining + PoBC (Proof of Burned Calories)
+############################################################
 
+# Include project-specific headers
+INCLUDEPATH += src/ftc src/ftc/qt src/ftc/json src/ftc/mining
+
+# Add sources for FitCoin core logic
+SOURCES += src/ftc/ftc_core.cpp \
+           src/ftc/ftc_minting.cpp \
+           src/ftc/ftc_wallet.cpp \
+           src/ftc/ftc_sync.cpp \
+           src/ftc/ftc_network.cpp \
+           src/ftc/ftc_blockchain.cpp \
+           src/ftc/mining/ftc_miner.cpp \
+           src/ftc/mining/ftc_pobc.cpp
+
+# Add headers for FitCoin
+HEADERS += src/ftc/ftc_core.h \
+           src/ftc/ftc_minting.h \
+           src/ftc/ftc_wallet.h \
+           src/ftc/ftc_sync.h \
+           src/ftc/ftc_network.h \
+           src/ftc/ftc_blockchain.h \
+           src/ftc/mining/ftc_miner.h \
+           src/ftc/mining/ftc_pobc.h
+
+# Include QT forms for FitWallet GUI
+FORMS += src/ftc/qt/forms/ftc_wallet.ui \
+         src/ftc/qt/forms/ftc_transaction.ui \
+         src/ftc/qt/forms/ftc_send.ui
+
+# Include Qt resources for FitCoin
+RESOURCES += src/ftc/qt/ftc.qrc
+
+# Preprocessor defines for FitCoin
+DEFINES += FITCOIN_PROJECT \
+           FITCOIN_QT_ENABLED \
+           FITCOIN_PROOF_OF_BURN_CALORIE \
+           FITCOIN_MINING_ENABLED
+
+# Enable blockchain network support
+QT += network core gui
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+# Link LevelDB and cryptography libraries for blockchain
+LIBS += $$PWD/src/leveldb/libleveldb.a \
+        $$PWD/src/leveldb/libmemenv.a \
+        -lssl -lcrypto
+
+# Include translation files
+TRANSLATIONS += $$files(src/ftc/locale/ftc_*.ts)
+
+# Build targets
+TARGET = fitcoin-ftc-qt
+TEMPLATE = app
+
+# Extra compiler flags for security
+QMAKE_CXXFLAGS += -fstack-protector-all -D_FORTIFY_SOURCE=2
+
+# Include OS-specific fixes
+win32:DEFINES += WIN32
+macx:DEFINES += MAC_OSX
+
+# Add FitCoin resources to clean target
+QMAKE_CLEAN += $$PWD/src/ftc/qt/ftc.qrc
+
+# FitCoin ecosystem integration notes
+# Users can burn calories using FitOwlSiTrack smartwatch
+# Mining engine creates FTC tokens via Proof of Energy
+# PoBC (Proof of Burned Calories) burns calories to mint additional FTC
+# Sync automatically with FitWallet for trades, ledger, and PoBC validation
