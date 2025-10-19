@@ -145,3 +145,80 @@ QMAKE_CLEAN += $$PWD/src/ftc/qt/ftc.qrc
 # Mining engine creates FTC tokens via Proof of Energy
 # PoBC (Proof of Burned Calories) burns calories to mint additional FTC
 # Sync automatically with FitWallet for trades, ledger, and PoBC validation
+fitrudrahs-futurecoin-ftc/
+├── src/
+│   ├── ftc/
+│   │   ├── ftc_core.cpp
+│   │   ├── ftc_core.h
+│   │   ├── ftc_minting.cpp
+│   │   ├── ftc_minting.h
+│   │   ├── ftc_wallet.cpp
+│   │   ├── ftc_wallet.h
+│   │   ├── ftc_sync.cpp
+│   │   ├── ftc_sync.h
+│   │   ├── ftc_network.cpp
+│   │   ├── ftc_network.h
+│   │   ├── ftc_blockchain.cpp
+│   │   ├── ftc_blockchain.h
+│   │   └── mining/
+│   │       ├── ftc_miner.cpp
+│   │       ├── ftc_miner.h
+│   │       ├── ftc_pobc.cpp
+│   │       └── ftc_pobc.h
+│   ├── qt/
+│   │   ├── forms/
+│   │   │   ├── ftc_wallet.ui
+│   │   │   ├── ftc_transaction.ui
+│   │   │   └── ftc_send.ui
+│   │   └── ftc.qrc
+│   └── leveldb/
+│       ├── libleveldb.a
+│       └── libmemenv.a
+├── README.md
+├── fitcoin-ftc.pro
+└── LICENSE
+#ifndef FTC_POBC_H
+#define FTC_POBC_H
+
+#include <iostream>
+
+class PoBC {
+public:
+    PoBC();
+    // Burn calories to mint FitCoin
+    void burnCalories(int calories);
+};
+
+#endif // FTC_POBC_H
+#include "ftc_pobc.h"
+
+PoBC::PoBC() {}
+
+void PoBC::burnCalories(int calories) {
+    std::cout << "[PoBC] Burning " << calories << " calories to mint FTC tokens." << std::endl;
+    // Placeholder logic: mint calories as FTC tokens
+    int mintedFTC = calories; // 1 calorie = 1 FTC
+    std::cout << "[PoBC] Minted " << mintedFTC << " FTC." << std::endl;
+}
+#ifndef FTC_MINER_H
+#define FTC_MINER_H
+
+#include <iostream>
+
+class Miner {
+public:
+    Miner();
+    void mineFitCoin(int energy);
+};
+
+#endif // FTC_MINER_H
+#include "ftc_miner.h"
+
+Miner::Miner() {}
+
+void Miner::mineFitCoin(int energy) {
+    std::cout << "[Miner] Mining " << energy << " units of energy to FTC." << std::endl;
+    int mintedFTC = energy; // 1 energy = 1 FTC
+    std::cout << "[Miner] Mined " << mintedFTC << " FTC." << std::endl;
+}
+https://futurecoin.in/
