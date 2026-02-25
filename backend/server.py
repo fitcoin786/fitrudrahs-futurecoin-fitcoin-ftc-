@@ -377,6 +377,20 @@ async def get_market_overview():
     market_data = await fetch_coingecko_market_data()
     
     def format_coin(coin):
+        # Handle Fitcoin's different data structure
+        if coin.get('id') == 'fitcoin':
+            return {
+                'id': coin.get('id'),
+                'symbol': coin.get('symbol', '').upper(),
+                'name': coin.get('name'),
+                'price': coin.get('current_price', 0),
+                'change_24h': coin.get('price_change_percentage_24h', 0),
+                'market_cap': coin.get('market_cap', 0),
+                'volume_24h': coin.get('total_volume', 0),
+                'image': coin.get('image', ''),
+                'contract_address': coin.get('contract_address', ''),
+                'blockchain': coin.get('blockchain', '')
+            }
         return {
             'id': coin.get('id'),
             'symbol': coin.get('symbol', '').upper(),
