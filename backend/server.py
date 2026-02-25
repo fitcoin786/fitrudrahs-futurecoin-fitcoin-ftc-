@@ -185,20 +185,27 @@ async def fetch_jupiter_price(token_address: str):
 async def fetch_coingecko_market_data():
     """Fetch market overview from CoinGecko"""
     try:
-        # Get top coins by market cap
-        top_coins = cg.get_coins_markets(
-            vs_currency='usd',
-            order='market_cap_desc',
-            per_page=100,
-            page=1,
-            sparkline=False,
-            price_change_percentage='24h'
-        )
+        # Run synchronous CoinGecko call in thread pool
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        
+        def get_market_data():
+            return cg.get_coins_markets(
+                vs_currency='usd',
+                order='market_cap_desc',
+                per_page=100,
+                page=1,
+                sparkline=False,
+                price_change_percentage='24h'
+            )
+        
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            top_coins = await loop.run_in_executor(pool, get_market_data)
         
         # Sort for different categories
-        gainers = sorted([c for c in top_coins if c.get('price_change_percentage_24h', 0) > 0], 
+        gainers = sorted([c for c in top_coins if c.get('price_change_percentage_24h') and c.get('price_change_percentage_24h', 0) > 0], 
                         key=lambda x: x.get('price_change_percentage_24h', 0), reverse=True)[:10]
-        losers = sorted([c for c in top_coins if c.get('price_change_percentage_24h', 0) < 0], 
+        losers = sorted([c for c in top_coins if c.get('price_change_percentage_24h') and c.get('price_change_percentage_24h', 0) < 0], 
                        key=lambda x: x.get('price_change_percentage_24h', 0))[:10]
         trending = top_coins[:10]
         
