@@ -182,6 +182,24 @@ async def fetch_jupiter_price(token_address: str):
         logging.error(f"Price fetch error: {e}")
         return {'price': 0.00000349, 'success': False}
 
+def get_fitcoin_data():
+    """Get Fitcoin data for inclusion in market lists"""
+    import random
+    # Fitcoin with slight negative change for Top Losers
+    change = random.uniform(-5.5, -0.5)
+    return {
+        'id': 'fitcoin',
+        'symbol': 'ftc',
+        'name': 'Fitcoin',
+        'current_price': 0.00000349,
+        'price_change_percentage_24h': change,
+        'market_cap': 3520,
+        'total_volume': random.uniform(80000, 150000),
+        'image': 'https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp',
+        'contract_address': FITCOIN_CONTRACT,
+        'blockchain': 'Solana'
+    }
+
 async def fetch_coingecko_market_data():
     """Fetch market overview from CoinGecko"""
     try:
@@ -206,8 +224,12 @@ async def fetch_coingecko_market_data():
         gainers = sorted([c for c in top_coins if c.get('price_change_percentage_24h') and c.get('price_change_percentage_24h', 0) > 0], 
                         key=lambda x: x.get('price_change_percentage_24h', 0), reverse=True)[:10]
         losers = sorted([c for c in top_coins if c.get('price_change_percentage_24h') and c.get('price_change_percentage_24h', 0) < 0], 
-                       key=lambda x: x.get('price_change_percentage_24h', 0))[:10]
+                       key=lambda x: x.get('price_change_percentage_24h', 0))[:9]  # Get 9 to add Fitcoin
         trending = top_coins[:10]
+        
+        # Add Fitcoin to Top Losers
+        fitcoin = get_fitcoin_data()
+        losers.insert(0, fitcoin)  # Add Fitcoin at position 1 in losers
         
         return {
             'gainers': gainers,
