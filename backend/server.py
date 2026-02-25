@@ -409,14 +409,22 @@ async def search_cryptocurrency(query: str):
 async def get_crypto_details(coin_id: str):
     """Get detailed information about a cryptocurrency"""
     try:
-        data = cg.get_coin_by_id(
-            id=coin_id,
-            localization='false',
-            tickers=False,
-            market_data=True,
-            community_data=False,
-            developer_data=False
-        )
+        # Run synchronous CoinGecko call in thread pool
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        
+        def get_details():
+            return cg.get_coin_by_id(
+                id=coin_id,
+                localization='false',
+                tickers=False,
+                market_data=True,
+                community_data=False,
+                developer_data=False
+            )
+        
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            data = await loop.run_in_executor(pool, get_details)
         
         market_data = data.get('market_data', {})
         
