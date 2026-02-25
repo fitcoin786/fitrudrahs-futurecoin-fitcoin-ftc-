@@ -377,7 +377,16 @@ async def get_market_overview():
 async def search_cryptocurrency(query: str):
     """Search for cryptocurrencies by name or symbol"""
     try:
-        results = cg.search(query)
+        # Run synchronous CoinGecko call in thread pool
+        import concurrent.futures
+        loop = asyncio.get_event_loop()
+        
+        def do_search():
+            return cg.search(query)
+        
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            results = await loop.run_in_executor(pool, do_search)
+        
         coins = results.get('coins', [])[:20]
         
         formatted_results = []
