@@ -458,6 +458,30 @@ async def search_cryptocurrency(query: str):
 async def get_crypto_details(coin_id: str):
     """Get detailed information about a cryptocurrency"""
     try:
+        # Handle Fitcoin specially
+        if coin_id == 'fitcoin':
+            import random
+            change_24h = random.uniform(-5.5, -0.5)
+            return {
+                'id': 'fitcoin',
+                'symbol': 'FTC',
+                'name': 'Fitcoin',
+                'price': 0.00000349,
+                'market_cap': 3520,
+                'volume_24h': random.uniform(80000, 150000),
+                'price_change_24h': change_24h,
+                'price_change_7d': random.uniform(-8, 5),
+                'price_change_30d': random.uniform(-15, 10),
+                'high_24h': 0.00000389,
+                'low_24h': 0.00000309,
+                'ath': 0.00001200,
+                'atl': 0.00000100,
+                'description': "Fitcoin (FTC) is India's first fitness-backed cryptocurrency using POBC (Proof of Burned Calories) technology. Every calorie you burn is converted to FTC. Contract: 5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump on Solana blockchain.",
+                'image': 'https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp',
+                'contract_address': FITCOIN_CONTRACT,
+                'blockchain': 'Solana'
+            }
+        
         # Run synchronous CoinGecko call in thread pool
         import concurrent.futures
         loop = asyncio.get_event_loop()
