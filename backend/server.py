@@ -397,8 +397,30 @@ async def get_market_overview():
 
 @api_router.get("/crypto/search")
 async def search_cryptocurrency(query: str):
-    """Search for cryptocurrencies by name or symbol"""
+    """Search for cryptocurrencies by name, symbol, or contract address"""
     try:
+        query_lower = query.lower().strip()
+        
+        # Fitcoin data for search
+        fitcoin_result = {
+            'id': 'fitcoin',
+            'symbol': 'FTC',
+            'name': 'Fitcoin',
+            'market_cap_rank': None,
+            'thumb': 'https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp',
+            'large': 'https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp',
+            'contract_address': FITCOIN_CONTRACT,
+            'blockchain': 'Solana'
+        }
+        
+        # Check if searching for Fitcoin specifically
+        is_fitcoin_search = (
+            'fitcoin' in query_lower or 
+            'ftc' == query_lower or
+            FITCOIN_CONTRACT.lower() in query_lower or
+            query_lower in FITCOIN_CONTRACT.lower()
+        )
+        
         # Run synchronous CoinGecko call in thread pool
         import concurrent.futures
         loop = asyncio.get_event_loop()
@@ -409,9 +431,14 @@ async def search_cryptocurrency(query: str):
         with concurrent.futures.ThreadPoolExecutor() as pool:
             results = await loop.run_in_executor(pool, do_search)
         
-        coins = results.get('coins', [])[:20]
+        coins = results.get('coins', [])[:19]  # Get 19 to potentially add Fitcoin
         
         formatted_results = []
+        
+        # Add Fitcoin first if it matches the search
+        if is_fitcoin_search:
+            formatted_results.append(fitcoin_result)
+        
         for coin in coins:
             formatted_results.append({
                 'id': coin.get('id'),
