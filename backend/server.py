@@ -187,13 +187,15 @@ def get_fitcoin_data():
     import random
     # Fitcoin with slight negative change for Top Losers
     change = random.uniform(-5.5, -0.5)
+    # Market cap fluctuation around $3.48K
+    market_cap = random.uniform(3400, 3550)
     return {
         'id': 'fitcoin',
         'symbol': 'ftc',
         'name': 'Fitcoin',
         'current_price': 0.00000349,
         'price_change_percentage_24h': change,
-        'market_cap': 3520,
+        'market_cap': market_cap,
         'total_volume': random.uniform(80000, 150000),
         'image': 'https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp',
         'contract_address': FITCOIN_CONTRACT,
