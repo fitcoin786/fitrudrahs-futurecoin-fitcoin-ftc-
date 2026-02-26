@@ -292,13 +292,22 @@ const MarketOverview = ({ user, onLogout }) => {
               <div className="bg-black/50 border border-white/10 p-4">
                 <div className="text-xs font-mono uppercase text-white/60 mb-2">Market Cap</div>
                 <div className="text-lg font-bold font-mono text-white">
-                  ${(selectedCrypto.market_cap / 1000000000).toFixed(2)}B
+                  ${selectedCrypto.market_cap ? (
+                    selectedCrypto.market_cap >= 1000000000 ? (selectedCrypto.market_cap / 1000000000).toFixed(2) + 'B' :
+                    selectedCrypto.market_cap >= 1000000 ? (selectedCrypto.market_cap / 1000000).toFixed(2) + 'M' :
+                    selectedCrypto.market_cap >= 1000 ? (selectedCrypto.market_cap / 1000).toFixed(2) + 'K' :
+                    selectedCrypto.market_cap.toFixed(2)
+                  ) : 'N/A'}
                 </div>
               </div>
               <div className="bg-black/50 border border-white/10 p-4">
                 <div className="text-xs font-mono uppercase text-white/60 mb-2">24h Volume</div>
                 <div className="text-lg font-bold font-mono text-white">
-                  ${(selectedCrypto.volume_24h / 1000000).toFixed(2)}M
+                  ${selectedCrypto.volume_24h ? (
+                    selectedCrypto.volume_24h >= 1000000 ? (selectedCrypto.volume_24h / 1000000).toFixed(2) + 'M' :
+                    selectedCrypto.volume_24h >= 1000 ? (selectedCrypto.volume_24h / 1000).toFixed(2) + 'K' :
+                    selectedCrypto.volume_24h.toFixed(2)
+                  ) : 'N/A'}
                 </div>
               </div>
             </div>
