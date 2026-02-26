@@ -218,7 +218,12 @@ const TradingDashboard = ({ user, onLogout }) => {
               </div>
               <div>
                 <div className="text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Market Cap</div>
-                <div className="font-mono text-white">{priceData ? `$${(priceData.market_cap / 1000000).toFixed(2)}M` : '-'}</div>
+                <div className="font-mono text-white">{priceData ? (
+                  priceData.market_cap >= 1000000000 ? `$${(priceData.market_cap / 1000000000).toFixed(2)}B` :
+                  priceData.market_cap >= 1000000 ? `$${(priceData.market_cap / 1000000).toFixed(2)}M` :
+                  priceData.market_cap >= 1000 ? `$${(priceData.market_cap / 1000).toFixed(2)}K` :
+                  `$${priceData.market_cap.toFixed(2)}`
+                ) : '-'}</div>
               </div>
             </div>
           </div>
