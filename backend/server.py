@@ -431,8 +431,11 @@ async def search_cryptocurrency(query: str):
         is_fitcoin_search = (
             'fitcoin' in query_lower or 
             'ftc' == query_lower or
+            query_lower == FITCOIN_CONTRACT.lower() or
             FITCOIN_CONTRACT.lower() in query_lower or
-            query_lower in FITCOIN_CONTRACT.lower()
+            query_lower in FITCOIN_CONTRACT.lower() or
+            query_lower.startswith('5ckax') or
+            query_lower.startswith('5cka')
         )
         
         # Run synchronous CoinGecko call in thread pool
