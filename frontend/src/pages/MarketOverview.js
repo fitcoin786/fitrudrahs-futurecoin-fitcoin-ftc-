@@ -119,7 +119,12 @@ const MarketOverview = ({ user, onLogout }) => {
           <div className="text-right hidden md:block">
             <div className="text-xs font-mono uppercase text-white/60">MCap</div>
             <div className="font-mono text-xs text-white">
-              ${coin.market_cap ? (coin.market_cap / 1000000).toFixed(2) + 'M' : 'N/A'}
+              ${coin.market_cap ? (
+                coin.market_cap >= 1000000000 ? (coin.market_cap / 1000000000).toFixed(2) + 'B' :
+                coin.market_cap >= 1000000 ? (coin.market_cap / 1000000).toFixed(2) + 'M' :
+                coin.market_cap >= 1000 ? (coin.market_cap / 1000).toFixed(2) + 'K' :
+                coin.market_cap.toFixed(2)
+              ) : 'N/A'}
             </div>
           </div>
           <ExternalLink className="h-4 w-4 text-white/40 group-hover:text-[#FF9F1C] transition-colors" />
