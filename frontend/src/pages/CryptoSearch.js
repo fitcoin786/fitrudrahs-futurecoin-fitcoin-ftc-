@@ -424,6 +424,54 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
                   </a>
                 )}
               </div>
+
+              {/* Blockchain Links - Real-time Data Sources */}
+              {cryptoDetails.contract_address && (
+                <div className="mt-6 p-4 bg-black/30 border border-white/10 rounded">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Zap className="h-4 w-4 text-[#00F090]" />
+                    <span className="text-xs font-mono uppercase text-[#00F090]">AI-Powered Real-Time Blockchain Data</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <a 
+                      href={`https://solscan.io/token/${cryptoDetails.contract_address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group"
+                    >
+                      <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Solscan</span>
+                      <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+                    </a>
+                    <a 
+                      href={`https://www.dextools.io/app/en/solana/pair-explorer/${cryptoDetails.contract_address}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group"
+                    >
+                      <span className="text-sm font-bold text-white group-hover:text-[#00F090]">DexTools</span>
+                      <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+                    </a>
+                    <a 
+                      href={`https://birdeye.so/token/${cryptoDetails.contract_address}?chain=solana`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group"
+                    >
+                      <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">Birdeye</span>
+                      <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+                    </a>
+                    <a 
+                      href={`https://solscan.io/token/${cryptoDetails.contract_address}#txs`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group"
+                    >
+                      <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">TX Log</span>
+                      <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Market Stats Grid */}
