@@ -105,8 +105,6 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
     // Navigate to trade page
     navigate('/trade');
   };
-    }
-  };
 
   useEffect(() => {
     const debounceTimer = setTimeout(() => {
