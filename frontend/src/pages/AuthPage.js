@@ -51,12 +51,14 @@ const AuthPage = ({ onLogin }) => {
       >
         {/* Logo */}
         <div className="text-center mb-12">
-          <img 
-            src="https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp" 
-            alt="Fitcoin Spirit" 
-            className="h-24 w-24 mx-auto mb-6 object-contain"
-            data-testid="auth-logo"
-          />
+          <Link to="/" className="inline-block cursor-pointer hover:opacity-80 transition-opacity">
+            <img 
+              src="https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp" 
+              alt="Fitcoin Spirit" 
+              className="h-24 w-24 mx-auto mb-6 object-contain"
+              data-testid="auth-logo"
+            />
+          </Link>
           <h1 className="text-4xl font-black font-unbounded tracking-tighter uppercase mb-2">
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FF9F1C] via-[#FFD700] to-[#FF9F1C]">
               {isLogin ? 'WELCOME BACK' : 'JOIN FITCOIN'}
