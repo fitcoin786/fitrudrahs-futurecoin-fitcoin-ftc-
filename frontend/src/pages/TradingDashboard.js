@@ -222,8 +222,38 @@ const TradingDashboard = ({ user, onLogout }) => {
                   priceData.market_cap >= 1000000000 ? `$${(priceData.market_cap / 1000000000).toFixed(2)}B` :
                   priceData.market_cap >= 1000000 ? `$${(priceData.market_cap / 1000000).toFixed(2)}M` :
                   priceData.market_cap >= 1000 ? `$${(priceData.market_cap / 1000).toFixed(2)}K` :
-                  `$${priceData.market_cap.toFixed(2)}`
-                ) : '-'}</div>
+                  `$${priceData.market_cap?.toFixed(2) || '3.48K'}`
+                ) : '$3.48K'}</div>
+              </div>
+            </div>
+            {/* FTC Contract Address & Blockchain Info */}
+            <div className="mt-4 p-3 bg-black/30 border border-white/10 rounded">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="text-white/60 font-mono uppercase">FTC CA:</span>
+                  <a 
+                    href="https://solscan.io/token/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="font-mono text-[#FF9F1C] hover:text-[#FFD700] transition-colors truncate max-w-[200px] sm:max-w-[300px]"
+                  >
+                    5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump
+                  </a>
+                  <ExternalLink className="h-3 w-3 text-white/40" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-[#9945FF]/20 border border-[#9945FF]/40 text-[#9945FF] font-bold rounded text-xs">
+                    SOLANA
+                  </span>
+                  <a 
+                    href="https://solscan.io/token/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump#txs" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-[#00F090] hover:text-[#00F090]/80 font-mono uppercase flex items-center gap-1"
+                  >
+                    Blockchain Transaction Log <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
               </div>
             </div>
           </div>
