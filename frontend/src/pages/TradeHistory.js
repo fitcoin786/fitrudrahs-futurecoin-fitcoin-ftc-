@@ -44,14 +44,14 @@ const TradeHistory = ({ user, onLogout }) => {
       {/* Navbar */}
       <nav className="glass-nav border-b border-white/5 sticky top-0 z-50">
         <div className="max-w-[1920px] mx-auto flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity">
             <img 
               src="https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp" 
               alt="Fitcoin" 
               className="h-8 w-8 object-contain"
             />
             <span className="text-xl font-black font-unbounded tracking-tighter uppercase text-[#FF9F1C]">FITCOIN</span>
-          </div>
+          </Link>
 
           <div className="hidden md:flex items-center gap-8">
             <Link to="/trade" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Trade</Link>
