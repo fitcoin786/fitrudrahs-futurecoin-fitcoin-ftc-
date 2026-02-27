@@ -86,38 +86,25 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
   };
 
   const handleSelectCrypto = async (crypto) => {
-    setSelectedCrypto(crypto);
-    setLoadingDetails(true);
-    setSearchQuery('');
-    setSearchResults([]);
-
-    try {
-      // If Fitcoin selected
-      if (crypto.id === 'fitcoin' || crypto.contract_address === FITCOIN_DATA.contract_address) {
-        setCryptoDetails({
-          ...FITCOIN_DATA,
-          price: 0.00000349,
-          price_change_24h: 12.5,
-          price_change_7d: 18.3,
-          price_change_30d: 25.7,
-          market_cap: 3520,
-          volume_24h: 150,
-          high_24h: 0.00000389,
-          low_24h: 0.00000309,
-          ath: 0.00001200,
-          atl: 0.00000100,
-          image: FITCOIN_DATA.thumb,
-          chart_url: `https://birdeye.so/token/${FITCOIN_DATA.contract_address}?chain=solana`
-        });
-      } else {
-        const response = await axios.get(`${API}/crypto/details/${crypto.id}`);
-        setCryptoDetails(response.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch crypto details:', error);
-      toast.error('Failed to load cryptocurrency details');
-    } finally {
-      setLoadingDetails(false);
+    // Store selected crypto info for trade page
+    const tradeData = {
+      id: crypto.id,
+      symbol: crypto.symbol,
+      name: crypto.name,
+      contract_address: crypto.contract_address,
+      blockchain: crypto.blockchain || 'Solana',
+      thumb: crypto.thumb || crypto.large
+    };
+    
+    // Save to localStorage for trade page to access
+    localStorage.setItem('selectedTradeCrypto', JSON.stringify(tradeData));
+    
+    // Show toast notification
+    toast.success(`Redirecting to trade ${crypto.name} (${crypto.symbol})...`);
+    
+    // Navigate to trade page
+    navigate('/trade');
+  };
     }
   };
 
