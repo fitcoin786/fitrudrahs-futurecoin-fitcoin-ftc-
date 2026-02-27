@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { TrendingUp, TrendingDown, Wallet, LogOut, Menu, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, LogOut, Menu, X, ExternalLink } from 'lucide-react';
 // Using MobyScreener for live Solana chart
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
