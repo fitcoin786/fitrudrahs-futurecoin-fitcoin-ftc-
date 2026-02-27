@@ -242,8 +242,12 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
                 exit={{ opacity: 0, y: -10 }}
                 className="mt-2 bg-[#0F1115] border border-white/10 max-h-[500px] overflow-y-auto"
               >
-                <div className="p-2 bg-black/50 border-b border-white/10">
+                <div className="p-2 bg-black/50 border-b border-white/10 flex justify-between items-center">
                   <span className="text-xs font-mono uppercase text-white/60">Found {searchResults.length} results</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-[#00F090]/20 text-[#00F090] px-2 py-0.5 font-bold">AI-POWERED</span>
+                    <span className="text-xs bg-[#9945FF]/20 text-[#9945FF] px-2 py-0.5 font-bold">10,000+ TOKENS</span>
+                  </div>
                 </div>
                 {searchResults.map((crypto, index) => (
                   <button
@@ -257,10 +261,10 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
                       <div className="font-bold text-white">{crypto.name}</div>
                       <div className="text-sm text-white/60 font-mono uppercase flex items-center gap-2">
                         {crypto.symbol}
-                        {crypto.blockchain && <span className="text-xs bg-[#FF9F1C]/20 text-[#FF9F1C] px-2 py-0.5">{crypto.blockchain}</span>}
+                        {crypto.blockchain && <span className="text-xs bg-[#9945FF]/20 text-[#9945FF] px-2 py-0.5">{crypto.blockchain}</span>}
                       </div>
                       {crypto.contract_address && (
-                        <div className="text-xs text-white/40 font-mono mt-1 truncate">{crypto.contract_address}</div>
+                        <div className="text-xs text-[#FF9F1C]/80 font-mono mt-1 truncate">{crypto.contract_address}</div>
                       )}
                     </div>
                     {crypto.market_cap_rank && (
