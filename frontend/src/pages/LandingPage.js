@@ -395,6 +395,237 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Fitcoin Ecosystem Links Section */}
+      <section className="py-16 px-6 bg-gradient-to-b from-[#0F1115] to-[#050505]">
+        <div className="max-w-6xl mx-auto">
+          <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4 font-unbounded uppercase text-center">
+            <span className="text-[#FF9F1C]">Fitcoin</span> Ecosystem
+          </h2>
+          <p className="text-center text-white/60 mb-8 font-mono text-sm">
+            FTC CA: <a href="https://solscan.io/token/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="text-[#FF9F1C] hover:text-[#FFD700]">5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump</a>
+          </p>
+          
+          {/* Trading & Analytics */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-[#00F090] mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Activity className="h-5 w-5" /> Trading & Analytics
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <a href="https://www.mobyscreener.com/solana/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">MobyScreener</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://www.birdeye.so/token/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump?chain=solana" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">Birdeye</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://www.dextools.io/app/en/solana/pair-explorer/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">DexTools</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://rugcheck.xyz/tokens/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">RugCheck</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://gmgn.ai/sol/token/TL0vpO9q_5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">GMGN.ai</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://fluxbeam.xyz/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">FluxBeam</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://photon-sol.tinyastro.io/en/lp/E2M6MuNdPrSFUcRrh19KiL9H4bftU1WSSrTUyuCriRd6" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">Photon</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://web3.bitget.com/en/swap/sol/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">Bitget Swap</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://phantom.com/tokens/solana/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF9F1C]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF9F1C]">Phantom</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+            </div>
+          </div>
+
+          {/* Official & Community */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-[#9945FF] mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Users className="h-5 w-5" /> Official & Community
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <a href="https://futurecoin.in" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">🇮🇳 FutureCoin.in</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://futurecoin.in/whitepaper" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Whitepaper</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://t.me/Fitrudrahfitcoin" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Official Telegram</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://t.me/+5YH0EJ6vJho4MjE1" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">FitOwlSiTrack</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://t.me/+8oRHqhv_ZwJlODhl" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">TG Community</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://t.me/Rudrahbot" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Rudrah Bot</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://discord.gg/wFccxrY4" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Discord</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://invite.steps.app/zkK1vmJRdARK" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Join Fitrudrah</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://join.steps.app/jc7n0aj0SgVVsYck" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#9945FF]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#9945FF]">Steps App</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+            </div>
+          </div>
+
+          {/* Social Media */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-[#FF2E50] mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="h-5 w-5" /> Social Media
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <a href="https://x.com/OwlsOfOwls" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">𝕏 @OwlsOfOwls</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://x.com/OwlsOfOwls/status/1981306401185288254" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">Latest Tweet</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://youtube.com/@fitrudrah" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">YouTube</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://youtube.com/shorts/Z1WGoP-ZpOU" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">YT Shorts</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://www.instagram.com/reel/C10B_bQtFY1/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">Instagram</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://m.facebook.com/profile.php?id=61571564615083" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">Facebook</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://www.reddit.com/user/Emergency-Bad559/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">Reddit</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://github.com/fitcoin786" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FF2E50]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FF2E50]">GitHub</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+            </div>
+          </div>
+
+          {/* Ecosystem Projects */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-[#FFD700] mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Award className="h-5 w-5" /> Ecosystem Projects
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <a href="https://nickeysnutrition.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Nickeys Nutrition</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://nickeys-nutrition.mini.store" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Mini Store</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://fitwarrior7.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Fit Warrior</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://fitcoinexchange.pwastore.com/editor-page" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">FTC Exchange</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://Fit-Forge-Ftc.replit.app" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Fit Forge FTC</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://futurecoin0.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">FutureCoin Site</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://site-aq55r70hc.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 1</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://site-sls78qs0b.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 2</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://site-l39b1yw1c.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 3</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://nickeysnutrition9.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Nickeys 9</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+            </div>
+          </div>
+
+          {/* Resources & Documentation */}
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-[#00F090] mb-4 uppercase tracking-wider flex items-center gap-2">
+              <Shield className="h-5 w-5" /> Resources & Documentation
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              <a href="https://fitrudrahsfuturecoinfitcoin.atlassian.net/wiki/x/RQAC" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#00F090]">Confluence Wiki</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://id.atlassian.com/invite/p/confluence?id=CAOoXSWBSQaiHEFnUEw7JA" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#00F090]">Join Confluence</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://orcid.org/0009-0001-7770-6883" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#00F090]">ORCID</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://www.foundit.in/seeker/profile" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#00F090]">Foundit Profile</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+              <a href="https://maps.app.goo.gl/RY4a5hoMESDPjtJu8" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#00F090]/50 transition-all group">
+                <span className="text-sm font-bold text-white group-hover:text-[#00F090]">Location</span>
+                <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
+              </a>
+            </div>
+          </div>
+
+          {/* Contact Info */}
+          <div className="mt-8 p-6 glass-card text-center">
+            <p className="text-white/80 font-mono text-sm mb-2">
+              <span className="text-[#FF9F1C] font-bold">Contact:</span> Ftc@futurecoin.in
+            </p>
+            <p className="text-white/60 font-mono text-xs">
+              FTC CA: 5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump | Solana Blockchain
+            </p>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6 text-center text-white/50 text-sm">
         <p className="font-mono mb-2">© 2026 Future Trade. Powered by Fitcoin (FTC) & VN1 HEALTHBAZAR OPC Pvt Ltd</p>
