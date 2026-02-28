@@ -256,8 +256,14 @@ def get_fitcoin_data():
     }
 
 async def fetch_coingecko_market_data():
-    """Fetch market overview from CoinGecko"""
+    """Fetch market overview from CoinGecko with caching"""
     try:
+        # Check cache first
+        cached = get_cached_data('market_data')
+        if cached:
+            logging.info("Using cached market data")
+            return cached
+        
         # Run synchronous CoinGecko call in thread pool
         import concurrent.futures
         loop = asyncio.get_event_loop()
@@ -286,15 +292,27 @@ async def fetch_coingecko_market_data():
         fitcoin = get_fitcoin_data()
         losers.insert(0, fitcoin)  # Add Fitcoin at position 1 in losers
         
-        return {
+        result = {
             'gainers': gainers,
             'losers': losers,
             'trending': trending,
             'success': True
         }
+        
+        # Cache the result
+        set_cached_data('market_data', result)
+        
+        return result
     except Exception as e:
         logging.error(f"CoinGecko error: {e}")
-        return {'gainers': [], 'losers': [], 'trending': [], 'success': False}
+        # Return fallback data with Fitcoin
+        fitcoin = get_fitcoin_data()
+        return {
+            'gainers': [],
+            'losers': [fitcoin],
+            'trending': [],
+            'success': False
+        }
 
 # ============ AUTH ROUTES ============
 
