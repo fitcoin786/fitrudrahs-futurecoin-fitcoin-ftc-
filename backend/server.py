@@ -605,24 +605,32 @@ async def search_cryptocurrency(query: str):
                 'description': 'AI-detected Solana SPL token - View on Solscan for details'
             })
         
-        # Also search CoinGecko for broader results (10,000+ tokens)
+        # Also search CoinGecko for broader results (10,000+ tokens) with caching
         try:
-            import concurrent.futures
-            loop = asyncio.get_event_loop()
-            
-            def do_search():
-                return cg.search(query)
-            
-            with concurrent.futures.ThreadPoolExecutor() as pool:
-                results = await loop.run_in_executor(pool, do_search)
-            
-            coins = results.get('coins', [])[:15]
-            
-            for coin in coins:
-                # Avoid duplicates
-                coin_id = coin.get('id')
-                if not any(r.get('id') == coin_id for r in formatted_results):
-                    formatted_results.append({
+            # Check cache first
+            cached_search = get_cached_data('search', query_lower)
+            if cached_search:
+                logging.info(f"Using cached search results for: {query}")
+                for coin in cached_search[:15]:
+                    coin_id = coin.get('id')
+                    if not any(r.get('id') == coin_id for r in formatted_results):
+                        formatted_results.append(coin)
+            else:
+                import concurrent.futures
+                loop = asyncio.get_event_loop()
+                
+                def do_search():
+                    return cg.search(query)
+                
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    results = await loop.run_in_executor(pool, do_search)
+                
+                coins = results.get('coins', [])[:15]
+                
+                # Format and cache the results
+                formatted_coins = []
+                for coin in coins:
+                    formatted_coin = {
                         'id': coin.get('id'),
                         'symbol': coin.get('symbol', '').upper(),
                         'name': coin.get('name'),
@@ -630,7 +638,14 @@ async def search_cryptocurrency(query: str):
                         'thumb': coin.get('thumb', ''),
                         'large': coin.get('large', ''),
                         'blockchain': 'Multiple'
-                    })
+                    }
+                    formatted_coins.append(formatted_coin)
+                    # Avoid duplicates
+                    if not any(r.get('id') == coin.get('id') for r in formatted_results):
+                        formatted_results.append(formatted_coin)
+                
+                # Cache the results
+                set_cached_data('search', formatted_coins, query_lower)
         except Exception as e:
             logging.warning(f"CoinGecko search failed: {e}")
         
