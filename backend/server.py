@@ -15,6 +15,7 @@ import jwt
 import httpx
 import asyncio
 from pycoingecko import CoinGeckoAPI
+import time
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,6 +35,40 @@ FITCOIN_CONTRACT = "5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump"
 
 # Initialize CoinGecko for market data
 cg = CoinGeckoAPI()
+
+# Cache for API responses to prevent rate limiting
+API_CACHE = {
+    'market_data': {'data': None, 'timestamp': 0},
+    'search': {},  # query -> {'data': result, 'timestamp': timestamp}
+    'details': {}  # coin_id -> {'data': result, 'timestamp': timestamp}
+}
+CACHE_DURATION = 60  # Cache for 60 seconds
+SEARCH_CACHE_DURATION = 120  # Search cache for 2 minutes
+
+def get_cached_data(cache_key, sub_key=None):
+    """Get data from cache if not expired"""
+    now = time.time()
+    if sub_key:
+        cache_entry = API_CACHE.get(cache_key, {}).get(sub_key)
+    else:
+        cache_entry = API_CACHE.get(cache_key)
+    
+    if cache_entry and cache_entry.get('data') is not None:
+        age = now - cache_entry.get('timestamp', 0)
+        duration = SEARCH_CACHE_DURATION if cache_key == 'search' else CACHE_DURATION
+        if age < duration:
+            return cache_entry['data']
+    return None
+
+def set_cached_data(cache_key, data, sub_key=None):
+    """Store data in cache"""
+    now = time.time()
+    if sub_key:
+        if cache_key not in API_CACHE:
+            API_CACHE[cache_key] = {}
+        API_CACHE[cache_key][sub_key] = {'data': data, 'timestamp': now}
+    else:
+        API_CACHE[cache_key] = {'data': data, 'timestamp': now}
 
 security = HTTPBearer()
 
