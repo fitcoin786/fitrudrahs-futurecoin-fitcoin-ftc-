@@ -687,6 +687,12 @@ async def get_crypto_details(coin_id: str):
                 'blockchain': 'Solana'
             }
         
+        # Check cache first for non-Fitcoin coins
+        cached_details = get_cached_data('details', coin_id)
+        if cached_details:
+            logging.info(f"Using cached details for: {coin_id}")
+            return cached_details
+        
         # Run synchronous CoinGecko call in thread pool
         import concurrent.futures
         loop = asyncio.get_event_loop()
@@ -706,7 +712,7 @@ async def get_crypto_details(coin_id: str):
         
         market_data = data.get('market_data', {})
         
-        return {
+        result = {
             'id': data.get('id'),
             'symbol': data.get('symbol', '').upper(),
             'name': data.get('name'),
@@ -723,6 +729,11 @@ async def get_crypto_details(coin_id: str):
             'description': data.get('description', {}).get('en', ''),
             'image': data.get('image', {}).get('large', '')
         }
+        
+        # Cache the result
+        set_cached_data('details', result, coin_id)
+        
+        return result
     except Exception as e:
         logging.error(f"Details error: {e}")
         raise HTTPException(status_code=404, detail="Cryptocurrency not found")
