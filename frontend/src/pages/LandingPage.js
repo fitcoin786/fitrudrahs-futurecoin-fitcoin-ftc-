@@ -542,7 +542,7 @@ const LandingPage = () => {
               <Award className="h-5 w-5" /> Ecosystem Projects
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://nickeysnutrition.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Nickeys Nutrition</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
@@ -550,35 +550,35 @@ const LandingPage = () => {
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Mini Store</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://fitwarrior7.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Fit Warrior</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://fitcoinexchange.pwastore.com/editor-page" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">FTC Exchange</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://Fit-Forge-Ftc.replit.app" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Fit Forge FTC</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://futurecoin0.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">FutureCoin Site</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://site-aq55r70hc.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 1</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://site-sls78qs0b.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 2</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://site-l39b1yw1c.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Project Site 3</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
-              <a href="https://www.fitcoin.live" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
+              <a href="https://nickeysnutrition9.godaddysites.com/" target="_blank" rel="noopener noreferrer" className="glass-card p-3 text-center hover:border-[#FFD700]/50 transition-all group">
                 <span className="text-sm font-bold text-white group-hover:text-[#FFD700]">Nickeys 9</span>
                 <ExternalLink className="h-3 w-3 inline ml-1 text-white/40" />
               </a>
