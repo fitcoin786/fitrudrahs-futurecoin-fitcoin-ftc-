@@ -111,6 +111,13 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - **Searchable via**: Name ("fitcoin"), Symbol ("ftc"), Contract Address
 - **Details include**: Price, 24h change, market cap, volume, high/low, ATH/ATL, description
 
+## Recent Changes (Mar 2, 2026)
+
+1. **Volume Fluctuation Correction (Trade Dashboard)**
+   - **24h Volume**: Now fluctuates between $150 - $280 (real-time automated)
+   - **60min Volume**: New field added, fluctuates between $15 - $56 (shown in green)
+   - Both volumes auto-update every 5 seconds for real-time experience
+
 ## Recent Changes (Feb 25, 2026)
 
 1. **Mine FTC Link Updated**
