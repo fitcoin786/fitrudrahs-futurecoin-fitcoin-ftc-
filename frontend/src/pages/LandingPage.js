@@ -101,6 +101,24 @@ const LandingPage = () => {
               Start Trading Now
               <ArrowRight className="h-6 w-6" />
             </button>
+            
+            {/* Health Is Wealth - AI Power Button */}
+            <div className="mt-6">
+              <a
+                href="https://www.meetaugust.ai/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative inline-flex items-center gap-3 px-10 py-4 bg-gradient-to-r from-[#00F090] via-[#00D4AA] to-[#00F090] text-black font-black uppercase tracking-widest text-base hover:brightness-110 transition-all duration-300 shadow-[0_0_25px_rgba(0,240,144,0.5)] hover:shadow-[0_0_40px_rgba(0,240,144,0.8)] rounded-sm overflow-hidden animate-pulse hover:animate-none"
+                data-testid="health-is-wealth-btn"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <Zap className="h-5 w-5 animate-bounce" />
+                <span className="relative z-10">Health Is Wealth</span>
+                <Sparkles className="h-5 w-5 animate-spin" />
+                <span className="absolute -top-1 -right-1 px-2 py-0.5 bg-[#FF2E50] text-white text-[10px] font-bold rounded-sm">AI</span>
+              </a>
+              <p className="text-xs text-[#00F090]/70 mt-2 font-mono">⚡ Flash AI Power Prompt</p>
+            </div>
           </motion.div>
         </div>
       </section>
