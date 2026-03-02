@@ -498,6 +498,32 @@ async def get_price_history():
     
     return {"data": data}
 
+@api_router.get("/ai/suggestions")
+async def get_ai_trading_suggestions():
+    """Get Fitrudrah's AI trading suggestions with buy/hold/sell recommendations"""
+    suggestions = get_ai_suggestions()
+    return suggestions
+
+@api_router.get("/ai/ftc-prediction")
+async def get_ftc_prediction():
+    """Get Fitcoin price prediction with growth chart"""
+    suggestions = get_ai_suggestions()
+    return {
+        'prediction': suggestions['ftc_prediction'],
+        'ai_model': suggestions['ai_model'],
+        'last_updated': suggestions['last_updated'],
+        'confidence': random.uniform(75, 95)
+    }
+
+@api_router.post("/volume-mode")
+async def set_volume_mode(mode: str = 'daily'):
+    """Switch between daily ($50-$250) and hourly ($5-$10) volume mode"""
+    global VOLUME_MODE
+    if mode in ['daily', 'hourly']:
+        VOLUME_MODE = mode
+        return {'mode': VOLUME_MODE, 'status': 'success'}
+    return {'error': 'Invalid mode. Use "daily" or "hourly"'}
+
 # ============ MARKET DATA ROUTES ============
 
 @api_router.get("/market/overview")
