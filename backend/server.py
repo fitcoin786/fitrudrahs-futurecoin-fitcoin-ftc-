@@ -141,6 +141,24 @@ class TokenPrice(BaseModel):
     market_cap: float
     last_updated: str
 
+# ============ PASSWORD RESET MODELS ============
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class VerifyOTPRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
 # ============ AUTH HELPERS ============
 
 def hash_password(password: str) -> str:
