@@ -145,6 +145,37 @@ const LandingPage = () => {
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
+
+            {/* Alpha Radar Section */}
+            <div className="mt-8 glass-card p-8 max-w-lg mx-auto border-2 border-[#FF2E50]/30">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="relative">
+                  <div className="w-10 h-10 rounded-full bg-[#FF2E50]/20 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-[#FF2E50]/40 flex items-center justify-center animate-ping absolute" />
+                    <div className="w-4 h-4 rounded-full bg-[#FF2E50] relative z-10" />
+                  </div>
+                </div>
+                <h3 className="text-2xl font-black font-unbounded tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF2E50] via-[#FF6B6B] to-[#FF2E50]">
+                  Alpha Radar
+                </h3>
+                <Shield className="h-8 w-8 text-[#FF2E50]" />
+              </div>
+              <p className="text-white/70 text-center mb-6">
+                Real-time global monitoring • Conflicts • Hotspots • Weather • Alerts
+              </p>
+              <a
+                href="https://www.worldmonitor.app/?lat=28.0000&lon=45.0000&zoom=2.50&view=mena&timeRange=7d&layers=conflicts%2Chotspots%2Csanctions%2Cweather%2Coutages%2Cnatural%2CiranAttacks"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FF2E50] to-[#FF6B6B] text-white font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(255,46,80,0.5)] hover:shadow-[0_0_35px_rgba(255,46,80,0.8)] rounded-sm overflow-hidden"
+                data-testid="alpha-radar-btn"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
+                <TrendingUp className="h-5 w-5" />
+                <span className="relative z-10">Open Alpha Radar</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
