@@ -118,6 +118,16 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
    - **60min Volume**: New field added, fluctuates between $15 - $56 (shown in green)
    - Both volumes auto-update every 5 seconds for real-time experience
 
+2. **Complete Authentication System Upgrade**
+   - **Login**: Email + Password (existing)
+   - **Register**: Full Name + Email + Password (existing)
+   - **Forgot Password**: Email-based OTP flow
+   - **OTP Verification**: 6-digit code with 10-minute expiry, 5 attempts max
+   - **Reset Password**: New password + confirmation after OTP verification
+   - **Change Password**: For logged-in users (current + new password)
+   - **Demo Mode**: OTP displayed on screen when RESEND_API_KEY not configured
+   - **Production**: Configure RESEND_API_KEY for email delivery
+
 ## Recent Changes (Feb 25, 2026)
 
 1. **Mine FTC Link Updated**
