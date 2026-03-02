@@ -217,6 +217,10 @@ const TradingDashboard = ({ user, onLogout }) => {
                 <div className="font-mono text-white">{priceData ? `$${priceData.volume_24h.toLocaleString()}` : '-'}</div>
               </div>
               <div>
+                <div className="text-xs font-mono uppercase tracking-wider text-white/60 mb-1">60min Volume</div>
+                <div className="font-mono text-[#00F090]">{priceData?.volume_60min ? `$${priceData.volume_60min.toLocaleString()}` : '-'}</div>
+              </div>
+              <div>
                 <div className="text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Market Cap</div>
                 <div className="font-mono text-white">{priceData ? (
                   priceData.market_cap >= 1000000000 ? `$${(priceData.market_cap / 1000000000).toFixed(2)}B` :
