@@ -127,7 +127,7 @@ const TradingDashboard = ({ user, onLogout }) => {
             <Link to="/market" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Markets</Link>
             <Link to="/search" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Search</Link>
             <a 
-              href={process.env.REACT_APP_BACKEND_URL || "https://fitcoin-platform.preview.emergentagent.com/"} 
+              href="https://solana-fitness.emergent.host/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase tracking-wider text-sm flex items-center gap-1"
@@ -170,7 +170,7 @@ const TradingDashboard = ({ user, onLogout }) => {
               <Link to="/market" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Markets</Link>
               <Link to="/search" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Search</Link>
               <a 
-                href={process.env.REACT_APP_BACKEND_URL || "https://fitcoin-platform.preview.emergentagent.com/"} 
+                href="https://solana-fitness.emergent.host/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase"
