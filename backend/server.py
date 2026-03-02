@@ -525,6 +525,178 @@ async def get_me(user_id: str = Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="User not found")
     return User(**user_doc)
 
+# ============ PASSWORD RESET ROUTES ============
+
+def generate_otp() -> str:
+    """Generate a 6-digit OTP"""
+    return ''.join([str(random.randint(0, 9)) for _ in range(6)])
+
+async def send_otp_email(email: str, otp: str, purpose: str = "password reset"):
+    """Send OTP via email using Resend"""
+    html_content = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #050505; color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp" alt="Fitcoin" style="height: 80px; width: 80px;">
+            <h1 style="color: #FF9F1C; margin-top: 10px;">FUTURE TRADE</h1>
+        </div>
+        <div style="background-color: #111; border: 1px solid #333; padding: 30px; text-align: center;">
+            <h2 style="color: #FFD700; margin-bottom: 20px;">Your OTP for {purpose}</h2>
+            <div style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #00F090; background: #000; padding: 20px; margin: 20px 0; border: 2px solid #00F090;">
+                {otp}
+            </div>
+            <p style="color: #aaa; font-size: 14px;">This OTP is valid for 10 minutes.</p>
+            <p style="color: #aaa; font-size: 12px;">If you didn't request this, please ignore this email.</p>
+        </div>
+        <div style="text-align: center; margin-top: 20px; color: #666; font-size: 12px;">
+            <p>© 2026 Future Trade - Fitcoin Trading Platform</p>
+        </div>
+    </div>
+    """
+    
+    if not RESEND_API_KEY:
+        # Demo mode - just log the OTP (for testing without email service)
+        logging.info(f"[DEMO MODE] OTP for {email}: {otp}")
+        return {"status": "demo", "otp": otp}
+    
+    try:
+        params = {
+            "from": SENDER_EMAIL,
+            "to": [email],
+            "subject": f"Future Trade - Your OTP for {purpose}",
+            "html": html_content
+        }
+        email_response = await asyncio.to_thread(resend.Emails.send, params)
+        logging.info(f"OTP email sent to {email}")
+        return {"status": "sent", "email_id": email_response.get("id")}
+    except Exception as e:
+        logging.error(f"Failed to send OTP email: {e}")
+        # Still allow the flow to continue in demo mode
+        return {"status": "error", "message": str(e)}
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(input: ForgotPasswordRequest):
+    """Send OTP to user's email for password reset"""
+    # Check if user exists
+    user_doc = await db.users.find_one({"email": input.email}, {"_id": 0})
+    if not user_doc:
+        # Don't reveal if email exists or not for security
+        return {"message": "If the email exists, an OTP has been sent", "status": "success"}
+    
+    # Generate OTP
+    otp = generate_otp()
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    
+    # Store OTP in cache
+    OTP_CACHE[input.email] = {
+        'otp': otp,
+        'expires': expires,
+        'attempts': 0
+    }
+    
+    # Send OTP email
+    email_result = await send_otp_email(input.email, otp, "password reset")
+    
+    response = {"message": "If the email exists, an OTP has been sent", "status": "success"}
+    
+    # In demo mode (no API key), include OTP in response for testing
+    if not RESEND_API_KEY:
+        response["demo_otp"] = otp
+        response["note"] = "Demo mode - OTP shown for testing. Configure RESEND_API_KEY for production."
+    
+    return response
+
+@api_router.post("/auth/verify-otp")
+async def verify_otp(input: VerifyOTPRequest):
+    """Verify the OTP sent to user's email"""
+    cache_entry = OTP_CACHE.get(input.email)
+    
+    if not cache_entry:
+        raise HTTPException(status_code=400, detail="No OTP request found. Please request a new OTP.")
+    
+    # Check attempts
+    if cache_entry['attempts'] >= 5:
+        del OTP_CACHE[input.email]
+        raise HTTPException(status_code=400, detail="Too many attempts. Please request a new OTP.")
+    
+    # Check expiry
+    if datetime.now(timezone.utc) > cache_entry['expires']:
+        del OTP_CACHE[input.email]
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
+    
+    # Verify OTP
+    cache_entry['attempts'] += 1
+    
+    if cache_entry['otp'] != input.otp:
+        remaining = 5 - cache_entry['attempts']
+        raise HTTPException(status_code=400, detail=f"Invalid OTP. {remaining} attempts remaining.")
+    
+    # OTP is valid - mark as verified
+    cache_entry['verified'] = True
+    
+    return {"message": "OTP verified successfully", "status": "success"}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(input: ResetPasswordRequest):
+    """Reset password after OTP verification"""
+    cache_entry = OTP_CACHE.get(input.email)
+    
+    if not cache_entry:
+        raise HTTPException(status_code=400, detail="No OTP request found. Please request a new OTP.")
+    
+    # Check if OTP was verified
+    if not cache_entry.get('verified'):
+        # Verify OTP again
+        if cache_entry['otp'] != input.otp:
+            raise HTTPException(status_code=400, detail="Invalid OTP")
+        if datetime.now(timezone.utc) > cache_entry['expires']:
+            del OTP_CACHE[input.email]
+            raise HTTPException(status_code=400, detail="OTP has expired")
+    
+    # Validate new password
+    if len(input.new_password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+    
+    # Update password in database
+    result = await db.users.update_one(
+        {"email": input.email},
+        {"$set": {"password_hash": hash_password(input.new_password)}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Clear OTP from cache
+    del OTP_CACHE[input.email]
+    
+    return {"message": "Password reset successfully", "status": "success"}
+
+@api_router.post("/auth/change-password")
+async def change_password(input: ChangePasswordRequest, user_id: str = Depends(get_current_user)):
+    """Change password for logged-in user"""
+    # Get user
+    user_doc = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Verify current password
+    if not verify_password(input.current_password, user_doc["password_hash"]):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    
+    # Validate new password
+    if len(input.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    
+    if input.current_password == input.new_password:
+        raise HTTPException(status_code=400, detail="New password must be different from current password")
+    
+    # Update password
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": hash_password(input.new_password)}}
+    )
+    
+    return {"message": "Password changed successfully", "status": "success"}
+
 # ============ WALLET ROUTES ============
 
 @api_router.get("/wallet", response_model=WalletBalance)
