@@ -181,30 +181,101 @@ def get_fitcoin_volume_with_fluctuation(mode='daily'):
         return random.uniform(50, 250) * 1000  # Convert to actual value
 
 def get_ai_suggestions():
-    """Generate Fitrudrah's AI trading suggestions"""
+    """Generate Fitrudrah's AI trading suggestions with position changes every 3 minutes"""
     import random
+    import time
     
-    # Generate realistic growth predictions
-    btc_growth = random.uniform(2, 8)
-    eth_growth = random.uniform(1, 6)
-    sol_growth = random.uniform(3, 12)
-    ftc_growth = random.uniform(5, 25)
-    jup_growth = random.uniform(2, 10)
-    bonk_growth = random.uniform(-5, 15)
+    # Use time-based seed for 3-minute rotation cycles
+    rotation_cycle = int(time.time() // 180)  # Changes every 3 minutes (180 seconds)
+    random.seed(rotation_cycle)
+    
+    # All available coins for suggestions
+    all_coins = [
+        {'symbol': 'FTC', 'name': 'Fitcoin', 'base_growth': 15, 'volatility': 10, 'reason': 'Strong fitness adoption metrics'},
+        {'symbol': 'SOL', 'name': 'Solana', 'base_growth': 8, 'volatility': 5, 'reason': 'Network activity surge'},
+        {'symbol': 'JUP', 'name': 'Jupiter', 'base_growth': 6, 'volatility': 4, 'reason': 'DEX volume increasing'},
+        {'symbol': 'BTC', 'name': 'Bitcoin', 'base_growth': 4, 'volatility': 3, 'reason': 'Stable long-term outlook'},
+        {'symbol': 'ETH', 'name': 'Ethereum', 'base_growth': 5, 'volatility': 3, 'reason': 'DeFi ecosystem growth'},
+        {'symbol': 'BONK', 'name': 'Bonk', 'base_growth': -2, 'volatility': 8, 'reason': 'Meme coin volatility risk'},
+        {'symbol': 'WIF', 'name': 'dogwifhat', 'base_growth': 3, 'volatility': 12, 'reason': 'Meme coin momentum'},
+        {'symbol': 'PEPE', 'name': 'Pepe', 'base_growth': -1, 'volatility': 15, 'reason': 'High volatility meme'},
+        {'symbol': 'RAY', 'name': 'Raydium', 'base_growth': 7, 'volatility': 5, 'reason': 'Solana DEX leader'},
+        {'symbol': 'ORCA', 'name': 'Orca', 'base_growth': 5, 'volatility': 4, 'reason': 'AMM growth potential'},
+        {'symbol': 'PYTH', 'name': 'Pyth Network', 'base_growth': 6, 'volatility': 4, 'reason': 'Oracle demand rising'},
+        {'symbol': 'RENDER', 'name': 'Render', 'base_growth': 8, 'volatility': 6, 'reason': 'GPU computing demand'},
+        {'symbol': 'INJ', 'name': 'Injective', 'base_growth': 7, 'volatility': 5, 'reason': 'DeFi derivatives growth'},
+        {'symbol': 'SEI', 'name': 'Sei', 'base_growth': 4, 'volatility': 6, 'reason': 'Trading chain momentum'},
+        {'symbol': 'TIA', 'name': 'Celestia', 'base_growth': 5, 'volatility': 7, 'reason': 'Modular blockchain trend'},
+        {'symbol': 'AVAX', 'name': 'Avalanche', 'base_growth': 6, 'volatility': 4, 'reason': 'Subnet adoption'},
+        {'symbol': 'LINK', 'name': 'Chainlink', 'base_growth': 5, 'volatility': 3, 'reason': 'Oracle dominance'},
+        {'symbol': 'DOGE', 'name': 'Dogecoin', 'base_growth': 2, 'volatility': 10, 'reason': 'Social sentiment driven'},
+        {'symbol': 'SHIB', 'name': 'Shiba Inu', 'base_growth': -1, 'volatility': 12, 'reason': 'Meme coin risk'},
+        {'symbol': 'MATIC', 'name': 'Polygon', 'base_growth': 4, 'volatility': 4, 'reason': 'L2 scaling solution'},
+    ]
+    
+    # Shuffle coins based on rotation cycle
+    shuffled_coins = all_coins.copy()
+    random.shuffle(shuffled_coins)
+    
+    # Reset random seed for actual values
+    random.seed()
+    
+    # Calculate growth for each coin with market behavior variation
+    market_sentiment = random.choice(['bullish', 'bearish', 'neutral', 'volatile'])
+    
+    for coin in shuffled_coins:
+        base = coin['base_growth']
+        vol = coin['volatility']
+        
+        # Apply market sentiment modifier
+        if market_sentiment == 'bullish':
+            coin['growth'] = base + random.uniform(0, vol * 1.5)
+        elif market_sentiment == 'bearish':
+            coin['growth'] = base - random.uniform(0, vol)
+        elif market_sentiment == 'volatile':
+            coin['growth'] = base + random.uniform(-vol * 1.2, vol * 1.2)
+        else:  # neutral
+            coin['growth'] = base + random.uniform(-vol * 0.5, vol * 0.5)
+        
+        coin['confidence'] = random.uniform(60, 95)
+    
+    # Sort by growth and categorize
+    sorted_coins = sorted(shuffled_coins, key=lambda x: x['growth'], reverse=True)
+    
+    # FTC always in buy (but position may vary)
+    ftc_coin = next((c for c in sorted_coins if c['symbol'] == 'FTC'), None)
+    if ftc_coin:
+        sorted_coins.remove(ftc_coin)
+        ftc_coin['growth'] = random.uniform(10, 25)  # FTC always positive
+        ftc_coin['confidence'] = random.uniform(85, 98)
+    
+    # Categorize: top performers = buy, middle = hold, bottom = sell
+    buy_coins = [ftc_coin] if ftc_coin else []
+    buy_coins.extend([c for c in sorted_coins if c['growth'] > 5][:5])  # Up to 6 buy coins
+    
+    remaining = [c for c in sorted_coins if c not in buy_coins]
+    hold_coins = [c for c in remaining if c['growth'] >= 0][:4]  # Up to 4 hold coins
+    
+    remaining = [c for c in remaining if c not in hold_coins]
+    sell_coins = remaining[:4]  # Up to 4 sell coins
+    
+    # Format output
+    def format_coin(c):
+        return {
+            'symbol': c['symbol'],
+            'name': c['name'],
+            'growth': round(c['growth'], 1),
+            'confidence': round(c['confidence'], 0),
+            'reason': c['reason']
+        }
     
     return {
-        'buy': [
-            {'symbol': 'FTC', 'name': 'Fitcoin', 'growth': ftc_growth, 'confidence': random.uniform(75, 95), 'reason': 'Strong fitness adoption metrics'},
-            {'symbol': 'SOL', 'name': 'Solana', 'growth': sol_growth, 'confidence': random.uniform(70, 90), 'reason': 'Network activity surge'},
-            {'symbol': 'JUP', 'name': 'Jupiter', 'growth': jup_growth, 'confidence': random.uniform(65, 85), 'reason': 'DEX volume increasing'},
-        ],
-        'hold': [
-            {'symbol': 'BTC', 'name': 'Bitcoin', 'growth': btc_growth, 'confidence': random.uniform(80, 95), 'reason': 'Stable long-term outlook'},
-            {'symbol': 'ETH', 'name': 'Ethereum', 'growth': eth_growth, 'confidence': random.uniform(75, 90), 'reason': 'DeFi ecosystem growth'},
-        ],
-        'sell': [
-            {'symbol': 'BONK', 'name': 'Bonk', 'growth': bonk_growth, 'confidence': random.uniform(60, 80), 'reason': 'Meme coin volatility risk'},
-        ],
+        'buy': [format_coin(c) for c in buy_coins],
+        'hold': [format_coin(c) for c in hold_coins],
+        'sell': [format_coin(c) for c in sell_coins],
+        'market_sentiment': market_sentiment,
+        'rotation_cycle': rotation_cycle,
+        'next_rotation_in': 180 - (int(time.time()) % 180),
         'ftc_prediction': {
             'current_price': 0.00000349,
             'predicted_1h': 0.00000349 * (1 + random.uniform(0.01, 0.05)),
