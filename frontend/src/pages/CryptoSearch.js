@@ -366,6 +366,146 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
           </div>
         )}
 
+        {/* Fitrudrah's AI Trading Suggestions */}
+        {!selectedCrypto && aiSuggestions && (
+          <div className="glass-card p-6 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2">
+                <Zap className="h-6 w-6 text-[#FF9F1C]" />
+                <h3 className="text-xl font-bold font-unbounded uppercase">Fitrudrah's FutureCoin AI</h3>
+              </div>
+              <div className="flex items-center gap-3">
+                <button 
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  className={`text-xs px-3 py-1 rounded ${autoRefresh ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-white/10 text-white/60'}`}
+                >
+                  {autoRefresh ? '● LIVE 10s' : '○ PAUSED'}
+                </button>
+                <span className="text-xs text-white/40 font-mono">{aiSuggestions.ai_model}</span>
+              </div>
+            </div>
+
+            {/* Buy / Hold / Sell Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              {/* BUY Suggestions */}
+              <div className="bg-[#00F090]/10 border border-[#00F090]/30 p-4 rounded">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingUp className="h-5 w-5 text-[#00F090]" />
+                  <span className="font-bold text-[#00F090] uppercase">Buy These Coins</span>
+                </div>
+                {aiSuggestions.buy?.map((coin, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
+                    <div>
+                      <span className="font-bold text-white">{coin.symbol}</span>
+                      <span className="text-xs text-white/60 ml-2">{coin.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[#00F090] font-bold">+{coin.growth?.toFixed(1)}%</div>
+                      <div className="text-xs text-white/40">{coin.confidence?.toFixed(0)}% conf</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* HOLD Suggestions */}
+              <div className="bg-[#FFD700]/10 border border-[#FFD700]/30 p-4 rounded">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="h-5 w-5 text-[#FFD700]" />
+                  <span className="font-bold text-[#FFD700] uppercase">Hold These Coins</span>
+                </div>
+                {aiSuggestions.hold?.map((coin, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
+                    <div>
+                      <span className="font-bold text-white">{coin.symbol}</span>
+                      <span className="text-xs text-white/60 ml-2">{coin.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[#FFD700] font-bold">+{coin.growth?.toFixed(1)}%</div>
+                      <div className="text-xs text-white/40">{coin.confidence?.toFixed(0)}% conf</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* SELL Suggestions */}
+              <div className="bg-[#FF2E50]/10 border border-[#FF2E50]/30 p-4 rounded">
+                <div className="flex items-center gap-2 mb-3">
+                  <TrendingDown className="h-5 w-5 text-[#FF2E50]" />
+                  <span className="font-bold text-[#FF2E50] uppercase">Sell These Coins</span>
+                </div>
+                {aiSuggestions.sell?.map((coin, i) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
+                    <div>
+                      <span className="font-bold text-white">{coin.symbol}</span>
+                      <span className="text-xs text-white/60 ml-2">{coin.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`font-bold ${coin.growth >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                        {coin.growth >= 0 ? '+' : ''}{coin.growth?.toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-white/40">{coin.confidence?.toFixed(0)}% conf</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* FTC Prediction Chart */}
+            {aiSuggestions.ftc_prediction && (
+              <div className="bg-black/30 border border-[#FF9F1C]/30 p-4 rounded">
+                <div className="flex items-center gap-2 mb-4">
+                  <BarChart3 className="h-5 w-5 text-[#FF9F1C]" />
+                  <span className="font-bold text-[#FF9F1C] uppercase">Fitcoin (FTC) Price Prediction</span>
+                </div>
+                
+                {/* Visual Growth Chart */}
+                <div className="flex items-end gap-2 h-32 mb-4">
+                  {aiSuggestions.ftc_prediction.growth_chart?.map((point, i) => {
+                    const maxPrice = Math.max(...aiSuggestions.ftc_prediction.growth_chart.map(p => p.price));
+                    const minPrice = Math.min(...aiSuggestions.ftc_prediction.growth_chart.map(p => p.price));
+                    const height = ((point.price - minPrice) / (maxPrice - minPrice)) * 100 + 20;
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center">
+                        <div 
+                          className="w-full bg-gradient-to-t from-[#FF9F1C] to-[#FFD700] rounded-t transition-all"
+                          style={{ height: `${height}%` }}
+                        />
+                        <span className="text-xs text-white/60 mt-1">{point.time}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Prediction Values */}
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xs text-white/60 uppercase">1H Prediction</div>
+                    <div className="text-lg font-bold text-[#00F090]">
+                      ${aiSuggestions.ftc_prediction.predicted_1h?.toFixed(11)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-white/60 uppercase">24H Prediction</div>
+                    <div className="text-lg font-bold text-[#FFD700]">
+                      ${aiSuggestions.ftc_prediction.predicted_24h?.toFixed(11)}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-xs text-white/60 uppercase">7D Prediction</div>
+                    <div className="text-lg font-bold text-[#FF9F1C]">
+                      ${aiSuggestions.ftc_prediction.predicted_7d?.toFixed(11)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-4 text-center text-xs text-white/40">
+              Last updated: {new Date(aiSuggestions.last_updated).toLocaleTimeString()} • Auto-refresh: {autoRefresh ? '10s' : 'Off'}
+            </div>
+          </div>
+        )}
+
         {/* Loading State */}
         {loadingDetails && (
           <div className="glass-card p-12 text-center">
