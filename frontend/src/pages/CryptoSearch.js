@@ -389,11 +389,16 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {/* BUY Suggestions */}
               <div className="bg-[#00F090]/10 border border-[#00F090]/30 p-4 rounded">
-                <div className="flex items-center gap-2 mb-3">
-                  <TrendingUp className="h-5 w-5 text-[#00F090]" />
-                  <span className="font-bold text-[#00F090] uppercase">Buy These Coins</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-[#00F090]" />
+                    <span className="font-bold text-[#00F090] uppercase">Buy These Coins</span>
+                  </div>
+                  {aiSuggestions.buy?.length > 3 && (
+                    <span className="text-xs text-[#00F090]/70">+{aiSuggestions.buy.length - 3} more</span>
+                  )}
                 </div>
-                {aiSuggestions.buy?.map((coin, i) => (
+                {aiSuggestions.buy?.slice(0, 6).map((coin, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
                     <div>
                       <span className="font-bold text-white">{coin.symbol}</span>
@@ -409,11 +414,16 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
 
               {/* HOLD Suggestions */}
               <div className="bg-[#FFD700]/10 border border-[#FFD700]/30 p-4 rounded">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="h-5 w-5 text-[#FFD700]" />
-                  <span className="font-bold text-[#FFD700] uppercase">Hold These Coins</span>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-5 w-5 text-[#FFD700]" />
+                    <span className="font-bold text-[#FFD700] uppercase">Hold These Coins</span>
+                  </div>
+                  {aiSuggestions.hold?.length > 3 && (
+                    <span className="text-xs text-[#FFD700]/70">+{aiSuggestions.hold.length - 3} more</span>
+                  )}
                 </div>
-                {aiSuggestions.hold?.map((coin, i) => (
+                {aiSuggestions.hold?.slice(0, 6).map((coin, i) => (
                   <div key={i} className="flex items-center justify-between py-2 border-b border-white/10 last:border-0">
                     <div>
                       <span className="font-bold text-white">{coin.symbol}</span>
