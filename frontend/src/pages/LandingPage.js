@@ -119,6 +119,32 @@ const LandingPage = () => {
               </a>
               <p className="text-xs text-[#00F090]/70 mt-2 font-mono">⚡ Flash AI Power Prompt</p>
             </div>
+
+            {/* Mine Fitcoin Section */}
+            <div className="mt-10 glass-card p-8 max-w-lg mx-auto">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <Flame className="h-8 w-8 text-[#FF9F1C] animate-pulse" />
+                <h3 className="text-2xl font-black font-unbounded tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF9F1C] via-[#FFD700] to-[#FF9F1C]">
+                  Mine Fitcoin
+                </h3>
+                <Flame className="h-8 w-8 text-[#FF9F1C] animate-pulse" />
+              </div>
+              <p className="text-white/70 text-center mb-6">
+                Start mining FTC tokens with our official mining application
+              </p>
+              <a
+                href="https://solana-fitness.emergent.host/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(255,159,28,0.5)] hover:shadow-[0_0_35px_rgba(255,159,28,0.8)] rounded-sm overflow-hidden"
+                data-testid="mine-ftc-btn"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
+                <Activity className="h-5 w-5" />
+                <span className="relative z-10">Open FTC Mining App</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>
