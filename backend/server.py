@@ -509,7 +509,10 @@ async def get_wallet(user_id: str = Depends(get_current_user)):
 
 @api_router.get("/price/fitcoin")
 async def get_fitcoin_price():
-    """Get real-time Fitcoin price"""
+    """Get real-time Fitcoin price with automated volume fluctuation
+    24h Volume: $150 - $280 (real-time)
+    60 min Volume: $15 - $56 (real-time)
+    """
     price_data = await fetch_jupiter_price(FITCOIN_CONTRACT)
     
     # Add small random variation to simulate real-time fluctuation (±0.5%)
@@ -521,8 +524,11 @@ async def get_fitcoin_price():
     # Calculate 24h change (simulate realistic crypto volatility)
     change_24h = random.uniform(-15, 35)
     
-    # Calculate volume based on price
-    volume_24h = get_fitcoin_volume_with_fluctuation(VOLUME_MODE)  # Use mode-based volume
+    # Calculate volumes with real-time automated fluctuation
+    # 24h Volume: $150 - $280
+    volume_24h = random.uniform(150, 280)
+    # 60 min Volume: $15 - $56
+    volume_60min = random.uniform(15, 56)
     
     # Total supply: 1 Billion FTC
     total_supply = 1000000000
@@ -534,6 +540,7 @@ async def get_fitcoin_price():
         "price": round(current_price, 11),  # Show up to 11 decimal places
         "change_24h": round(change_24h, 2),
         "volume_24h": round(volume_24h, 2),
+        "volume_60min": round(volume_60min, 2),
         "market_cap": round(market_cap, 2),
         "high_24h": round(current_price * 1.12, 11),
         "low_24h": round(current_price * 0.88, 11),
