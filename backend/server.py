@@ -448,7 +448,7 @@ async def get_fitcoin_price():
     change_24h = random.uniform(-15, 35)
     
     # Calculate volume based on price
-    volume_24h = random.uniform(80000, 250000)
+    volume_24h = get_fitcoin_volume_with_fluctuation(VOLUME_MODE)  # Use mode-based volume
     
     # Total supply: 1 Billion FTC
     total_supply = 1000000000
@@ -466,7 +466,8 @@ async def get_fitcoin_price():
         "last_updated": datetime.now(timezone.utc).isoformat(),
         "contract_address": FITCOIN_CONTRACT,
         "blockchain": "Solana",
-        "real_data": price_data['success']
+        "real_data": price_data['success'],
+        "volume_mode": VOLUME_MODE
     }
 
 @api_router.get("/price/history")
