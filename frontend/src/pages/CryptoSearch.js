@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Search, X, Loader2, TrendingUp, TrendingDown, ExternalLink, Sparkles, LogOut, Menu, Star, BarChart3, Zap } from 'lucide-react';
+import { Search, X, Loader2, TrendingUp, TrendingDown, ExternalLink, Sparkles, LogOut, Menu, Star, BarChart3, Zap, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
