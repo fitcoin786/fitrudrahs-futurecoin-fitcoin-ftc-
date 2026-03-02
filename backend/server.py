@@ -32,6 +32,15 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'futuretrade_secret_key_2026')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
 
+# Resend Email Configuration
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+SENDER_EMAIL = os.environ.get('SENDER_EMAIL', 'onboarding@resend.dev')
+if RESEND_API_KEY:
+    resend.api_key = RESEND_API_KEY
+
+# OTP Cache (in-memory for simplicity, use Redis in production)
+OTP_CACHE = {}  # email -> {'otp': str, 'expires': datetime, 'attempts': int}
+
 # Solana Fitcoin Contract Address
 FITCOIN_CONTRACT = "5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump"
 
