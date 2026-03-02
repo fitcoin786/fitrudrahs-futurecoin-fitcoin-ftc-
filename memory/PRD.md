@@ -85,6 +85,10 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 | `/api/auth/register` | POST | ✅ | User registration |
 | `/api/auth/login` | POST | ✅ | User login |
 | `/api/auth/me` | GET | ✅ | Get current user |
+| `/api/auth/forgot-password` | POST | ✅ | Send OTP to email |
+| `/api/auth/verify-otp` | POST | ✅ | Verify OTP code |
+| `/api/auth/reset-password` | POST | ✅ | Reset password with OTP |
+| `/api/auth/change-password` | POST | ✅ | Change password (logged-in) |
 | `/api/wallet` | GET | ✅ | Get wallet balance |
 | `/api/price/fitcoin` | GET | ✅ | Get FTC price |
 | `/api/market/overview` | GET | ✅ | Get gainers/losers(+FTC)/trending |
