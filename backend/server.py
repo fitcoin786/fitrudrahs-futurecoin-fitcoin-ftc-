@@ -172,13 +172,16 @@ def get_fitcoin_price_with_fluctuation():
     return base_price * (1 + fluctuation)
 
 def get_fitcoin_volume_with_fluctuation(mode='daily'):
-    """Generate realistic FTC 24h volume with fluctuation"""
+    """Generate realistic FTC volume with real-time fluctuation
+    - 24h Volume: $150 - $280 (continuous fluctuation)
+    - 60 min Volume: $15 - $56 (continuous fluctuation)
+    """
     if mode == 'hourly':
-        # 60 min mode: $5-$10
-        return random.uniform(5, 10) * 1000  # Convert to actual value
+        # 60 min mode: $15-$56 (real-time automated fluctuation)
+        return random.uniform(15, 56)
     else:
-        # Daily mode: $50-$250
-        return random.uniform(50, 250) * 1000  # Convert to actual value
+        # Daily mode: $150-$280 (real-time automated fluctuation)
+        return random.uniform(150, 280)
 
 def get_ai_suggestions():
     """Generate Fitrudrah's AI trading suggestions with position changes every 3 minutes"""
