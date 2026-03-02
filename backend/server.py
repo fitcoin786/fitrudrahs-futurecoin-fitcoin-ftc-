@@ -162,11 +162,67 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 import random
 from datetime import datetime, timezone
 
+# Volume mode: 'daily' = $50-$250, 'hourly' = $5-$10
+VOLUME_MODE = 'daily'
+
 def get_fitcoin_price_with_fluctuation():
     """Generate realistic Fitcoin price with small fluctuation around $0.00000349"""
     base_price = 0.00000349
     fluctuation = random.uniform(-0.15, 0.15)  # +/- 15% fluctuation
     return base_price * (1 + fluctuation)
+
+def get_fitcoin_volume_with_fluctuation(mode='daily'):
+    """Generate realistic FTC 24h volume with fluctuation"""
+    if mode == 'hourly':
+        # 60 min mode: $5-$10
+        return random.uniform(5, 10) * 1000  # Convert to actual value
+    else:
+        # Daily mode: $50-$250
+        return random.uniform(50, 250) * 1000  # Convert to actual value
+
+def get_ai_suggestions():
+    """Generate Fitrudrah's AI trading suggestions"""
+    import random
+    
+    # Generate realistic growth predictions
+    btc_growth = random.uniform(2, 8)
+    eth_growth = random.uniform(1, 6)
+    sol_growth = random.uniform(3, 12)
+    ftc_growth = random.uniform(5, 25)
+    jup_growth = random.uniform(2, 10)
+    bonk_growth = random.uniform(-5, 15)
+    
+    return {
+        'buy': [
+            {'symbol': 'FTC', 'name': 'Fitcoin', 'growth': ftc_growth, 'confidence': random.uniform(75, 95), 'reason': 'Strong fitness adoption metrics'},
+            {'symbol': 'SOL', 'name': 'Solana', 'growth': sol_growth, 'confidence': random.uniform(70, 90), 'reason': 'Network activity surge'},
+            {'symbol': 'JUP', 'name': 'Jupiter', 'growth': jup_growth, 'confidence': random.uniform(65, 85), 'reason': 'DEX volume increasing'},
+        ],
+        'hold': [
+            {'symbol': 'BTC', 'name': 'Bitcoin', 'growth': btc_growth, 'confidence': random.uniform(80, 95), 'reason': 'Stable long-term outlook'},
+            {'symbol': 'ETH', 'name': 'Ethereum', 'growth': eth_growth, 'confidence': random.uniform(75, 90), 'reason': 'DeFi ecosystem growth'},
+        ],
+        'sell': [
+            {'symbol': 'BONK', 'name': 'Bonk', 'growth': bonk_growth, 'confidence': random.uniform(60, 80), 'reason': 'Meme coin volatility risk'},
+        ],
+        'ftc_prediction': {
+            'current_price': 0.00000349,
+            'predicted_1h': 0.00000349 * (1 + random.uniform(0.01, 0.05)),
+            'predicted_24h': 0.00000349 * (1 + random.uniform(0.05, 0.15)),
+            'predicted_7d': 0.00000349 * (1 + random.uniform(0.10, 0.30)),
+            'growth_chart': [
+                {'time': '0h', 'price': 0.00000349},
+                {'time': '1h', 'price': 0.00000349 * (1 + random.uniform(0.01, 0.03))},
+                {'time': '2h', 'price': 0.00000349 * (1 + random.uniform(0.02, 0.05))},
+                {'time': '4h', 'price': 0.00000349 * (1 + random.uniform(0.03, 0.07))},
+                {'time': '8h', 'price': 0.00000349 * (1 + random.uniform(0.05, 0.10))},
+                {'time': '12h', 'price': 0.00000349 * (1 + random.uniform(0.07, 0.12))},
+                {'time': '24h', 'price': 0.00000349 * (1 + random.uniform(0.10, 0.20))},
+            ]
+        },
+        'last_updated': datetime.now(timezone.utc).isoformat(),
+        'ai_model': 'Fitrudrah FutureCoin AI v2.0'
+    }
 
 async def fetch_jupiter_price(token_address: str):
     """Fetch real-time price - Base price from DexTools: $0.00000349"""
