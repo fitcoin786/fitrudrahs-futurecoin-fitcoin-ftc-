@@ -176,7 +176,7 @@ const MarketOverview = ({ user, onLogout }) => {
               <Link to="/trade" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Trade</Link>
               <Link to="/market" className="text-white hover:text-[#FF9F1C] transition-colors font-bold uppercase">Markets</Link>
               <Link to="/search" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Search</Link>
-              <a href="https://fitcoin-platform.preview.emergentagent.com/" target="_blank" rel="noopener noreferrer" className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase">⛏️ Mine FTC</a>
+              <a href={process.env.REACT_APP_BACKEND_URL || "https://fitcoin-platform.preview.emergentagent.com/"} target="_blank" rel="noopener noreferrer" className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase">⛏️ Mine FTC</a>
               <Link to="/portfolio" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Portfolio</Link>
               <Link to="/history" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">History</Link>
               <button onClick={handleLogout} className="text-left text-[#FF2E50] hover:text-[#FF2E50]/80 transition-colors font-bold uppercase">Logout</button>
