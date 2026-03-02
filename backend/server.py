@@ -16,6 +16,8 @@ import httpx
 import asyncio
 from pycoingecko import CoinGeckoAPI
 import time
+import random
+import resend
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
