@@ -38,7 +38,27 @@ const AdvancedCryptoSearch = ({ user, onLogout }) => {
   const token = localStorage.getItem('token');
   const axiosConfig = { headers: { Authorization: `Bearer ${token}` } };
 
-  // AI-powered recommendations
+  // AI-powered recommendations with real-time updates
+  const [aiSuggestions, setAiSuggestions] = useState(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+
+  useEffect(() => {
+    const fetchAiSuggestions = async () => {
+      try {
+        const response = await axios.get(`${API}/ai/suggestions`);
+        setAiSuggestions(response.data);
+      } catch (error) {
+        console.error('Failed to fetch AI suggestions:', error);
+      }
+    };
+
+    fetchAiSuggestions();
+
+    // Auto-refresh every 10 seconds
+    const interval = autoRefresh ? setInterval(fetchAiSuggestions, 10000) : null;
+    return () => interval && clearInterval(interval);
+  }, [autoRefresh]);
+
   useEffect(() => {
     const recommendations = [
       { name: 'Bitcoin', symbol: 'BTC', reason: 'Market Leader' },
