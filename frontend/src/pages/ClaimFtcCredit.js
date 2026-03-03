@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { 
   Calculator, User, Calendar, Activity, Scale, Ruler, 
   Flame, Zap, Award, Shield, TrendingUp, ArrowLeft,
-  CheckCircle, AlertTriangle, Heart, Coins
+  CheckCircle, AlertTriangle, Heart, Coins, Wallet,
+  Send, ArrowRightLeft, History, ExternalLink, Copy
 } from 'lucide-react';
 
 const ClaimFtcCredit = () => {
@@ -19,9 +20,70 @@ const ClaimFtcCredit = () => {
     dailyIntake: ''
   });
   
+  const [walletAddress, setWalletAddress] = useState('');
   const [results, setResults] = useState(null);
   const [errors, setErrors] = useState({});
   const [isCalculating, setIsCalculating] = useState(false);
+  const [isClaiming, setIsClaiming] = useState(false);
+  const [transactions, setTransactions] = useState([]);
+  const [claimedFTC, setClaimedFTC] = useState(0);
+
+  // Generate mock real-time transactions
+  useEffect(() => {
+    // Initial transactions
+    const initialTxs = [
+      {
+        id: 'tx_' + Math.random().toString(36).substr(2, 9),
+        type: 'POBC_VERIFY',
+        calories: 2150,
+        ftcAmount: 2.15,
+        status: 'confirmed',
+        timestamp: new Date(Date.now() - 3600000).toISOString(),
+        hash: '5cKax...' + Math.random().toString(36).substr(2, 6),
+        walletTo: 'FitWallet_' + Math.random().toString(36).substr(2, 8)
+      },
+      {
+        id: 'tx_' + Math.random().toString(36).substr(2, 9),
+        type: 'CLAIM',
+        calories: 1850,
+        ftcAmount: 1.85,
+        status: 'confirmed',
+        timestamp: new Date(Date.now() - 7200000).toISOString(),
+        hash: '5cKax...' + Math.random().toString(36).substr(2, 6),
+        walletTo: 'FitWallet_' + Math.random().toString(36).substr(2, 8)
+      },
+      {
+        id: 'tx_' + Math.random().toString(36).substr(2, 9),
+        type: 'EXCHANGE',
+        calories: 3200,
+        ftcAmount: 3.20,
+        status: 'confirmed',
+        timestamp: new Date(Date.now() - 14400000).toISOString(),
+        hash: '5cKax...' + Math.random().toString(36).substr(2, 6),
+        walletTo: 'FitWallet_' + Math.random().toString(36).substr(2, 8)
+      }
+    ];
+    setTransactions(initialTxs);
+
+    // Real-time transaction updates
+    const interval = setInterval(() => {
+      const types = ['POBC_VERIFY', 'CLAIM', 'EXCHANGE', 'SEND', 'RECEIVE'];
+      const newTx = {
+        id: 'tx_' + Math.random().toString(36).substr(2, 9),
+        type: types[Math.floor(Math.random() * types.length)],
+        calories: Math.floor(Math.random() * 3000) + 500,
+        ftcAmount: (Math.random() * 5 + 0.5).toFixed(2),
+        status: 'confirmed',
+        timestamp: new Date().toISOString(),
+        hash: '5cKax...' + Math.random().toString(36).substr(2, 6),
+        walletTo: 'FitWallet_' + Math.random().toString(36).substr(2, 8)
+      };
+      
+      setTransactions(prev => [newTx, ...prev.slice(0, 9)]);
+    }, 15000); // New transaction every 15 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   const activityMultipliers = {
     sedentary: { value: 1.2, label: 'Sedentary (Little/No Exercise)' },
@@ -146,14 +208,71 @@ const ClaimFtcCredit = () => {
       toast.error('No FTC credits to claim. Please improve your health balance.');
       return;
     }
+
+    if (!walletAddress.trim()) {
+      toast.error('Please enter your FitWallet address to receive FTC');
+      return;
+    }
+
+    if (walletAddress.length < 32) {
+      toast.error('Invalid FitWallet address. Please enter a valid Solana address.');
+      return;
+    }
+
+    setIsClaiming(true);
     
-    // Generate calculation hash (simulated)
-    const timestamp = Date.now();
-    const hashData = `${formData.dob}-${formData.height}-${formData.weight}-${formData.dailyIntake}-${results.tdee}-${timestamp}`;
-    const hash = btoa(hashData).substring(0, 32);
-    
-    toast.success(`Claim Request Submitted! Hash: ${hash}`);
-    toast.info('FTC will be minted to your wallet within 24 hours.');
+    // Simulate blockchain transaction
+    setTimeout(() => {
+      const timestamp = Date.now();
+      const hashData = `${formData.dob}-${formData.height}-${formData.weight}-${formData.dailyIntake}-${results.tdee}-${timestamp}`;
+      const hash = '5cKax' + btoa(hashData).substring(0, 20) + '...pump';
+      
+      // Create new transaction
+      const newTx = {
+        id: 'tx_' + Math.random().toString(36).substr(2, 9),
+        type: 'CLAIM',
+        calories: parseFloat(results.finalFTC) * 1000,
+        ftcAmount: parseFloat(results.finalFTC),
+        status: 'confirmed',
+        timestamp: new Date().toISOString(),
+        hash: hash,
+        walletTo: walletAddress.substring(0, 8) + '...' + walletAddress.substring(walletAddress.length - 6)
+      };
+      
+      setTransactions(prev => [newTx, ...prev]);
+      setClaimedFTC(prev => prev + parseFloat(results.finalFTC));
+      
+      setIsClaiming(false);
+      toast.success(`🎉 ${results.finalFTC} FTC sent to your FitWallet!`);
+      toast.info(`Transaction Hash: ${hash}`);
+    }, 3000);
+  };
+
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Copied to clipboard!');
+  };
+
+  const getTypeColor = (type) => {
+    switch(type) {
+      case 'POBC_VERIFY': return 'text-[#00F090]';
+      case 'CLAIM': return 'text-[#FFD700]';
+      case 'EXCHANGE': return 'text-[#FF9F1C]';
+      case 'SEND': return 'text-[#FF2E50]';
+      case 'RECEIVE': return 'text-[#00F090]';
+      default: return 'text-white';
+    }
+  };
+
+  const getTypeIcon = (type) => {
+    switch(type) {
+      case 'POBC_VERIFY': return <CheckCircle className="h-4 w-4" />;
+      case 'CLAIM': return <Coins className="h-4 w-4" />;
+      case 'EXCHANGE': return <ArrowRightLeft className="h-4 w-4" />;
+      case 'SEND': return <Send className="h-4 w-4" />;
+      case 'RECEIVE': return <Wallet className="h-4 w-4" />;
+      default: return <Activity className="h-4 w-4" />;
+    }
   };
 
   return (
@@ -170,15 +289,17 @@ const ClaimFtcCredit = () => {
             />
             <span className="text-xl font-black font-unbounded tracking-tighter uppercase text-[#FF9F1C]">FUTURE TRADE</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Coins className="h-5 w-5 text-[#FFD700]" />
-            <span className="text-sm font-mono text-[#FFD700]">FTC CREDIT CALCULATOR</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 glass-card px-4 py-2">
+              <Coins className="h-4 w-4 text-[#FFD700]" />
+              <span className="text-sm font-mono text-[#FFD700]">{claimedFTC.toFixed(2)} FTC Claimed</span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="pt-24 px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {/* Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -202,7 +323,12 @@ const ClaimFtcCredit = () => {
             </p>
             <div className="mt-4 glass-card inline-block px-6 py-3">
               <p className="text-xs font-mono text-white/60">CONTRACT ADDRESS (SPL)</p>
-              <p className="text-sm font-mono text-[#00F090] break-all">5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-mono text-[#00F090]">5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump</p>
+                <button onClick={() => copyToClipboard('5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump')} className="text-white/40 hover:text-white">
+                  <Copy className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </motion.div>
 
@@ -222,79 +348,75 @@ const ClaimFtcCredit = () => {
               </div>
               <span className="text-[#FF9F1C]">→</span>
               <div className="glass-card px-4 py-2">
-                <span className="text-white/80">Mathematical Health Score</span>
+                <span className="text-white/80">POBC Verification</span>
+              </div>
+              <span className="text-[#FF9F1C]">→</span>
+              <div className="glass-card px-4 py-2 border-[#FFD700]/50">
+                <span className="text-[#FFD700] font-bold">FTC Credit</span>
               </div>
               <span className="text-[#FF9F1C]">→</span>
               <div className="glass-card px-4 py-2 border-[#00F090]/50">
-                <span className="text-[#00F090] font-bold">FTC Credit Reward</span>
+                <span className="text-[#00F090] font-bold">FitWallet</span>
               </div>
             </div>
             <p className="text-sm text-white/60 text-center mt-4">
-              System is 100% formula-based • All calculations are deterministic & verifiable • 1 FTC = 1,000 kcal Balanced Energy
+              Claimed FTC goes directly to your FitWallet • Real-time blockchain transactions • POBC-verified calorie to Fitcoin conversion
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Input Form */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="glass-card p-8"
+              className="glass-card p-6 lg:col-span-1"
             >
-              <h2 className="text-2xl font-bold text-[#FF9F1C] mb-6 flex items-center gap-2">
-                <User className="h-6 w-6" /> USER INPUT MODULE
+              <h2 className="text-xl font-bold text-[#FF9F1C] mb-6 flex items-center gap-2">
+                <User className="h-5 w-5" /> USER INPUT
               </h2>
 
-              <div className="space-y-5">
+              <div className="space-y-4">
                 {/* Full Name */}
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                    Full Name *
-                  </label>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Full Name *</label>
                   <input
                     type="text"
                     value={formData.fullName}
                     onChange={(e) => setFormData({...formData, fullName: e.target.value})}
-                    className={`w-full bg-black/50 border ${errors.fullName ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-12 px-4 outline-none transition-colors`}
-                    placeholder="Enter your full name"
+                    className={`w-full bg-black/50 border ${errors.fullName ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-10 px-3 text-sm outline-none transition-colors`}
+                    placeholder="Enter name"
                     data-testid="ftc-name-input"
                   />
-                  {errors.fullName && <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>}
                 </div>
 
                 {/* DOB */}
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                    <Calendar className="inline h-3 w-3 mr-1" /> Date of Birth *
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">
+                    <Calendar className="inline h-3 w-3 mr-1" /> DOB *
                   </label>
                   <input
                     type="date"
                     value={formData.dob}
                     onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                    className={`w-full bg-black/50 border ${errors.dob ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white rounded-none h-12 px-4 outline-none transition-colors`}
+                    className={`w-full bg-black/50 border ${errors.dob ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white rounded-none h-10 px-3 text-sm outline-none transition-colors`}
                     data-testid="ftc-dob-input"
                   />
-                  {errors.dob && <p className="text-red-500 text-xs mt-1">{errors.dob}</p>}
                 </div>
 
                 {/* Gender */}
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                    Gender *
-                  </label>
-                  <div className="flex gap-4">
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Gender *</label>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => setFormData({...formData, gender: 'male'})}
-                      className={`flex-1 py-3 px-4 border ${formData.gender === 'male' ? 'border-[#FF9F1C] bg-[#FF9F1C]/10 text-[#FF9F1C]' : 'border-white/10 text-white/60'} transition-all`}
-                      data-testid="ftc-gender-male"
+                      className={`flex-1 py-2 px-3 text-sm border ${formData.gender === 'male' ? 'border-[#FF9F1C] bg-[#FF9F1C]/10 text-[#FF9F1C]' : 'border-white/10 text-white/60'} transition-all`}
                     >
                       Male
                     </button>
                     <button
                       onClick={() => setFormData({...formData, gender: 'female'})}
-                      className={`flex-1 py-3 px-4 border ${formData.gender === 'female' ? 'border-[#FF9F1C] bg-[#FF9F1C]/10 text-[#FF9F1C]' : 'border-white/10 text-white/60'} transition-all`}
-                      data-testid="ftc-gender-female"
+                      className={`flex-1 py-2 px-3 text-sm border ${formData.gender === 'female' ? 'border-[#FF9F1C] bg-[#FF9F1C]/10 text-[#FF9F1C]' : 'border-white/10 text-white/60'} transition-all`}
                     >
                       Female
                     </button>
@@ -302,46 +424,38 @@ const ClaimFtcCredit = () => {
                 </div>
 
                 {/* Height & Weight */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                      <Ruler className="inline h-3 w-3 mr-1" /> Height (cm) *
-                    </label>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Height (cm)</label>
                     <input
                       type="number"
                       value={formData.height}
                       onChange={(e) => setFormData({...formData, height: e.target.value})}
-                      className={`w-full bg-black/50 border ${errors.height ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-12 px-4 outline-none transition-colors`}
+                      className={`w-full bg-black/50 border ${errors.height ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-10 px-3 text-sm outline-none`}
                       placeholder="170"
                       data-testid="ftc-height-input"
                     />
-                    {errors.height && <p className="text-red-500 text-xs mt-1">{errors.height}</p>}
                   </div>
                   <div>
-                    <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                      <Scale className="inline h-3 w-3 mr-1" /> Weight (kg) *
-                    </label>
+                    <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Weight (kg)</label>
                     <input
                       type="number"
                       value={formData.weight}
                       onChange={(e) => setFormData({...formData, weight: e.target.value})}
-                      className={`w-full bg-black/50 border ${errors.weight ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-12 px-4 outline-none transition-colors`}
+                      className={`w-full bg-black/50 border ${errors.weight ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-10 px-3 text-sm outline-none`}
                       placeholder="70"
                       data-testid="ftc-weight-input"
                     />
-                    {errors.weight && <p className="text-red-500 text-xs mt-1">{errors.weight}</p>}
                   </div>
                 </div>
 
                 {/* Activity Level */}
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                    <Activity className="inline h-3 w-3 mr-1" /> Activity Level *
-                  </label>
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">Activity Level</label>
                   <select
                     value={formData.activityLevel}
                     onChange={(e) => setFormData({...formData, activityLevel: e.target.value})}
-                    className="w-full bg-black/50 border border-white/10 focus:border-[#FF9F1C]/50 text-white rounded-none h-12 px-4 outline-none transition-colors"
+                    className="w-full bg-black/50 border border-white/10 focus:border-[#FF9F1C]/50 text-white rounded-none h-10 px-3 text-sm outline-none"
                     data-testid="ftc-activity-select"
                   >
                     {Object.entries(activityMultipliers).map(([key, { label }]) => (
@@ -352,174 +466,199 @@ const ClaimFtcCredit = () => {
 
                 {/* Daily Calorie Intake */}
                 <div>
-                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                    <Flame className="inline h-3 w-3 mr-1" /> Average Daily Calorie Intake (kcal) *
+                  <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-1">
+                    <Flame className="inline h-3 w-3 mr-1" /> Daily Intake (kcal)
                   </label>
                   <input
                     type="number"
                     value={formData.dailyIntake}
                     onChange={(e) => setFormData({...formData, dailyIntake: e.target.value})}
-                    className={`w-full bg-black/50 border ${errors.dailyIntake ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-12 px-4 outline-none transition-colors`}
+                    className={`w-full bg-black/50 border ${errors.dailyIntake ? 'border-red-500' : 'border-white/10'} focus:border-[#FF9F1C]/50 text-white placeholder:text-white/20 rounded-none h-10 px-3 text-sm outline-none`}
                     placeholder="2000"
                     data-testid="ftc-intake-input"
                   />
-                  {errors.dailyIntake && <p className="text-red-500 text-xs mt-1">{errors.dailyIntake}</p>}
                 </div>
 
                 {/* Calculate Button */}
                 <button
                   onClick={calculateFTC}
                   disabled={isCalculating}
-                  className="w-full py-4 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(255,159,28,0.5)] hover:shadow-[0_0_30px_rgba(255,159,28,0.7)] disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="w-full py-3 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_15px_rgba(255,159,28,0.5)] disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
                   data-testid="ftc-calculate-btn"
                 >
                   {isCalculating ? (
-                    <>
-                      <div className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full" />
-                      Calculating...
-                    </>
+                    <><div className="animate-spin h-4 w-4 border-2 border-black border-t-transparent rounded-full" /> Calculating...</>
                   ) : (
-                    <>
-                      <Calculator className="h-5 w-5" />
-                      Calculate FTC Credit
-                    </>
+                    <><Calculator className="h-4 w-4" /> Calculate FTC</>
                   )}
                 </button>
               </div>
             </motion.div>
 
-            {/* Results Dashboard */}
+            {/* Results & Claim Section */}
             <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="glass-card p-8"
+              className="glass-card p-6 lg:col-span-1"
             >
-              <h2 className="text-2xl font-bold text-[#00F090] mb-6 flex items-center gap-2">
-                <TrendingUp className="h-6 w-6" /> DASHBOARD OUTPUT
+              <h2 className="text-xl font-bold text-[#00F090] mb-6 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" /> RESULTS & CLAIM
               </h2>
 
               {!results ? (
-                <div className="text-center py-16">
-                  <Calculator className="h-16 w-16 text-white/20 mx-auto mb-4" />
-                  <p className="text-white/40">Enter your data and calculate to see results</p>
+                <div className="text-center py-12">
+                  <Calculator className="h-12 w-12 text-white/20 mx-auto mb-4" />
+                  <p className="text-white/40 text-sm">Calculate to see results</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Basic Metrics */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="glass-card p-4">
-                      <p className="text-xs text-white/50 uppercase">Age</p>
-                      <p className="text-2xl font-bold text-white">{results.age} <span className="text-sm text-white/50">years</span></p>
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="glass-card p-3">
+                      <p className="text-xs text-white/50">BMR</p>
+                      <p className="text-lg font-bold text-[#FF9F1C]">{results.bmr}</p>
                     </div>
-                    <div className="glass-card p-4">
-                      <p className="text-xs text-white/50 uppercase">BMR</p>
-                      <p className="text-2xl font-bold text-[#FF9F1C]">{results.bmr} <span className="text-sm text-white/50">kcal/day</span></p>
-                    </div>
-                    <div className="glass-card p-4">
-                      <p className="text-xs text-white/50 uppercase">TDEE</p>
-                      <p className="text-2xl font-bold text-[#FFD700]">{results.tdee} <span className="text-sm text-white/50">kcal/day</span></p>
-                    </div>
-                    <div className="glass-card p-4">
-                      <p className="text-xs text-white/50 uppercase">Daily Balance</p>
-                      <p className={`text-2xl font-bold ${parseFloat(results.dailyBalance) >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                        {parseFloat(results.dailyBalance) >= 0 ? '+' : ''}{results.dailyBalance} <span className="text-sm text-white/50">kcal</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 18-Year Projection */}
-                  <div className="glass-card p-4 border border-[#FFD700]/30">
-                    <p className="text-xs text-[#FFD700] uppercase mb-3">18-Year Energy Projection (6,570 Days)</p>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <p className="text-white/50">Total Burn</p>
-                        <p className="font-mono text-white">{parseInt(results.totalBurn18Years).toLocaleString()} kcal</p>
-                      </div>
-                      <div>
-                        <p className="text-white/50">Total Intake</p>
-                        <p className="font-mono text-white">{parseInt(results.totalIntake18Years).toLocaleString()} kcal</p>
-                      </div>
-                      <div>
-                        <p className="text-white/50">Energy Balance</p>
-                        <p className={`font-mono ${parseFloat(results.energyBalance) >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                          {parseFloat(results.energyBalance) >= 0 ? '+' : ''}{parseInt(results.energyBalance).toLocaleString()} kcal
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-white/50">Est. Weight Change</p>
-                        <p className={`font-mono ${parseFloat(results.weightChange) >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                          {parseFloat(results.weightChange) >= 0 ? '+' : ''}{results.weightChange} kg
-                        </p>
-                      </div>
+                    <div className="glass-card p-3">
+                      <p className="text-xs text-white/50">TDEE</p>
+                      <p className="text-lg font-bold text-[#FFD700]">{results.tdee}</p>
                     </div>
                   </div>
 
                   {/* Stability Score */}
-                  <div className="glass-card p-4 border border-[#00F090]/30">
+                  <div className="glass-card p-3">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs text-[#00F090] uppercase">Metabolic Stability Score</p>
-                      <Heart className="h-4 w-4 text-[#FF2E50]" />
+                      <p className="text-xs text-white/50">Stability Score</p>
+                      <span className="text-lg font-bold">{results.stabilityScore}</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1 h-3 bg-black/50 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full transition-all duration-1000 ${
-                            parseFloat(results.stabilityScore) >= 75 ? 'bg-[#00F090]' :
-                            parseFloat(results.stabilityScore) >= 50 ? 'bg-[#FFD700]' : 'bg-[#FF2E50]'
-                          }`}
-                          style={{ width: `${results.stabilityScore}%` }}
-                        />
-                      </div>
-                      <span className="text-2xl font-bold text-white">{results.stabilityScore}</span>
+                    <div className="h-2 bg-black/50 rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full ${parseFloat(results.stabilityScore) >= 75 ? 'bg-[#00F090]' : parseFloat(results.stabilityScore) >= 50 ? 'bg-[#FFD700]' : 'bg-[#FF2E50]'}`}
+                        style={{ width: `${results.stabilityScore}%` }}
+                      />
                     </div>
-                    <p className="text-xs text-white/50 mt-2">Energy Alignment: {results.differencePercent}% deviation</p>
                   </div>
 
                   {/* FTC Earned */}
-                  <div className={`glass-card p-6 border-2 ${parseFloat(results.finalFTC) > 0 ? 'border-[#FFD700]' : 'border-[#FF2E50]/50'}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Award className="h-6 w-6 text-[#FFD700]" />
-                        <p className="text-sm text-white/70 uppercase">FTC Credit Earned</p>
-                      </div>
-                      <span className={`px-3 py-1 text-xs font-bold rounded ${
-                        parseFloat(results.modifier) === 100 ? 'bg-[#00F090]/20 text-[#00F090]' :
-                        parseFloat(results.modifier) >= 70 ? 'bg-[#FFD700]/20 text-[#FFD700]' :
-                        parseFloat(results.modifier) >= 40 ? 'bg-orange-500/20 text-orange-500' : 'bg-[#FF2E50]/20 text-[#FF2E50]'
-                      }`}>
-                        {results.modifier}% Modifier
+                  <div className={`glass-card p-4 border-2 ${parseFloat(results.finalFTC) > 0 ? 'border-[#FFD700]' : 'border-[#FF2E50]/50'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <Award className="h-5 w-5 text-[#FFD700]" />
+                      <span className={`px-2 py-1 text-xs font-bold rounded ${parseFloat(results.modifier) >= 70 ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-[#FF2E50]/20 text-[#FF2E50]'}`}>
+                        {results.modifier}%
                       </span>
                     </div>
-                    <div className="text-center">
-                      <p className="text-5xl font-black text-[#FFD700] mb-2">{results.finalFTC}</p>
-                      <p className="text-lg text-white/60">FTC Tokens</p>
-                      <p className={`text-sm mt-2 flex items-center justify-center gap-2 ${
-                        parseFloat(results.finalFTC) > 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'
-                      }`}>
-                        {parseFloat(results.finalFTC) > 0 ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                        {results.healthStatus}
-                      </p>
-                    </div>
-                    <p className="text-xs text-white/40 text-center mt-3">Base: {results.baseFTC} FTC × {results.modifier}% modifier</p>
+                    <p className="text-3xl font-black text-[#FFD700] text-center">{results.finalFTC}</p>
+                    <p className="text-sm text-white/60 text-center">FTC Tokens</p>
+                    <p className={`text-xs mt-2 text-center ${parseFloat(results.finalFTC) > 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                      {results.healthStatus}
+                    </p>
+                  </div>
+
+                  {/* FitWallet Address Input */}
+                  <div className="glass-card p-4 border-2 border-[#00F090]/30">
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[#00F090] mb-2 flex items-center gap-2">
+                      <Wallet className="h-4 w-4" /> FitWallet Address (Solana)
+                    </label>
+                    <input
+                      type="text"
+                      value={walletAddress}
+                      onChange={(e) => setWalletAddress(e.target.value)}
+                      className="w-full bg-black/50 border border-[#00F090]/30 focus:border-[#00F090] text-white placeholder:text-white/30 rounded-none h-12 px-4 outline-none transition-colors font-mono text-sm"
+                      placeholder="Enter your FitWallet/Solana address..."
+                      data-testid="ftc-wallet-input"
+                    />
+                    <p className="text-xs text-white/40 mt-2">
+                      FTC will be sent directly to this wallet address
+                    </p>
                   </div>
 
                   {/* Claim Button */}
                   <button
                     onClick={handleClaim}
-                    disabled={parseFloat(results.finalFTC) === 0}
-                    className={`w-full py-4 font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-3 ${
-                      parseFloat(results.finalFTC) > 0 
-                        ? 'bg-gradient-to-r from-[#00F090] to-[#00F090]/80 text-black hover:brightness-110 shadow-[0_0_20px_rgba(0,240,144,0.5)] hover:shadow-[0_0_30px_rgba(0,240,144,0.7)]' 
+                    disabled={parseFloat(results.finalFTC) === 0 || isClaiming}
+                    className={`w-full py-4 font-bold uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${
+                      parseFloat(results.finalFTC) > 0 && !isClaiming
+                        ? 'bg-gradient-to-r from-[#00F090] to-[#00F090]/80 text-black hover:brightness-110 shadow-[0_0_20px_rgba(0,240,144,0.5)]' 
                         : 'bg-white/10 text-white/30 cursor-not-allowed'
                     }`}
                     data-testid="ftc-claim-btn"
                   >
-                    <Shield className="h-5 w-5" />
-                    {parseFloat(results.finalFTC) > 0 ? 'Claim FTC to Wallet' : 'Improve Balance to Claim'}
+                    {isClaiming ? (
+                      <><div className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full" /> Processing...</>
+                    ) : (
+                      <><Send className="h-5 w-5" /> Send FTC to FitWallet</>
+                    )}
                   </button>
                 </div>
               )}
+            </motion.div>
+
+            {/* Real-Time Blockchain Transactions */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+              className="glass-card p-6 lg:col-span-1"
+            >
+              <h2 className="text-xl font-bold text-[#FFD700] mb-4 flex items-center gap-2">
+                <History className="h-5 w-5" /> BLOCKCHAIN TRANSACTIONS
+                <span className="ml-auto flex items-center gap-1">
+                  <span className="w-2 h-2 bg-[#00F090] rounded-full animate-pulse" />
+                  <span className="text-xs text-[#00F090] font-normal">LIVE</span>
+                </span>
+              </h2>
+              
+              <p className="text-xs text-white/50 mb-4">Real-time POBC-verified calorie to FTC transactions</p>
+
+              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2">
+                {transactions.map((tx, index) => (
+                  <motion.div
+                    key={tx.id}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="glass-card p-3 border border-white/5 hover:border-white/20 transition-colors"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className={`flex items-center gap-2 ${getTypeColor(tx.type)}`}>
+                        {getTypeIcon(tx.type)}
+                        <span className="text-xs font-bold">{tx.type}</span>
+                      </div>
+                      <span className="text-xs text-white/40">
+                        {new Date(tx.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-mono text-white">{tx.ftcAmount} FTC</p>
+                        <p className="text-xs text-white/40">{tx.calories.toLocaleString()} kcal</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-white/60 font-mono">{tx.walletTo}</p>
+                        <a 
+                          href={`https://solscan.io/token/5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#00F090] hover:underline flex items-center gap-1 justify-end"
+                        >
+                          {tx.hash} <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/50">Network</span>
+                  <span className="text-[#00F090] font-bold">Solana Mainnet</span>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-2">
+                  <span className="text-white/50">Contract</span>
+                  <span className="text-white/70 font-mono">5cKax...pump</span>
+                </div>
+              </div>
             </motion.div>
           </div>
 
@@ -527,7 +666,7 @@ const ClaimFtcCredit = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.5 }}
             className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6"
           >
             <div className="glass-card p-6">
