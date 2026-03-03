@@ -176,6 +176,34 @@ const LandingPage = () => {
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </a>
             </div>
+
+            {/* Claim FTC Credit Section */}
+            <div className="mt-8 glass-card p-8 max-w-lg mx-auto border-2 border-[#FFD700]/50 bg-gradient-to-br from-[#FFD700]/5 to-transparent">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="text-4xl">🪙</span>
+                <h3 className="text-2xl font-black font-unbounded tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] via-[#FF9F1C] to-[#FFD700]">
+                  Claim FTC Credit
+                </h3>
+              </div>
+              <p className="text-white/70 text-center mb-2">
+                FITRUDRAH'S FUTURECOIN – Health Energy Based Gamified Reward
+              </p>
+              <p className="text-xs text-center text-[#00F090] mb-6">
+                Human Energy → Mathematical Balance → FTC Credit Reward
+              </p>
+              <button
+                onClick={() => navigate('/claim-ftc')}
+                className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FFD700] to-[#FF9F1C] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_25px_rgba(255,215,0,0.5)] hover:shadow-[0_0_40px_rgba(255,215,0,0.8)] rounded-sm overflow-hidden"
+                data-testid="claim-ftc-credit-btn"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
+                <span className="relative z-10">Calculate & Claim FTC</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <p className="text-xs text-white/40 text-center mt-4 font-mono">
+                Contract: 5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>
