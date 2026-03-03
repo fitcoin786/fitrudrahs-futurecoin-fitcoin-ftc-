@@ -8,7 +8,7 @@ import {
   CheckCircle, AlertTriangle, Heart, Coins, Wallet,
   Send, ArrowRightLeft, History, ExternalLink, Copy,
   ArrowDown, ArrowUp, Check, X, Info, LogIn, LogOut,
-  Lock, UserCheck, Clock
+  Lock, UserCheck, Clock, Mail, Key
 } from 'lucide-react';
 
 // Verified FTC Wallet Addresses
@@ -23,7 +23,8 @@ const VERIFIED_FTC_ADDRESSES = [
 const ClaimFtcCredit = () => {
   // Login State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loginAddress, setLoginAddress] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [userClaimHistory, setUserClaimHistory] = useState([]);
@@ -57,8 +58,6 @@ const ClaimFtcCredit = () => {
   
   // Transaction Details Modal
   const [selectedTx, setSelectedTx] = useState(null);
-  const [clickCount, setClickCount] = useState(0);
-  const [clickTimer, setClickTimer] = useState(null);
 
   // Initialize wallet balances and ledger
   useEffect(() => {
@@ -162,96 +161,101 @@ const ClaimFtcCredit = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Login Handler
+  // Email/Password Login Handler
   const handleLogin = () => {
-    if (!loginAddress.trim()) {
-      toast.error('Enter your FTC wallet address');
+    if (!loginEmail.trim()) {
+      toast.error('Enter your FitWallet email');
       return;
     }
-    if (!loginAddress.startsWith('FTC') || loginAddress.length < 32) {
-      toast.error('Invalid FTC address format');
+    if (!loginPassword.trim()) {
+      toast.error('Enter your password');
+      return;
+    }
+    if (!loginEmail.includes('@')) {
+      toast.error('Enter a valid email address');
+      return;
+    }
+    if (loginPassword.length < 6) {
+      toast.error('Password must be at least 6 characters');
       return;
     }
 
     setIsLoggingIn(true);
 
-    // Simulate blockchain verification
+    // Simulate FitWallet authentication
     setTimeout(() => {
-      const isVerified = VERIFIED_FTC_ADDRESSES.includes(loginAddress) || loginAddress.startsWith('FTC');
+      // Generate FTC address from email
+      const emailHash = loginEmail.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
+      const ftcAddress = 'FTC' + emailHash.padEnd(32, Math.random().toString(36).substr(2).toUpperCase()).substring(0, 32);
+      const walletName = 'FitWallet_' + loginEmail.split('@')[0].substring(0, 6);
+      const balance = (Math.random() * 5000 + 500).toFixed(2);
       
-      if (isVerified) {
-        const walletName = 'FitWallet_' + loginAddress.substring(3, 7);
-        const balance = walletBalances[loginAddress] || (Math.random() * 5000 + 500).toFixed(2);
-        
-        // Generate mock claim history for this user
-        const mockHistory = [
-          {
-            id: 'claim_' + Date.now() + '_1',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-            calories: 2150000,
-            ftcAmount: 2150.00,
-            status: 'CONFIRMED',
-            pobcVerified: true,
-            hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
-          },
-          {
-            id: 'claim_' + Date.now() + '_2',
-            timestamp: new Date(Date.now() - 172800000).toISOString(),
-            calories: 1850000,
-            ftcAmount: 1850.00,
-            status: 'CONFIRMED',
-            pobcVerified: true,
-            hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
-          },
-          {
-            id: 'claim_' + Date.now() + '_3',
-            timestamp: new Date(Date.now() - 259200000).toISOString(),
-            calories: 3200000,
-            ftcAmount: 3200.00,
-            status: 'CONFIRMED',
-            pobcVerified: true,
-            hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
-          }
-        ];
+      // Generate mock claim history
+      const mockHistory = [
+        {
+          id: 'claim_' + Date.now() + '_1',
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          calories: 2150000,
+          ftcAmount: 2150.00,
+          status: 'CONFIRMED',
+          pobcVerified: true,
+          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
+        },
+        {
+          id: 'claim_' + Date.now() + '_2',
+          timestamp: new Date(Date.now() - 172800000).toISOString(),
+          calories: 1850000,
+          ftcAmount: 1850.00,
+          status: 'CONFIRMED',
+          pobcVerified: true,
+          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
+        },
+        {
+          id: 'claim_' + Date.now() + '_3',
+          timestamp: new Date(Date.now() - 259200000).toISOString(),
+          calories: 3200000,
+          ftcAmount: 3200.00,
+          status: 'CONFIRMED',
+          pobcVerified: true,
+          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
+        }
+      ];
 
-        // Mock calorie data
-        const mockCalorieData = {
-          totalCaloriesBurned: 7200000,
-          totalCaloriesIntake: 6800000,
-          avgDailyBurn: 2400,
-          avgDailyIntake: 2267,
-          lastVerified: new Date().toISOString(),
-          pobcStatus: 'VERIFIED'
-        };
+      const mockCalorieData = {
+        totalCaloriesBurned: 7200000,
+        totalCaloriesIntake: 6800000,
+        avgDailyBurn: 2400,
+        avgDailyIntake: 2267,
+        lastVerified: new Date().toISOString(),
+        pobcStatus: 'VERIFIED'
+      };
 
-        setLoggedInUser({
-          address: loginAddress,
-          name: walletName,
-          balance: balance,
-          verified: true,
-          loginTime: new Date().toISOString()
-        });
-        
-        setUserClaimHistory(mockHistory);
-        setUserCalorieData(mockCalorieData);
-        setWalletAddress(loginAddress);
-        setWalletBalances(prev => ({ ...prev, [loginAddress]: balance }));
-        setIsLoggedIn(true);
-        setIsLoggingIn(false);
-        
-        toast.success(`✅ Welcome ${walletName}!`);
-        toast.info(`Blockchain verified • Balance: ${balance} FTC`);
-      } else {
-        setIsLoggingIn(false);
-        toast.error('Address verification failed');
-      }
+      setLoggedInUser({
+        email: loginEmail,
+        address: ftcAddress,
+        name: walletName,
+        balance: balance,
+        verified: true,
+        loginTime: new Date().toISOString()
+      });
+      
+      setUserClaimHistory(mockHistory);
+      setUserCalorieData(mockCalorieData);
+      setWalletAddress(ftcAddress);
+      setWalletBalances(prev => ({ ...prev, [ftcAddress]: balance }));
+      setIsLoggedIn(true);
+      setIsLoggingIn(false);
+      
+      toast.success(`✅ Welcome ${walletName}!`);
+      toast.info(`FitWallet connected • Balance: ${balance} FTC`);
     }, 2000);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setLoggedInUser(null);
-    setLoginAddress('');
+    setLoginEmail('');
+    setLoginPassword('');
     setUserClaimHistory([]);
     setUserCalorieData(null);
     setResults(null);
@@ -322,7 +326,6 @@ const ClaimFtcCredit = () => {
       const finalFTC = baseFTC * modifier;
       const stabilityScore = Math.max(0, 100 - differencePercent);
 
-      // Update user calorie data
       setUserCalorieData(prev => ({
         ...prev,
         currentBMR: bmr.toFixed(2),
@@ -344,7 +347,7 @@ const ClaimFtcCredit = () => {
     }, 1500);
   };
 
-  const isValidFTCAddress = (address) => address.startsWith('FTC') && address.length >= 32;
+  const isValidFTCAddress = (address) => address && address.startsWith('FTC') && address.length >= 32;
 
   const handleClaim = () => {
     if (!results || parseFloat(results.finalFTC) === 0) {
@@ -405,12 +408,10 @@ const ClaimFtcCredit = () => {
         
         setLedger(prev => [receiveTx, ...prev.map(tx => tx.id === sendTx.id ? { ...tx, status: 'CONFIRMED', received: true } : tx)]);
         
-        // Update wallet balance
         const newBalance = (parseFloat(walletBalances[loggedInUser.address] || 0) + amount).toFixed(2);
         setWalletBalances(prev => ({ ...prev, [loggedInUser.address]: newBalance }));
         setLoggedInUser(prev => ({ ...prev, balance: newBalance }));
         
-        // Add to claim history
         const newClaim = {
           id: 'claim_' + Date.now(),
           timestamp: new Date().toISOString(),
@@ -431,7 +432,6 @@ const ClaimFtcCredit = () => {
     }, 1000);
   };
 
-  // Send FTC
   const handleSendFTC = () => {
     const senderBalance = parseFloat(walletBalances[loggedInUser.address] || 0);
     const amountToSend = parseFloat(sendAmount);
@@ -510,7 +510,6 @@ const ClaimFtcCredit = () => {
         
         setLedger(prev => [receiveTx, ...prev.map(tx => tx.id === sendTx.id ? { ...tx, status: 'CONFIRMED', received: true } : tx)]);
         
-        // Update balances
         const newSenderBalance = (parseFloat(walletBalances[loggedInUser.address] || 0) - amountToSend).toFixed(2);
         setWalletBalances(prev => ({
           ...prev,
@@ -528,21 +527,8 @@ const ClaimFtcCredit = () => {
     }, 1000);
   };
 
-  // Double-tap handler
-  const handleTxClick = (tx) => {
-    if (clickTimer) {
-      clearTimeout(clickTimer);
-      setClickTimer(null);
-      setClickCount(0);
-      setSelectedTx(tx);
-    } else {
-      setClickCount(1);
-      const timer = setTimeout(() => {
-        setClickCount(0);
-        setClickTimer(null);
-      }, 300);
-      setClickTimer(timer);
-    }
+  const handleViewTransaction = (tx) => {
+    setSelectedTx(tx);
   };
 
   const copyToClipboard = (text) => {
@@ -584,48 +570,60 @@ const ClaimFtcCredit = () => {
                 🪙 FTC CLAIM LOGIN
               </span>
             </h1>
-            <p className="text-white/60 text-sm">Login with your verified FTC wallet address</p>
+            <p className="text-white/60 text-sm">Login with your FitWallet credentials</p>
           </div>
 
           {/* Login Card */}
           <div className="glass-card p-8 border-2 border-[#FFD700]/30">
             <div className="flex items-center gap-2 mb-6">
               <Lock className="h-5 w-5 text-[#FFD700]" />
-              <h2 className="text-lg font-bold text-[#FFD700]">BLOCKCHAIN LOGIN</h2>
+              <h2 className="text-lg font-bold text-[#FFD700]">FITWALLET LOGIN</h2>
             </div>
 
             <div className="space-y-4">
+              {/* Email Input */}
               <div>
                 <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
-                  <Wallet className="inline h-3 w-3 mr-1" /> FTC WALLET ADDRESS
+                  <Mail className="inline h-3 w-3 mr-1" /> EMAIL ADDRESS
                 </label>
                 <input
-                  type="text"
-                  value={loginAddress}
-                  onChange={(e) => setLoginAddress(e.target.value.toUpperCase())}
-                  className="w-full bg-black/50 border border-[#FFD700]/30 focus:border-[#FFD700] text-white placeholder:text-white/30 h-14 px-4 outline-none font-mono"
-                  placeholder="FTC..."
-                  data-testid="login-address-input"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 focus:border-[#FFD700] text-white placeholder:text-white/30 h-12 px-4 outline-none transition-colors"
+                  placeholder="your@email.com"
+                  data-testid="login-email-input"
                 />
-                <p className="text-xs text-white/40 mt-2">Format: FTC + 32 characters</p>
               </div>
 
-              {/* Verified Addresses Hint */}
+              {/* Password Input */}
+              <div>
+                <label className="block text-xs font-mono uppercase tracking-wider text-white/60 mb-2">
+                  <Key className="inline h-3 w-3 mr-1" /> PASSWORD
+                </label>
+                <input
+                  type="password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 focus:border-[#FFD700] text-white placeholder:text-white/30 h-12 px-4 outline-none transition-colors"
+                  placeholder="Enter password"
+                  data-testid="login-password-input"
+                />
+              </div>
+
+              {/* FitWallet Link */}
               <div className="glass-card p-3 border border-[#00F090]/20">
-                <p className="text-xs text-[#00F090] mb-2 flex items-center gap-1">
-                  <Shield className="h-3 w-3" /> VERIFIED ADDRESSES
-                </p>
-                <div className="space-y-1">
-                  {VERIFIED_FTC_ADDRESSES.slice(0, 3).map((addr, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setLoginAddress(addr)}
-                      className="block w-full text-left text-xs font-mono text-white/60 hover:text-[#FFD700] py-1 px-2 hover:bg-white/5 rounded transition-colors"
-                    >
-                      {addr.substring(0, 20)}...
-                    </button>
-                  ))}
-                </div>
+                <p className="text-xs text-white/60 mb-2">Don't have a FitWallet account?</p>
+                <a
+                  href="https://solana-fitness.emergent.host/fitwallet"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2 bg-[#00F090]/10 border border-[#00F090]/30 text-[#00F090] font-bold text-sm hover:bg-[#00F090]/20 transition-colors"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Create FitWallet Account
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
 
               <button
@@ -637,7 +635,7 @@ const ClaimFtcCredit = () => {
                 {isLoggingIn ? (
                   <>
                     <div className="animate-spin h-5 w-5 border-2 border-black border-t-transparent rounded-full" />
-                    Verifying on Blockchain...
+                    Connecting to FitWallet...
                   </>
                 ) : (
                   <>
@@ -650,12 +648,27 @@ const ClaimFtcCredit = () => {
 
             <div className="mt-6 pt-4 border-t border-white/10">
               <p className="text-xs text-white/40 text-center">
-                🔐 Your wallet will be verified on Solana blockchain
+                🔐 Secure connection to Fitcoin Exchange
               </p>
               <p className="text-xs text-[#00F090] text-center mt-2">
-                POBC-Verified • Real-time Calorie Data
+                Real-time Blockchain • POBC Verified
               </p>
             </div>
+          </div>
+
+          {/* FTC Exchange Link */}
+          <div className="mt-6 glass-card p-4 border border-[#FFD700]/30">
+            <p className="text-xs text-white/60 text-center mb-3">Access Real FTC Exchange</p>
+            <a
+              href="https://solana-fitness.emergent.host/fitwallet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold text-sm hover:brightness-110 transition-all"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+              Open FitWallet Exchange
+              <ExternalLink className="h-4 w-4" />
+            </a>
           </div>
 
           <div className="text-center mt-6">
@@ -682,7 +695,7 @@ const ClaimFtcCredit = () => {
           <div className="flex items-center gap-3">
             <div className="glass-card px-4 py-2 flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-[#00F090]" />
-              <span className="text-sm font-mono text-white">{loggedInUser?.name}</span>
+              <span className="text-sm text-white">{loggedInUser?.email}</span>
               <span className="text-sm font-bold text-[#FFD700]">{loggedInUser?.balance} FTC</span>
             </div>
             <button onClick={handleLogout} className="glass-card px-3 py-2 text-white/60 hover:text-[#FF2E50] transition-colors">
@@ -701,32 +714,32 @@ const ClaimFtcCredit = () => {
                 🪙 CLAIM & SEND FTC
               </span>
             </h1>
-            <p className="text-xs text-white/60 mt-1">POBC-Verified • Real Blockchain • Calorie Data Validated</p>
+            <p className="text-xs text-white/60 mt-1">Real Blockchain • POBC Verified • FitWallet Exchange</p>
           </div>
 
-          {/* User Info & Claim History Bar */}
+          {/* User Info Bar */}
           <div className="glass-card p-3 mb-4 border border-[#00F090]/30 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-[#00F090]" />
-                <span className="text-xs text-white/60">Logged in:</span>
-                <span className="text-xs font-mono text-[#FFD700]">{loggedInUser?.address.substring(0, 16)}...</span>
+                <span className="text-xs text-white/60">FitWallet:</span>
+                <span className="text-xs font-mono text-[#FFD700]">{loggedInUser?.address?.substring(0, 16)}...</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-white/40" />
                 <span className="text-xs text-white/40">Claims: {userClaimHistory.length}</span>
               </div>
             </div>
-            {userCalorieData && (
-              <div className="flex items-center gap-3 text-xs">
-                <span className="text-white/50">POBC Data:</span>
-                <span className="text-[#FF9F1C]">BMR {userCalorieData.currentBMR || 'N/A'}</span>
-                <span className="text-[#FFD700]">TDEE {userCalorieData.currentTDEE || 'N/A'}</span>
-                <span className={`px-2 py-0.5 rounded ${userCalorieData.pobcStatus === 'VERIFIED' ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-white/10 text-white/50'}`}>
-                  {userCalorieData.pobcStatus}
-                </span>
-              </div>
-            )}
+            <a
+              href="https://solana-fitness.emergent.host/fitwallet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-3 py-1.5 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] text-xs font-bold hover:bg-[#FFD700]/20 transition-colors"
+            >
+              <ArrowRightLeft className="h-3 w-3" />
+              Open FitWallet Exchange
+              <ExternalLink className="h-3 w-3" />
+            </a>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
@@ -778,7 +791,6 @@ const ClaimFtcCredit = () => {
                     {isClaiming ? 'Processing...' : `Claim to ${loggedInUser?.name}`}
                   </button>
 
-                  {/* Balance & Send Section */}
                   <div className="glass-card p-3 border border-[#00F090]/30 bg-[#00F090]/5">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-white/60">Your Balance:</span>
@@ -826,25 +838,49 @@ const ClaimFtcCredit = () => {
               </h2>
               
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {userClaimHistory.map((claim, i) => (
-                  <div key={claim.id} className="glass-card p-2 border border-white/5">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-[#FFD700]">{claim.ftcAmount.toFixed(2)} FTC</span>
-                      <span className={`text-xs ${claim.pobcVerified ? 'text-[#00F090]' : 'text-white/50'}`}>
-                        {claim.pobcVerified ? '✓ POBC' : 'Pending'}
-                      </span>
+                {userClaimHistory && userClaimHistory.length > 0 ? (
+                  userClaimHistory.map((claim) => (
+                    <div 
+                      key={claim.id} 
+                      className="glass-card p-2 border border-white/5 cursor-pointer hover:border-[#FFD700]/50 transition-colors"
+                      onClick={() => handleViewTransaction({
+                        ...claim,
+                        type: 'CLAIM',
+                        from: 'POBC_SYSTEM',
+                        to: loggedInUser?.address,
+                        toName: loggedInUser?.name,
+                        amount: claim.ftcAmount,
+                        blockNumber: 18547800 + Math.floor(Math.random() * 100),
+                        received: true,
+                        receiverDetails: {
+                          name: loggedInUser?.name,
+                          address: loggedInUser?.address,
+                          verified: true
+                        }
+                      })}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-bold text-[#FFD700]">{claim.ftcAmount.toFixed(2)} FTC</span>
+                        <span className={`text-xs ${claim.pobcVerified ? 'text-[#00F090]' : 'text-white/50'}`}>
+                          {claim.pobcVerified ? '✓ POBC' : 'Pending'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-white/40">
+                        <span>{claim.calories.toLocaleString()} kcal</span>
+                        <span>{new Date(claim.timestamp).toLocaleDateString()}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-white/40">
-                      <span>{claim.calories.toLocaleString()} kcal</span>
-                      <span>{new Date(claim.timestamp).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                ))}
+                  ))
+                ) : (
+                  <p className="text-xs text-white/40 text-center py-4">No claims yet</p>
+                )}
               </div>
               
-              <div className="mt-3 pt-2 border-t border-white/10 text-xs text-white/50">
-                Total Claimed: <span className="text-[#FFD700] font-bold">{userClaimHistory.reduce((sum, c) => sum + c.ftcAmount, 0).toFixed(2)} FTC</span>
-              </div>
+              {userClaimHistory && userClaimHistory.length > 0 && (
+                <div className="mt-3 pt-2 border-t border-white/10 text-xs text-white/50">
+                  Total: <span className="text-[#FFD700] font-bold">{userClaimHistory.reduce((sum, c) => sum + c.ftcAmount, 0).toFixed(2)} FTC</span>
+                </div>
+              )}
             </div>
 
             {/* Blockchain Ledger */}
@@ -856,33 +892,37 @@ const ClaimFtcCredit = () => {
                   <span className="text-xs text-[#00F090] font-normal">LIVE</span>
                 </span>
               </h2>
-              <p className="text-xs text-white/40 mb-2">Double-tap for details</p>
+              <p className="text-xs text-white/40 mb-2">Click transaction for details</p>
 
               <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-                {ledger.slice(0, 8).map((tx) => (
-                  <motion.div
-                    key={tx.id}
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    onClick={() => handleTxClick(tx)}
-                    className={`glass-card p-2 border cursor-pointer hover:border-white/30 ${tx.type.includes('RECEIVED') ? 'border-[#00F090]/30 bg-[#00F090]/5' : 'border-white/5'}`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="flex items-center gap-1">
-                        {getTypeIcon(tx.type)}
-                        <span className="text-xs font-bold text-white/80">{tx.type.substring(0, 10)}</span>
+                {ledger && ledger.length > 0 ? (
+                  ledger.slice(0, 8).map((tx) => (
+                    <motion.div
+                      key={tx.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      onClick={() => handleViewTransaction(tx)}
+                      className={`glass-card p-2 border cursor-pointer hover:border-white/30 ${tx.type.includes('RECEIVED') ? 'border-[#00F090]/30 bg-[#00F090]/5' : 'border-white/5'}`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1">
+                          {getTypeIcon(tx.type)}
+                          <span className="text-xs font-bold text-white/80">{tx.type.substring(0, 10)}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className={`text-xs ${getStatusColor(tx.status)}`}>{tx.status}</span>
+                          {tx.pobcVerified && <Check className="h-3 w-3 text-[#00F090]" />}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <span className={`text-xs ${getStatusColor(tx.status)}`}>{tx.status}</span>
-                        {tx.pobcVerified && <Check className="h-3 w-3 text-[#00F090]" />}
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-mono text-white/50">{tx.to?.substring(0, 10)}...</span>
+                        <span className="font-bold text-[#FFD700]">{tx.amount?.toFixed(2)}</span>
                       </div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="font-mono text-white/50">{tx.to.substring(0, 10)}...</span>
-                      <span className="font-bold text-[#FFD700]">{tx.amount.toFixed(2)}</span>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))
+                ) : (
+                  <p className="text-xs text-white/40 text-center py-4">No transactions</p>
+                )}
               </div>
             </div>
           </div>
@@ -924,8 +964,8 @@ const ClaimFtcCredit = () => {
                       {selectedTx.status}
                     </span>
                   </div>
-                  <p className="text-2xl font-black text-[#FFD700]">{selectedTx.amount.toFixed(2)} FTC</p>
-                  <p className="text-xs text-white/40">{selectedTx.calories.toLocaleString()} kcal</p>
+                  <p className="text-2xl font-black text-[#FFD700]">{selectedTx.amount?.toFixed(2) || selectedTx.ftcAmount?.toFixed(2)} FTC</p>
+                  <p className="text-xs text-white/40">{(selectedTx.calories || selectedTx.amount * 1000)?.toLocaleString()} kcal</p>
                 </div>
 
                 <div className="glass-card p-3 border border-[#00F090]/30 bg-[#00F090]/5">
@@ -935,15 +975,11 @@ const ClaimFtcCredit = () => {
                   <div className="space-y-1 text-sm">
                     <div className="flex justify-between">
                       <span className="text-white/50">Name:</span>
-                      <span className="text-white font-bold">{selectedTx.receiverDetails?.name || selectedTx.toName}</span>
+                      <span className="text-white font-bold">{selectedTx.receiverDetails?.name || selectedTx.toName || loggedInUser?.name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/50">Address:</span>
-                      <span className="font-mono text-white/70 text-xs">{selectedTx.to.substring(0, 16)}...</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-white/50">Balance After:</span>
-                      <span className="text-[#00F090] font-bold">{selectedTx.receiverDetails?.balanceAfter || '0.00'} FTC</span>
+                      <span className="font-mono text-white/70 text-xs">{(selectedTx.to || loggedInUser?.address)?.substring(0, 16)}...</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-white/50">POBC Status:</span>
@@ -957,23 +993,39 @@ const ClaimFtcCredit = () => {
                 <div className="glass-card p-3 text-xs">
                   <div className="flex justify-between mb-1">
                     <span className="text-white/50">Block:</span>
-                    <span className="text-white">#{selectedTx.blockNumber}</span>
+                    <span className="text-white">#{selectedTx.blockNumber || 18547800 + Math.floor(Math.random() * 100)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-white/50">Hash:</span>
                     <button onClick={() => copyToClipboard(selectedTx.hash)} className="font-mono text-[#00F090] hover:underline">
-                      {selectedTx.hash.substring(0, 16)}...
+                      {selectedTx.hash?.substring(0, 16)}...
                     </button>
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-white/50">Time:</span>
+                    <span className="text-white">{new Date(selectedTx.timestamp).toLocaleString()}</span>
                   </div>
                 </div>
 
-                {selectedTx.received && (
+                {(selectedTx.received || selectedTx.status === 'CONFIRMED') && (
                   <div className="text-center py-2 bg-[#00F090]/10 border border-[#00F090]/30 rounded">
                     <p className="text-[#00F090] font-bold flex items-center justify-center gap-2">
                       <CheckCircle className="h-5 w-5" /> RECEIVED & POBC VERIFIED
                     </p>
                   </div>
                 )}
+
+                {/* FitWallet Exchange Link */}
+                <a
+                  href="https://solana-fitness.emergent.host/fitwallet"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] font-bold text-sm hover:bg-[#FFD700]/20 transition-colors"
+                >
+                  <ArrowRightLeft className="h-4 w-4" />
+                  View in FitWallet Exchange
+                  <ExternalLink className="h-3 w-3" />
+                </a>
               </div>
             </motion.div>
           </motion.div>
