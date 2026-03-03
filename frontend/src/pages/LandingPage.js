@@ -177,32 +177,43 @@ const LandingPage = () => {
               </a>
             </div>
 
-            {/* Claim FTC Credit Section */}
-            <div className="mt-8 glass-card p-8 max-w-lg mx-auto border-2 border-[#FFD700]/50 bg-gradient-to-br from-[#FFD700]/5 to-transparent">
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-4xl">🪙</span>
-                <h3 className="text-2xl font-black font-unbounded tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FFD700] via-[#FF9F1C] to-[#FFD700]">
-                  Claim FTC Credit
-                </h3>
-              </div>
-              <p className="text-white/70 text-center mb-2">
-                FITRUDRAH'S FUTURECOIN – Health Energy Based Gamified Reward
-              </p>
-              <p className="text-xs text-center text-[#00F090] mb-6">
-                Human Energy → Mathematical Balance → FTC Credit Reward
-              </p>
-              <button
-                onClick={() => navigate('/claim-ftc')}
-                className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FFD700] to-[#FF9F1C] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_25px_rgba(255,215,0,0.5)] hover:shadow-[0_0_40px_rgba(255,215,0,0.8)] rounded-sm overflow-hidden"
-                data-testid="claim-ftc-credit-btn"
+            {/* Trading & Mining Photo Links */}
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Trading Buy-Sell Photo */}
+              <a
+                href="https://fitcoin-platform.preview.emergentagent.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group glass-card p-4 border-2 border-[#FFD700]/50 hover:border-[#FFD700] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"
+                data-testid="trading-photo-link"
               >
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
-                <span className="relative z-10">Calculate & Claim FTC</span>
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <p className="text-xs text-white/40 text-center mt-4 font-mono">
-                Contract: 5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump
-              </p>
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/qbzt0e34_1509.jpg" 
+                  alt="Trading Buy-Sell" 
+                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                />
+                <p className="text-center text-[#FFD700] font-bold uppercase tracking-wider">
+                  Tap to Trading Buy-Sell
+                </p>
+              </a>
+
+              {/* Mining Cal-Ftc Photo */}
+              <a
+                href="https://solana-fitness.emergent.host/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group glass-card p-4 border-2 border-[#00F090]/50 hover:border-[#00F090] transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,144,0.4)]"
+                data-testid="mining-photo-link"
+              >
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/h5ewa63t_14123.jpg" 
+                  alt="Mining Cal-Ftc" 
+                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                />
+                <p className="text-center text-[#00F090] font-bold uppercase tracking-wider">
+                  Tap to Mining Cal-Ftc
+                </p>
+              </a>
             </div>
           </motion.div>
         </div>
