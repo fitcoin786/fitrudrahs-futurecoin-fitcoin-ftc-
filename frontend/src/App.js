@@ -100,6 +100,7 @@ function App() {
               <Navigate to="/auth" />
             } 
           />
+          <Route path="/claim-ftc" element={<ClaimFtcCredit />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" theme="dark" />
