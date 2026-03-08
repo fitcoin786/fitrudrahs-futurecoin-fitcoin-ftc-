@@ -178,21 +178,21 @@ const LandingPage = () => {
             </div>
 
             {/* Trading & Mining Photo Links */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
               {/* Trading Buy-Sell Photo */}
               <a
                 href="https://fitcoin-platform.preview.emergentagent.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group glass-card p-4 border-2 border-[#FFD700]/50 hover:border-[#FFD700] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"
+                className="group glass-card p-3 border-2 border-[#FFD700]/50 hover:border-[#FFD700] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"
                 data-testid="trading-photo-link"
               >
                 <img 
                   src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/qbzt0e34_1509.jpg" 
                   alt="Trading Buy-Sell" 
-                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-36 object-cover rounded-lg mb-3 group-hover:scale-105 transition-transform duration-300"
                 />
-                <p className="text-center text-[#FFD700] font-bold uppercase tracking-wider">
+                <p className="text-center text-[#FFD700] font-bold uppercase tracking-wider text-xs">
                   Tap to Trading Buy-Sell
                 </p>
               </a>
@@ -202,33 +202,51 @@ const LandingPage = () => {
                 href="https://solana-fitness.emergent.host/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group glass-card p-4 border-2 border-[#00F090]/50 hover:border-[#00F090] transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,144,0.4)]"
+                className="group glass-card p-3 border-2 border-[#00F090]/50 hover:border-[#00F090] transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,144,0.4)]"
                 data-testid="mining-photo-link"
               >
                 <img 
                   src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/h5ewa63t_14123.jpg" 
                   alt="Mining Cal-Ftc" 
-                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-36 object-cover rounded-lg mb-3 group-hover:scale-105 transition-transform duration-300"
                 />
-                <p className="text-center text-[#00F090] font-bold uppercase tracking-wider">
+                <p className="text-center text-[#00F090] font-bold uppercase tracking-wider text-xs">
                   Tap to Mining Cal-Ftc
                 </p>
               </a>
 
-              {/* FTC Wellness Photo */}
+              {/* FTC Wellness Photo 1 */}
               <a
                 href="https://ftc-wellness.preview.emergentagent.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group glass-card p-4 border-2 border-[#FF9F1C]/50 hover:border-[#FF9F1C] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,159,28,0.4)]"
+                className="group glass-card p-3 border-2 border-[#FF9F1C]/50 hover:border-[#FF9F1C] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,159,28,0.4)]"
                 data-testid="wellness-photo-link"
               >
                 <img 
                   src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/fo9xhrdz_1000014169.jpg" 
                   alt="FTC Wellness" 
-                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-36 object-cover rounded-lg mb-3 group-hover:scale-105 transition-transform duration-300"
                 />
-                <p className="text-center text-[#FF9F1C] font-bold uppercase tracking-wider">
+                <p className="text-center text-[#FF9F1C] font-bold uppercase tracking-wider text-xs">
+                  Tap to FTC Wellness
+                </p>
+              </a>
+
+              {/* FTC Wellness Photo 2 */}
+              <a
+                href="https://ftc-wellness.preview.emergentagent.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group glass-card p-3 border-2 border-[#FF2E50]/50 hover:border-[#FF2E50] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,46,80,0.4)]"
+                data-testid="wellness-photo-link-2"
+              >
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/qc7scmil_1000003752.jpg" 
+                  alt="FTC Wellness App" 
+                  className="w-full h-36 object-cover rounded-lg mb-3 group-hover:scale-105 transition-transform duration-300"
+                />
+                <p className="text-center text-[#FF2E50] font-bold uppercase tracking-wider text-xs">
                   Tap to FTC Wellness
                 </p>
               </a>
