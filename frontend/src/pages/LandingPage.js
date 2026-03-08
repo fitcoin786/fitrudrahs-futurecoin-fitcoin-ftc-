@@ -178,7 +178,7 @@ const LandingPage = () => {
             </div>
 
             {/* Trading & Mining Photo Links */}
-            <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {/* Trading Buy-Sell Photo */}
               <a
                 href="https://fitcoin-platform.preview.emergentagent.com/"
@@ -212,6 +212,24 @@ const LandingPage = () => {
                 />
                 <p className="text-center text-[#00F090] font-bold uppercase tracking-wider">
                   Tap to Mining Cal-Ftc
+                </p>
+              </a>
+
+              {/* FTC Wellness Photo */}
+              <a
+                href="https://ftc-wellness.preview.emergentagent.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group glass-card p-4 border-2 border-[#FF9F1C]/50 hover:border-[#FF9F1C] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,159,28,0.4)]"
+                data-testid="wellness-photo-link"
+              >
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_bce9865d-fa6c-43ef-b2bd-4f3e219a1321/artifacts/fo9xhrdz_1000014169.jpg" 
+                  alt="FTC Wellness" 
+                  className="w-full h-48 object-cover rounded-lg mb-4 group-hover:scale-105 transition-transform duration-300"
+                />
+                <p className="text-center text-[#FF9F1C] font-bold uppercase tracking-wider">
+                  Tap to FTC Wellness
                 </p>
               </a>
             </div>
