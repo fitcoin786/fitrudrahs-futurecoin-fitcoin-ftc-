@@ -235,7 +235,7 @@ const LandingPage = () => {
 
               {/* FTC Wellness Photo 2 */}
               <a
-                href="https://ftc-marketplace.preview.emergentagent.com/"
+                href="https://ftc-wellness.preview.emergentagent.com?ref="
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group glass-card p-3 border-2 border-[#FF2E50]/50 hover:border-[#FF2E50] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,46,80,0.4)]"
