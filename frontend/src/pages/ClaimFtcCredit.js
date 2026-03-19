@@ -1,24 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 import { 
   Calculator, User, Calendar, Activity, Scale, Ruler, 
   Flame, Zap, Award, Shield, TrendingUp, ArrowLeft,
   CheckCircle, AlertTriangle, Heart, Coins, Wallet,
   Send, ArrowRightLeft, History, ExternalLink, Copy,
   ArrowDown, ArrowUp, Check, X, Info, LogIn, LogOut,
-  Lock, UserCheck, Clock, Mail, Key
+  Lock, UserCheck, Clock, Mail, Key, RefreshCw
 } from 'lucide-react';
 
-// Verified FTC Wallet Addresses
-const VERIFIED_FTC_ADDRESSES = [
-  'FTCD0914B7CAF6842978D497437F2122801',
-  'FTC7A943F8A21214B03939B1DB9E19C627D',
-  'FTC021FBE8A950C43129B1877B21FB8A766',
-  'FTC8B2C4D6E8F0A1B3C5D7E9F0A2B4C6D8',
-  'FTCA1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6'
-];
+// FCOIN Blockchain API Base URL
+const FCOIN_API_BASE = 'https://solana-fitness.emergent.host';
 
 const ClaimFtcCredit = () => {
   // Login State
@@ -27,6 +22,7 @@ const ClaimFtcCredit = () => {
   const [loginPassword, setLoginPassword] = useState('');
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState(null);
+  const [authToken, setAuthToken] = useState(null);
   const [userClaimHistory, setUserClaimHistory] = useState([]);
   const [userCalorieData, setUserCalorieData] = useState(null);
 
@@ -49,6 +45,16 @@ const ClaimFtcCredit = () => {
   const [claimedFTC, setClaimedFTC] = useState(0);
   const [walletBalances, setWalletBalances] = useState({});
   
+  // Blockchain Stats
+  const [blockchainStats, setBlockchainStats] = useState({
+    totalBlocks: 0,
+    totalMined: 0,
+    totalTransferred: 0,
+    totalUsers: 0,
+    activeUsers: 0
+  });
+  const [isLoadingBlockchain, setIsLoadingBlockchain] = useState(false);
+  
   // Send FTC State
   const [showSendPanel, setShowSendPanel] = useState(false);
   const [sendAmount, setSendAmount] = useState('');
@@ -59,110 +65,114 @@ const ClaimFtcCredit = () => {
   // Transaction Details Modal
   const [selectedTx, setSelectedTx] = useState(null);
 
-  // Initialize wallet balances and ledger
-  useEffect(() => {
-    const initialBalances = {};
-    VERIFIED_FTC_ADDRESSES.forEach(addr => {
-      initialBalances[addr] = (Math.random() * 10000 + 1000).toFixed(2);
-    });
-    setWalletBalances(initialBalances);
-
-    const initialLedger = [
-      {
-        id: 'tx_' + Date.now() + '_1',
-        type: 'POBC_MINT',
-        from: 'POBC_SYSTEM',
-        to: VERIFIED_FTC_ADDRESSES[0],
-        toName: 'FitWallet_Alpha',
-        amount: 2150.00,
-        calories: 2150000,
-        status: 'CONFIRMED',
-        timestamp: new Date(Date.now() - 3600000).toISOString(),
-        hash: 'FTX' + Math.random().toString(36).substr(2, 16).toUpperCase(),
-        blockNumber: 18547823,
+  // Fetch blockchain ledger from FCOIN API
+  const fetchBlockchainLedger = useCallback(async (token) => {
+    if (!token) return;
+    
+    setIsLoadingBlockchain(true);
+    try {
+      const response = await axios.get(`${FCOIN_API_BASE}/api/blockchain/ledger`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = response.data;
+      
+      // Update blockchain stats
+      setBlockchainStats({
+        totalBlocks: data.total_transactions || 0,
+        totalMined: data.network_stats?.total_mined || 0,
+        totalTransferred: data.network_stats?.total_transferred || 0,
+        totalUsers: data.total_users || 0,
+        activeUsers: data.active_users || 0
+      });
+      
+      // Transform ledger entries to our format
+      const transformedLedger = (data.entries || []).slice(0, 20).map((entry, index) => ({
+        id: `tx_${entry.block_number}_${index}`,
+        type: transformTransactionType(entry.type),
+        from: entry.type === 'mining' ? 'POBC_SYSTEM' : (entry.details?.from_user || 'SYSTEM'),
+        to: entry.details?.wallet_address || entry.details?.username || 'Unknown',
+        toName: entry.details?.username || 'FitWallet',
+        amount: parseFloat(entry.amount) || 0,
+        calories: entry.details?.calories_burned || (parseFloat(entry.amount) * 1000),
+        status: entry.status === 'confirmed' ? 'CONFIRMED' : 'PENDING',
+        timestamp: entry.timestamp,
+        hash: entry.transaction_hash,
+        blockNumber: entry.block_number,
         received: true,
         pobcVerified: true,
+        activityType: entry.details?.activity_type || null,
         receiverDetails: {
-          name: 'FitWallet_Alpha',
-          address: VERIFIED_FTC_ADDRESSES[0],
-          balanceBefore: '5000.00',
-          balanceAfter: '7150.00',
+          name: entry.details?.username || 'FitWallet',
+          address: entry.details?.wallet_address || '',
           verified: true
         }
-      },
-      {
-        id: 'tx_' + Date.now() + '_2',
-        type: 'EXCHANGE',
-        from: VERIFIED_FTC_ADDRESSES[1],
-        to: VERIFIED_FTC_ADDRESSES[2],
-        toName: 'FitWallet_Gamma',
-        amount: 500.00,
-        calories: 500000,
-        status: 'CONFIRMED',
-        timestamp: new Date(Date.now() - 7200000).toISOString(),
-        hash: 'FTX' + Math.random().toString(36).substr(2, 16).toUpperCase(),
-        blockNumber: 18547801,
-        received: true,
-        pobcVerified: true,
-        receiverDetails: {
-          name: 'FitWallet_Gamma',
-          address: VERIFIED_FTC_ADDRESSES[2],
-          balanceBefore: '3000.00',
-          balanceAfter: '3500.00',
-          verified: true
-        }
-      }
-    ];
-    setLedger(initialLedger);
-
-    // Real-time blockchain activity
-    const interval = setInterval(() => {
-      const types = ['POBC_MINT', 'EXCHANGE', 'SEND'];
-      const fromAddr = VERIFIED_FTC_ADDRESSES[Math.floor(Math.random() * VERIFIED_FTC_ADDRESSES.length)];
-      let toAddr = VERIFIED_FTC_ADDRESSES[Math.floor(Math.random() * VERIFIED_FTC_ADDRESSES.length)];
-      while (toAddr === fromAddr) {
-        toAddr = VERIFIED_FTC_ADDRESSES[Math.floor(Math.random() * VERIFIED_FTC_ADDRESSES.length)];
-      }
-      
-      const amount = (Math.random() * 2000 + 100).toFixed(2);
-      const walletNames = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon'];
-      const toName = 'FitWallet_' + walletNames[Math.floor(Math.random() * walletNames.length)];
-      
-      const newTx = {
-        id: 'tx_' + Date.now(),
-        type: types[Math.floor(Math.random() * types.length)],
-        from: types[0] === 'POBC_MINT' ? 'POBC_SYSTEM' : fromAddr,
-        to: toAddr,
-        toName: toName,
-        amount: parseFloat(amount),
-        calories: parseFloat(amount) * 1000,
-        status: 'CONFIRMED',
-        timestamp: new Date().toISOString(),
-        hash: 'FTX' + Math.random().toString(36).substr(2, 16).toUpperCase(),
-        blockNumber: 18547823 + Math.floor(Math.random() * 100),
-        received: true,
-        pobcVerified: true,
-        receiverDetails: {
-          name: toName,
-          address: toAddr,
-          balanceBefore: walletBalances[toAddr] || '0.00',
-          balanceAfter: (parseFloat(walletBalances[toAddr] || 0) + parseFloat(amount)).toFixed(2),
-          verified: true
-        }
-      };
-      
-      setLedger(prev => [newTx, ...prev.slice(0, 14)]);
-      setWalletBalances(prev => ({
-        ...prev,
-        [toAddr]: (parseFloat(prev[toAddr] || 0) + parseFloat(amount)).toFixed(2)
       }));
-    }, 25000);
-
-    return () => clearInterval(interval);
+      
+      setLedger(transformedLedger);
+      
+    } catch (error) {
+      console.error('Error fetching blockchain ledger:', error);
+      toast.error('Failed to fetch blockchain data');
+    } finally {
+      setIsLoadingBlockchain(false);
+    }
   }, []);
 
-  // Email/Password Login Handler
-  const handleLogin = () => {
+  // Transform transaction type from API to UI format
+  const transformTransactionType = (type) => {
+    const typeMap = {
+      'mining': 'POBC_MINT',
+      'account_creation': 'NEW_USER',
+      'referral_commission': 'REFERRAL',
+      'transfer': 'TRANSFER'
+    };
+    return typeMap[type] || type?.toUpperCase() || 'UNKNOWN';
+  };
+
+  // Fetch user stats from FCOIN API
+  const fetchUserStats = useCallback(async (token) => {
+    if (!token) return;
+    
+    try {
+      const response = await axios.get(`${FCOIN_API_BASE}/api/stats`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = response.data;
+      setUserCalorieData({
+        totalCaloriesBurned: data.total_calories || 0,
+        totalFitcoins: data.total_fitcoins || 0,
+        totalActivities: data.total_activities || 0,
+        currentBalance: data.current_balance || 0,
+        totalMiningRewards: data.total_mining_rewards || 0,
+        totalReferralCommission: data.total_referral_commission || 0,
+        referralCode: data.referral_code,
+        walletAddress: data.wallet_address
+      });
+      
+    } catch (error) {
+      console.error('Error fetching user stats:', error);
+    }
+  }, []);
+
+  // Auto-refresh blockchain data every 30 seconds
+  useEffect(() => {
+    if (authToken) {
+      fetchBlockchainLedger(authToken);
+      fetchUserStats(authToken);
+      
+      const interval = setInterval(() => {
+        fetchBlockchainLedger(authToken);
+        fetchUserStats(authToken);
+      }, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [authToken, fetchBlockchainLedger, fetchUserStats]);
+
+  // Email/Password Login Handler - Using REAL FCOIN API
+  const handleLogin = async () => {
     if (!loginEmail.trim()) {
       toast.error('Enter your FitWallet email');
       return;
@@ -182,85 +192,90 @@ const ClaimFtcCredit = () => {
 
     setIsLoggingIn(true);
 
-    // Simulate FitWallet authentication
-    setTimeout(() => {
-      // Generate FTC address from email
-      const emailHash = loginEmail.split('@')[0].toUpperCase().replace(/[^A-Z0-9]/g, '');
-      const ftcAddress = 'FTC' + emailHash.padEnd(32, Math.random().toString(36).substr(2).toUpperCase()).substring(0, 32);
-      const walletName = 'FitWallet_' + loginEmail.split('@')[0].substring(0, 6);
-      const balance = (Math.random() * 5000 + 500).toFixed(2);
-      
-      // Generate mock claim history
-      const mockHistory = [
-        {
-          id: 'claim_' + Date.now() + '_1',
-          timestamp: new Date(Date.now() - 86400000).toISOString(),
-          calories: 2150000,
-          ftcAmount: 2150.00,
-          status: 'CONFIRMED',
-          pobcVerified: true,
-          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
-        },
-        {
-          id: 'claim_' + Date.now() + '_2',
-          timestamp: new Date(Date.now() - 172800000).toISOString(),
-          calories: 1850000,
-          ftcAmount: 1850.00,
-          status: 'CONFIRMED',
-          pobcVerified: true,
-          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
-        },
-        {
-          id: 'claim_' + Date.now() + '_3',
-          timestamp: new Date(Date.now() - 259200000).toISOString(),
-          calories: 3200000,
-          ftcAmount: 3200.00,
-          status: 'CONFIRMED',
-          pobcVerified: true,
-          hash: 'FTX' + Math.random().toString(36).substr(2, 12).toUpperCase()
+    try {
+      // Try to login first
+      let response;
+      try {
+        response = await axios.post(`${FCOIN_API_BASE}/api/auth/login`, {
+          email: loginEmail,
+          password: loginPassword
+        });
+      } catch (loginError) {
+        // If login fails, try to register
+        if (loginError.response?.status === 401 || loginError.response?.status === 404) {
+          const username = loginEmail.split('@')[0].substring(0, 12);
+          response = await axios.post(`${FCOIN_API_BASE}/api/auth/register`, {
+            email: loginEmail,
+            password: loginPassword,
+            username: username
+          });
+          toast.success('New FitWallet account created!');
+        } else {
+          throw loginError;
         }
-      ];
+      }
 
-      const mockCalorieData = {
-        totalCaloriesBurned: 7200000,
-        totalCaloriesIntake: 6800000,
-        avgDailyBurn: 2400,
-        avgDailyIntake: 2267,
-        lastVerified: new Date().toISOString(),
-        pobcStatus: 'VERIFIED'
-      };
-
+      const data = response.data;
+      const token = data.access_token;
+      
+      setAuthToken(token);
       setLoggedInUser({
         email: loginEmail,
-        address: ftcAddress,
-        name: walletName,
-        balance: balance,
+        address: data.wallet_address,
+        name: data.username,
+        balance: data.fitcoin_balance?.toFixed(2) || '0.00',
         verified: true,
+        referralCode: data.referral_code,
         loginTime: new Date().toISOString()
       });
       
-      setUserClaimHistory(mockHistory);
-      setUserCalorieData(mockCalorieData);
-      setWalletAddress(ftcAddress);
-      setWalletBalances(prev => ({ ...prev, [ftcAddress]: balance }));
+      setWalletAddress(data.wallet_address);
+      setWalletBalances(prev => ({ ...prev, [data.wallet_address]: data.fitcoin_balance?.toFixed(2) || '0.00' }));
       setIsLoggedIn(true);
-      setIsLoggingIn(false);
       
-      toast.success(`✅ Welcome ${walletName}!`);
-      toast.info(`FitWallet connected • Balance: ${balance} FTC`);
-    }, 2000);
+      // Fetch blockchain data
+      fetchBlockchainLedger(token);
+      fetchUserStats(token);
+      
+      toast.success(`✅ Welcome ${data.username}!`);
+      toast.info(`FitWallet connected • Balance: ${data.fitcoin_balance?.toFixed(2) || '0'} FTC`);
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      toast.error(error.response?.data?.detail || 'Login failed. Please check your credentials.');
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
     setLoggedInUser(null);
+    setAuthToken(null);
     setLoginEmail('');
     setLoginPassword('');
     setUserClaimHistory([]);
     setUserCalorieData(null);
     setResults(null);
     setShowSendPanel(false);
+    setLedger([]);
+    setBlockchainStats({
+      totalBlocks: 0,
+      totalMined: 0,
+      totalTransferred: 0,
+      totalUsers: 0,
+      activeUsers: 0
+    });
     toast.info('Logged out successfully');
+  };
+
+  // Manual refresh blockchain data
+  const handleRefreshBlockchain = () => {
+    if (authToken) {
+      toast.info('Refreshing blockchain data...');
+      fetchBlockchainLedger(authToken);
+      fetchUserStats(authToken);
+    }
   };
 
   const activityMultipliers = {
@@ -546,9 +561,26 @@ const ClaimFtcCredit = () => {
       'EXCHANGE': <ArrowRightLeft className="h-4 w-4 text-[#FFD700]" />,
       'EXCHANGE_RECEIVED': <ArrowRightLeft className="h-4 w-4 text-[#00F090]" />,
       'SEND': <Send className="h-4 w-4 text-[#FF9F1C]" />,
-      'TRANSFER_RECEIVED': <ArrowDown className="h-4 w-4 text-[#00F090]" />
+      'TRANSFER': <Send className="h-4 w-4 text-[#FF9F1C]" />,
+      'TRANSFER_RECEIVED': <ArrowDown className="h-4 w-4 text-[#00F090]" />,
+      'NEW_USER': <User className="h-4 w-4 text-[#9945FF]" />,
+      'REFERRAL': <Award className="h-4 w-4 text-[#FFD700]" />,
+      'MINING': <Flame className="h-4 w-4 text-[#FF9F1C]" />
     };
     return icons[type] || <Activity className="h-4 w-4" />;
+  };
+
+  const getTypeLabel = (type) => {
+    const labels = {
+      'POBC_MINT': '⛏️ Mining',
+      'NEW_USER': '👤 New User',
+      'REFERRAL': '🎁 Referral',
+      'TRANSFER': '📤 Transfer',
+      'EXCHANGE': '🔄 Exchange',
+      'CLAIM_SEND': '📤 Claim',
+      'CLAIM_RECEIVED': '📥 Received'
+    };
+    return labels[type] || type;
   };
 
   // LOGIN SCREEN
@@ -883,31 +915,67 @@ const ClaimFtcCredit = () => {
               )}
             </div>
 
-            {/* Blockchain Ledger */}
+            {/* Blockchain Ledger - REAL FCOIN DATA */}
             <div className="glass-card p-4">
-              <h2 className="text-sm font-bold text-[#FFD700] mb-3 flex items-center gap-2">
-                <History className="h-4 w-4" /> BLOCKCHAIN
-                <span className="ml-auto flex items-center gap-1">
-                  <span className="w-2 h-2 bg-[#00F090] rounded-full animate-pulse" />
-                  <span className="text-xs text-[#00F090] font-normal">LIVE</span>
-                </span>
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-[#FFD700] flex items-center gap-2">
+                  <History className="h-4 w-4" /> FCOIN BLOCKCHAIN
+                  <span className="flex items-center gap-1">
+                    <span className="w-2 h-2 bg-[#00F090] rounded-full animate-pulse" />
+                    <span className="text-xs text-[#00F090] font-normal">LIVE</span>
+                  </span>
+                </h2>
+                <button 
+                  onClick={handleRefreshBlockchain}
+                  disabled={isLoadingBlockchain}
+                  className="p-1.5 hover:bg-white/10 rounded transition-colors"
+                  title="Refresh blockchain data"
+                >
+                  <RefreshCw className={`h-4 w-4 text-white/60 ${isLoadingBlockchain ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              
+              {/* Blockchain Stats */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <div className="glass-card p-2 border border-[#FFD700]/20">
+                  <p className="text-xs text-white/50">Total Blocks</p>
+                  <p className="text-sm font-bold text-[#FFD700]">{blockchainStats.totalBlocks.toLocaleString()}</p>
+                </div>
+                <div className="glass-card p-2 border border-[#00F090]/20">
+                  <p className="text-xs text-white/50">Total Mined</p>
+                  <p className="text-sm font-bold text-[#00F090]">{blockchainStats.totalMined.toLocaleString()} FTC</p>
+                </div>
+                <div className="glass-card p-2 border border-[#FF9F1C]/20">
+                  <p className="text-xs text-white/50">Transferred</p>
+                  <p className="text-sm font-bold text-[#FF9F1C]">{blockchainStats.totalTransferred.toLocaleString()} FTC</p>
+                </div>
+                <div className="glass-card p-2 border border-[#9945FF]/20">
+                  <p className="text-xs text-white/50">Users</p>
+                  <p className="text-sm font-bold text-[#9945FF]">{blockchainStats.totalUsers} ({blockchainStats.activeUsers} active)</p>
+                </div>
+              </div>
+              
               <p className="text-xs text-white/40 mb-2">Click transaction for details</p>
 
               <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
-                {ledger && ledger.length > 0 ? (
-                  ledger.slice(0, 8).map((tx) => (
+                {isLoadingBlockchain ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCw className="h-6 w-6 text-[#FFD700] animate-spin" />
+                    <span className="ml-2 text-white/60 text-sm">Loading blockchain...</span>
+                  </div>
+                ) : ledger && ledger.length > 0 ? (
+                  ledger.slice(0, 15).map((tx) => (
                     <motion.div
                       key={tx.id}
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       onClick={() => handleViewTransaction(tx)}
-                      className={`glass-card p-2 border cursor-pointer hover:border-white/30 ${tx.type.includes('RECEIVED') ? 'border-[#00F090]/30 bg-[#00F090]/5' : 'border-white/5'}`}
+                      className={`glass-card p-2 border cursor-pointer hover:border-white/30 ${tx.type === 'POBC_MINT' ? 'border-[#FF9F1C]/30 bg-[#FF9F1C]/5' : tx.type === 'NEW_USER' ? 'border-[#9945FF]/30 bg-[#9945FF]/5' : tx.type === 'REFERRAL' ? 'border-[#FFD700]/30 bg-[#FFD700]/5' : 'border-white/5'}`}
                     >
                       <div className="flex items-center justify-between mb-1">
                         <div className="flex items-center gap-1">
                           {getTypeIcon(tx.type)}
-                          <span className="text-xs font-bold text-white/80">{tx.type.substring(0, 10)}</span>
+                          <span className="text-xs font-bold text-white/80">{getTypeLabel(tx.type)}</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <span className={`text-xs ${getStatusColor(tx.status)}`}>{tx.status}</span>
@@ -915,14 +983,32 @@ const ClaimFtcCredit = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono text-white/50">{tx.to?.substring(0, 10)}...</span>
-                        <span className="font-bold text-[#FFD700]">{tx.amount?.toFixed(2)}</span>
+                        <span className="font-mono text-white/50">{tx.toName || tx.to?.substring(0, 15)}...</span>
+                        <span className="font-bold text-[#FFD700]">+{tx.amount?.toFixed(2)} FTC</span>
                       </div>
+                      {tx.activityType && (
+                        <div className="mt-1 text-xs text-white/40">
+                          Activity: {tx.activityType}
+                        </div>
+                      )}
                     </motion.div>
                   ))
                 ) : (
-                  <p className="text-xs text-white/40 text-center py-4">No transactions</p>
+                  <p className="text-xs text-white/40 text-center py-4">No transactions - Login to load blockchain</p>
                 )}
+              </div>
+              
+              {/* Link to Explorer */}
+              <div className="mt-3 pt-2 border-t border-white/10">
+                <a
+                  href="https://solana-fitness.emergent.host/explorer"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 text-[#FFD700] font-bold text-xs hover:bg-[#FFD700]/20 transition-colors"
+                >
+                  <ExternalLink className="h-3 w-3" />
+                  View Full FCOIN Explorer
+                </a>
               </div>
             </div>
           </div>

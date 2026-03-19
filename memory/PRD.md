@@ -39,7 +39,7 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 
 ### 5. Mine FTC Link
 - **Status**: ✅ Complete (Updated Feb 25, 2026)
-- Link: `https://fitcoin-platform.preview.emergentagent.com/`
+- Link: `https://ftc-marketplace.preview.emergentagent.com/`
 - Available in navbar on: Landing, Trade, Market, and other pages
 
 ### 6. Portfolio
