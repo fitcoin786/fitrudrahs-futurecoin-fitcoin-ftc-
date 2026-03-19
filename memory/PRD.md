@@ -10,6 +10,8 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - Registration with email, password, full name
 - Login with JWT tokens
 - Protected routes
+- Forgot Password with OTP via Resend email
+- Reset Password flow
 
 ### 2. Trading Dashboard
 - **Status**: ✅ Complete
@@ -18,9 +20,10 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - Buy/Sell order panel
 - Order book with bids/asks
 - Wallet balance display (USD/FTC)
+- 24h and 60min volume fluctuation
 
 ### 3. Market Overview (Top Gainers/Losers/Trending)
-- **Status**: ✅ Complete (Fixed Feb 25, 2026)
+- **Status**: ✅ Complete
 - Real-time data from CoinGecko API
 - **Fitcoin (FTC) included in Top Losers** - Always #1 with contract address
 - Top Gainers tab with real crypto data
@@ -29,28 +32,49 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - Clickable coins open details view
 
 ### 4. Advanced Crypto Search
-- **Status**: ✅ Complete (Fixed Feb 25, 2026)
+- **Status**: ✅ Complete
 - Search 10,000+ cryptocurrencies via CoinGecko
 - **Fitcoin searchable by**: name, symbol (FTC), contract address
-- Search by name or symbol
-- Search by contract address (`5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump`)
 - AI Recommendations: Bitcoin, Ethereum, Solana, Fitcoin
 - Detailed view on click with price, market cap, volume, blockchain info
 
-### 5. Mine FTC Link
-- **Status**: ✅ Complete (Updated Feb 25, 2026)
-- Link: `https://ftc-marketplace.preview.emergentagent.com/`
-- Available in navbar on: Landing, Trade, Market, and other pages
+### 5. Claim FTC Credit Page (FCOIN Blockchain Integration)
+- **Status**: ✅ Complete (Updated Mar 19, 2026)
+- **CONNECTED TO REAL FCOIN BLOCKCHAIN API**
+- Login with FitWallet credentials via `https://solana-fitness.emergent.host/api/auth/login`
+- Real-time blockchain data from `https://solana-fitness.emergent.host/api/blockchain/ledger`
+- Displays real blockchain stats: Total Blocks, Total Mined, Transferred, Users
+- Real transactions: Mining, New User, Referral Commission
+- Health-based FTC calculator
+- Send/Exchange FTC functionality
+- Auto-refresh every 30 seconds
+- Manual refresh button
 
-### 6. Portfolio
+### 6. Landing Page
+- **Status**: ✅ Complete (Updated Mar 19, 2026)
+- Hero section with FTC branding
+- "Health Is Wealth" AI button
+- "Mine Fitcoin" section
+- "Alpha Radar" section
+- Photo links grid including:
+  - Tap to Trading Buy-Sell
+  - Tap to Mining Cal-FTC
+  - **Fast tap to join Fit Pool** → `https://hacker-mine-ftc.emergent.host/`
+  - Tap to FTC Wellness
+- FiTOwlSiRinG section
+- Special offers
+- FAQ section
+- Extensive ecosystem links
+
+### 7. Portfolio
 - **Status**: ✅ Basic UI Complete
 - Shows user wallet balances
 
-### 7. Trade History
+### 8. Trade History
 - **Status**: ✅ Basic UI Complete
 - Shows user's past orders
 
-### 8. Send/Receive Feature
+### 9. Send/Receive Feature
 - **Status**: ⚠️ Placeholder only
 - UI exists but blockchain integration pending
 
@@ -59,16 +83,17 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 ```
 /app/
 ├── backend/
-│   ├── server.py        # FastAPI with async CoinGecko integration + Fitcoin data
+│   ├── server.py        # FastAPI with async CoinGecko integration
 │   ├── requirements.txt
 │   └── .env
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── LandingPage.js
+│   │   │   ├── LandingPage.js       # Updated with Fit Pool link
 │   │   │   ├── TradingDashboard.js
-│   │   │   ├── MarketOverview.js  # Real CoinGecko + Fitcoin in Top Losers
-│   │   │   ├── CryptoSearch.js    # Real CoinGecko + Fitcoin searchable
+│   │   │   ├── MarketOverview.js
+│   │   │   ├── CryptoSearch.js
+│   │   │   ├── ClaimFtcCredit.js    # FCOIN blockchain integration
 │   │   │   ├── Portfolio.js
 │   │   │   ├── TradeHistory.js
 │   │   │   └── SendReceive.js
@@ -92,76 +117,84 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 | `/api/wallet` | GET | ✅ | Get wallet balance |
 | `/api/price/fitcoin` | GET | ✅ | Get FTC price |
 | `/api/market/overview` | GET | ✅ | Get gainers/losers(+FTC)/trending |
-| `/api/crypto/search` | GET | ✅ | Search cryptos + Fitcoin by name/address |
-| `/api/crypto/details/{id}` | GET | ✅ | Get crypto details (handles fitcoin specially) |
+| `/api/crypto/search` | GET | ✅ | Search cryptos + Fitcoin |
+| `/api/crypto/details/{id}` | GET | ✅ | Get crypto details |
 | `/api/trade` | POST | ✅ | Execute trade |
 | `/api/trade/history` | GET | ✅ | Get trade history |
 | `/api/orderbook` | GET | ✅ | Get order book |
 
-## Integrations
+## External API Integrations
 
 | Service | Status | Notes |
 |---------|--------|-------|
 | CoinGecko API | ✅ Active | Free tier, async thread pool wrapper |
 | Birdeye.so | ✅ Active | Via iframe for FTC chart |
 | MongoDB | ✅ Active | User data, wallets, orders |
+| FCOIN Blockchain API | ✅ Active | Real-time blockchain data from solana-fitness.emergent.host |
+| Resend | ✅ Active | Email OTP for password reset |
 
-## Fitcoin Integration Details
+## FCOIN Blockchain Integration (Mar 19, 2026)
 
-- **Contract Address**: `5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump`
-- **Blockchain**: Solana
-- **Base Price**: $0.00000349
-- **Always appears in**: Top Losers (#1 position)
-- **Searchable via**: Name ("fitcoin"), Symbol ("ftc"), Contract Address
-- **Details include**: Price, 24h change, market cap, volume, high/low, ATH/ATL, description
+### API Base URL
+`https://solana-fitness.emergent.host`
 
-## Recent Changes (Mar 2, 2026)
+### Endpoints Used
+- `POST /api/auth/login` - Login to FitWallet
+- `POST /api/auth/register` - Register new FitWallet
+- `GET /api/blockchain/ledger` - Get blockchain transactions (requires auth)
+- `GET /api/stats` - Get user mining stats (requires auth)
 
-1. **Volume Fluctuation Correction (Trade Dashboard)**
-   - **24h Volume**: Now fluctuates between $150 - $280 (real-time automated)
-   - **60min Volume**: New field added, fluctuates between $15 - $56 (shown in green)
-   - Both volumes auto-update every 5 seconds for real-time experience
+### Data Retrieved
+- **Network Stats**: Total mined (119M+ FTC), total transferred, total users
+- **Transactions**: Mining rewards, new user registrations, referral commissions
+- **User Data**: Wallet address, FTC balance, referral code
 
-2. **Complete Authentication System Upgrade**
-   - **Login**: Email + Password (existing)
-   - **Register**: Full Name + Email + Password (existing)
-   - **Forgot Password**: Email-based OTP flow
-   - **OTP Verification**: 6-digit code with 10-minute expiry, 5 attempts max
-   - **Reset Password**: New password + confirmation after OTP verification
-   - **Change Password**: For logged-in users (current + new password)
-   - **Demo Mode**: OTP displayed on screen when RESEND_API_KEY not configured
-   - **Production**: Configure RESEND_API_KEY for email delivery
+## Recent Changes (Mar 19, 2026)
 
-## Recent Changes (Feb 25, 2026)
+1. **Landing Page Update**
+   - Replaced "Tap to FTC Wellness" with **"Fast tap to join Fit Pool"**
+   - New link: `https://hacker-mine-ftc.emergent.host/`
+   - Updated data-testid to `fit-pool-link`
 
-1. **Mine FTC Link Updated**
-   - Changed to: `vibe-journal-5.preview.emergentagent.com`
-
-2. **Fitcoin Added to Top Losers**
-   - FTC now appears as #1 in Top Losers with contract address
-   - Shows Solana blockchain badge
-
-3. **Fitcoin Fully Searchable**
-   - Search by: "fitcoin", "ftc", or full contract address
-   - Displays with Solana badge and contract address
-   - Click shows full details with blockchain info
-
-4. **Backend APIs Fixed**
-   - Async CoinGecko integration with ThreadPoolExecutor
-   - Special handling for Fitcoin in search and details endpoints
+2. **FCOIN Blockchain Integration** 
+   - Connected ClaimFtcCredit page to **REAL FCOIN blockchain API**
+   - Login authenticates via `https://solana-fitness.emergent.host/api/auth/login`
+   - Fetches real blockchain data from `/api/blockchain/ledger`
+   - Displays real stats: 360 blocks, 119M+ FTC mined, 53 users
+   - Shows real transactions: Mining, New User, Referral Commission
+   - Auto-refresh every 30 seconds
+   - Manual refresh button added
+   - Link to FCOIN Explorer
 
 ## Pending/Future Work
 
+### P0 - Critical
+- [x] Connect Claim FTC page to real blockchain API ✅ DONE
+
 ### P1 - High Priority
-- [ ] Real blockchain integration for Send/Receive
+- [ ] AI Suggestions UI improvement (+X more coins indicator)
+- [ ] Real Place Order functionality (update balances)
+- [ ] Send/Receive/Exchange backend logic
 
 ### P2 - Medium Priority
+- [ ] Intro video on landing page
 - [ ] Portfolio watchlist feature
-- [ ] AI/ML trade recommendations
+- [ ] Refactor server.py into modules
 
 ### P3 - Low Priority
 - [ ] Replace Birdeye iframe with native chart library
+- [ ] Refactor ClaimFtcCredit.js (1100+ lines)
 
 ## User Credentials for Testing
+
+### Local App
 - New users can register through `/auth` page
 - Initial balance: $10,000 USD, 0 FTC
+
+### FCOIN API Test Account
+- Email: `test@futuretrade.com`
+- Password: `testpass123`
+- Wallet: `FTC1D1AC4129EBC4B0F90E2297123459E03`
+
+## Test Reports
+- `/app/test_reports/iteration_1.json` - FCOIN blockchain integration tests (100% pass)
