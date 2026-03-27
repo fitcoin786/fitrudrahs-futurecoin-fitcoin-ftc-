@@ -478,7 +478,8 @@ const NutritionTrading = () => {
     setFitWalletLoading(true);
     
     try {
-      const response = await fetch(`${FCOIN_API_URL}/api/auth/login`, {
+      // Use backend proxy to bypass CORS
+      const response = await fetch(`${BACKEND_URL}/api/fitwallet/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fitWalletEmail, password: fitWalletPassword })
@@ -486,12 +487,12 @@ const NutritionTrading = () => {
       
       if (response.ok) {
         const data = await response.json();
-        const token = data.token || data.access_token;
         
-        if (token) {
-          setFitWalletToken(token);
+        if (data.success && data.token) {
+          setFitWalletToken(data.token);
           setIsFitWalletConnected(true);
-          localStorage.setItem('fitWalletToken', token);
+          localStorage.setItem('fitWalletToken', data.token);
+          localStorage.setItem('fitWalletEmail', fitWalletEmail);
           
           // Get wallet address from response
           if (data.wallet_address) {
@@ -499,24 +500,30 @@ const NutritionTrading = () => {
             localStorage.setItem('fit_wallet_address', data.wallet_address);
           }
           
-          // Get balance directly from login response if available
-          if (data.balance !== undefined || data.ftc_balance !== undefined || data.user?.balance !== undefined) {
-            const balance = data.balance || data.ftc_balance || data.user?.balance || 0;
-            setMiningWalletBalance(balance);
-            localStorage.setItem('mining_wallet_balance', balance.toString());
-          } else {
-            // Fetch balance separately
-            await fetchFitWalletBalance(token);
+          // Get balance from login response
+          if (data.balance !== undefined && data.balance !== null) {
+            const numBalance = parseFloat(data.balance);
+            if (!isNaN(numBalance)) {
+              setMiningWalletBalance(numBalance);
+              localStorage.setItem('mining_wallet_balance', numBalance.toString());
+            }
           }
           
+          // Also fetch balance from balance endpoint
+          await fetchFitWalletBalance(data.token);
+          
           setShowFitWalletLogin(false);
-          toast.success('✅ FitWallet connected successfully!', {
-            description: 'You can now transfer FTC between wallets'
+          toast.success('✅ FitWallet Connected!', {
+            description: `Mining Wallet synced: ${miningWalletBalance.toLocaleString()} FTC`
           });
+          
+          fetchBlockchainLedger();
+        } else {
+          toast.error(data.detail || 'Login failed');
         }
       } else {
-        const error = await response.json();
-        toast.error(error.message || 'Login failed. Check your credentials.');
+        const error = await response.json().catch(() => ({}));
+        toast.error(error.detail || 'Login failed. Check your credentials.');
       }
     } catch (error) {
       console.error('FitWallet login error:', error);
@@ -526,93 +533,47 @@ const NutritionTrading = () => {
     }
   };
   
-  // Fetch FitWallet balance from blockchain - REAL BALANCE
+  // Fetch FitWallet balance via backend proxy (bypasses CORS)
   const fetchFitWalletBalance = async (token) => {
+    if (!token) return 0;
+    
     setIsBalanceSyncing(true);
+    
     try {
-      // Try multiple endpoints to get the balance
-      const endpoints = [
-        `${FCOIN_API_URL}/api/wallet/balance`,
-        `${FCOIN_API_URL}/api/auth/me`,
-        `${FCOIN_API_URL}/api/user/profile`,
-        `${FCOIN_API_URL}/api/user/wallet`,
-        `${FCOIN_API_URL}/api/blockchain/balance`
-      ];
+      const response = await fetch(`${BACKEND_URL}/api/fitwallet/balance?fitwallet_token=${encodeURIComponent(token)}`);
       
-      for (const endpoint of endpoints) {
-        try {
-          const response = await fetch(endpoint, {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success && data.balance !== undefined) {
+          const numBalance = parseFloat(data.balance);
+          if (!isNaN(numBalance)) {
+            setMiningWalletBalance(numBalance);
+            localStorage.setItem('mining_wallet_balance', numBalance.toString());
             
-            // Try different balance field names
-            let balance = null;
-            
-            // Check all possible balance locations
-            const possibleBalances = [
-              data.balance,
-              data.ftc_balance,
-              data.available_balance,
-              data.wallet_balance,
-              data.user?.balance,
-              data.user?.ftc_balance,
-              data.wallet?.balance,
-              data.wallet?.ftc_balance,
-              data.balances?.FTC,
-              data.balances?.ftc,
-              data.data?.balance,
-              data.data?.ftc_balance
-            ];
-            
-            for (const bal of possibleBalances) {
-              if (bal !== undefined && bal !== null) {
-                const numBal = parseFloat(bal);
-                if (!isNaN(numBal)) {
-                  balance = numBal;
-                  break;
-                }
-              }
+            if (data.wallet_address) {
+              setFitWalletAddress(data.wallet_address);
+              localStorage.setItem('fit_wallet_address', data.wallet_address);
             }
             
-            if (balance !== null) {
-              setMiningWalletBalance(balance);
-              localStorage.setItem('mining_wallet_balance', balance.toString());
-              
-              // Also get wallet address if available
-              const addr = data.wallet_address || data.user?.wallet_address || data.address;
-              if (addr && !fitWalletAddress) {
-                setFitWalletAddress(addr);
-                localStorage.setItem('fit_wallet_address', addr);
-              }
-              
-              setIsBalanceSyncing(false);
-              return balance;
-            }
+            setIsBalanceSyncing(false);
+            return numBalance;
           }
-        } catch (endpointError) {
-          console.log(`Endpoint ${endpoint} failed:`, endpointError.message);
         }
       }
       
-      // If all endpoints fail, try to get balance from localStorage
+      // Fallback to localStorage
       const savedBalance = localStorage.getItem('mining_wallet_balance');
       if (savedBalance) {
         const numBalance = parseFloat(savedBalance);
         if (!isNaN(numBalance)) {
           setMiningWalletBalance(numBalance);
-          setIsBalanceSyncing(false);
-          return numBalance;
         }
       }
     } catch (error) {
       console.log('Balance fetch error:', error);
     }
+    
     setIsBalanceSyncing(false);
     return 0;
   };
@@ -692,25 +653,23 @@ const NutritionTrading = () => {
           return;
         }
         
-        // Call real FitWallet blockchain API to send FTC
+        // Call backend proxy to send FTC from FitWallet
         try {
-          const response = await fetch(`${FCOIN_API_URL}/api/blockchain/send`, {
+          const response = await fetch(`${BACKEND_URL}/api/fitwallet/send`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${fitWalletToken}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               recipient_address: walletAddress,
               amount: amount,
-              note: 'Transfer to FTC Nutrition Trading'
+              note: 'Transfer to FTC Nutrition Trading',
+              fitwallet_token: fitWalletToken
             })
           });
           
           if (response.ok) {
             const result = await response.json();
             
-            // Refresh real balance from FitWallet
+            // Refresh balance from FitWallet
             await fetchFitWalletBalance(fitWalletToken);
             
             // Add to Nutrition Wallet via backend
@@ -737,17 +696,17 @@ const NutritionTrading = () => {
             }
             
             toast.success(`✅ ${amount.toLocaleString()} FTC received from FitWallet!`, {
-              description: result.tx_hash ? `TX: ${result.tx_hash.substring(0, 10)}...` : 'Transaction recorded on FCOIN blockchain'
+              description: result.tx_hash ? `TX: ${result.tx_hash.substring(0, 10)}...` : 'Transfer successful'
             });
             
             fetchBlockchainLedger();
           } else {
             const errorData = await response.json().catch(() => ({}));
-            toast.error(errorData.message || errorData.detail || 'Transfer failed');
+            toast.error(errorData.detail || 'Transfer failed');
           }
         } catch (apiError) {
-          console.error('FitWallet API error:', apiError);
-          toast.error('Could not connect to FitWallet');
+          console.error('Transfer error:', apiError);
+          toast.error('Could not complete transfer');
         }
       } else {
         // Transfer from Nutrition Wallet to Mining Wallet (FitWallet)
@@ -785,22 +744,20 @@ const NutritionTrading = () => {
           });
         }
         
-        // Call real FitWallet blockchain API to receive FTC
+        // Call backend proxy to receive FTC in FitWallet
         try {
-          const response = await fetch(`${FCOIN_API_URL}/api/blockchain/receive`, {
+          const response = await fetch(`${BACKEND_URL}/api/fitwallet/receive`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${fitWalletToken}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               sender_address: walletAddress,
               amount: amount,
-              note: 'Transfer from FTC Nutrition Trading'
+              note: 'Transfer from FTC Nutrition Trading',
+              fitwallet_token: fitWalletToken
             })
           });
           
-          // Refresh real balance from FitWallet regardless of response
+          // Refresh balance
           await fetchFitWalletBalance(fitWalletToken);
           
           if (response.ok) {
