@@ -592,15 +592,20 @@ const FtcMining = () => {
           ))}
         </div>
 
-        {/* Link to Nutrient Trading */}
-        <div className="glass-card p-8 text-center">
-          <h3 className="text-xl font-bold mb-4">Ready to trade your FTC?</h3>
-          <p className="text-white/60 mb-6">Use your mined FTC to trade raw nutrients in the global marketplace</p>
+        {/* Admin Panel Link */}
+        <div className="glass-card p-6 text-center border border-[#9945FF]/30">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Shield className="h-8 w-8 text-[#9945FF]" />
+            <h3 className="text-xl font-bold text-[#9945FF]">Admin Control Panel</h3>
+          </div>
+          <p className="text-white/60 mb-6 text-sm">For administrators only - Manage user subscriptions and approvals</p>
           <Link
-            to="/nutrition-trading"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all"
+            to="/admin"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#9945FF] to-[#FF2E50] text-white font-bold rounded-lg hover:brightness-110 transition-all"
+            data-testid="admin-panel-link"
           >
-            Go to Nutrient Trading
+            <Shield className="h-5 w-5" />
+            Go to Admin Panel
             <ArrowRight className="h-5 w-5" />
           </Link>
         </div>
