@@ -144,45 +144,6 @@ const LandingPage = () => {
               </Link>
             </div>
 
-            {/* Sports Nutrition Trading - Coming Soon */}
-            <div className="mt-8 glass-card p-8 max-w-lg mx-auto border-2 border-[#FF9F1C]/50 relative overflow-hidden">
-              <div className="absolute -top-2 -right-2 px-4 py-1 bg-[#FF2E50] text-white text-xs font-black rounded-sm animate-pulse">
-                COMING SOON
-              </div>
-              <div className="flex items-center justify-center gap-3 mb-4">
-                <span className="text-3xl">🏋️</span>
-                <h3 className="text-2xl font-black font-unbounded tracking-tighter uppercase bg-clip-text text-transparent bg-gradient-to-r from-[#FF9F1C] via-[#FFD700] to-[#FF9F1C]">
-                  Sports Nutrition Trading
-                </h3>
-                <span className="text-3xl">💪</span>
-              </div>
-              <p className="text-white/70 text-center mb-4">
-                Trade 18 premium sports nutrition products like crypto! Buy low, sell high. First 50 buyers become sellers with 25% profit potential.
-              </p>
-              <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
-                <div className="flex items-center gap-2 bg-[#00F090]/10 px-3 py-2 rounded">
-                  <Gift className="h-4 w-4 text-[#00F090]" />
-                  <span className="text-[#00F090] font-bold">10,000 FTC Bonus</span>
-                </div>
-                <div className="flex items-center gap-2 bg-[#FFD700]/10 px-3 py-2 rounded">
-                  <TrendingUp className="h-4 w-4 text-[#FFD700]" />
-                  <span className="text-[#FFD700] font-bold">20% FTC Discount</span>
-                </div>
-              </div>
-              <a
-                href="/nutrition-trading"
-                className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(255,159,28,0.5)] hover:shadow-[0_0_35px_rgba(255,159,28,0.8)] rounded-sm overflow-hidden"
-                data-testid="nutrition-trading-btn"
-              >
-                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
-                <span className="relative z-10">Preview Nutrition Trading</span>
-                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </a>
-              <p className="text-xs text-white/50 mt-3 text-center font-mono">
-                Powered by FTC • 100 units per product • Buyers → Sellers
-              </p>
-            </div>
-
             {/* Alpha Radar Section */}
             <div className="mt-8 glass-card p-8 max-w-lg mx-auto border-2 border-[#FF2E50]/30">
               <div className="flex items-center justify-center gap-3 mb-4">

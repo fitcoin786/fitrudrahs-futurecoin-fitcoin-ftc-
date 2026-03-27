@@ -44,6 +44,92 @@ const FtcMining = () => {
   const [paymentMethod, setPaymentMethod] = useState('USD');
   const [transactionHash, setTransactionHash] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Sports Nutrition Trading States
+  const [nutritionPrices, setNutritionPrices] = useState({});
+  const [selectedNutrition, setSelectedNutrition] = useState(null);
+  const [showNutritionModal, setShowNutritionModal] = useState(false);
+  const [tradeAmount, setTradeAmount] = useState(1);
+  const [tradeType, setTradeType] = useState('buy');
+
+  // Sports Nutrition Products with base prices
+  const NUTRITION_PRODUCTS = [
+    { id: 'WPC80', name: 'Whey Protein Concentrate 80%', basePrice: 38.50, category: 'Protein' },
+    { id: 'WPI90', name: 'Whey Protein Isolate 90%', basePrice: 72.00, category: 'Protein' },
+    { id: 'CREATINE', name: 'Creatine Monohydrate Pure', basePrice: 22.50, category: 'Creatine' },
+    { id: 'GLUTAMINE', name: 'L-Glutamine Powder', basePrice: 44.00, category: 'Amino' },
+    { id: 'BCAA', name: 'BCAA 2:1:1 Instant', basePrice: 58.00, category: 'Amino' },
+    { id: 'CASEIN', name: 'Casein Protein Micellar', basePrice: 52.00, category: 'Protein' },
+    { id: 'PEA', name: 'Pea Protein Isolate 85%', basePrice: 32.00, category: 'Protein' },
+    { id: 'BETA', name: 'Beta-Alanine Pure', basePrice: 35.00, category: 'Pre-Workout' },
+    { id: 'CITRULLINE', name: 'L-Citrulline Malate 2:1', basePrice: 46.00, category: 'Pre-Workout' },
+    { id: 'CAFFEINE', name: 'Caffeine Anhydrous USP', basePrice: 14.50, category: 'Pre-Workout' },
+    { id: 'MALTO', name: 'Maltodextrin DE 18-20', basePrice: 9.50, category: 'Gainer' },
+    { id: 'DEXTROSE', name: 'Dextrose Monohydrate', basePrice: 6.80, category: 'Gainer' },
+  ];
+
+  // Initialize and update nutrition prices with fluctuation
+  useEffect(() => {
+    const initPrices = {};
+    NUTRITION_PRODUCTS.forEach(p => {
+      initPrices[p.id] = {
+        current: p.basePrice,
+        change: 0,
+        history: Array(20).fill(p.basePrice).map((v, i) => v * (0.95 + Math.random() * 0.1))
+      };
+    });
+    setNutritionPrices(initPrices);
+    
+    // Update prices every 3 seconds
+    const priceInterval = setInterval(() => {
+      setNutritionPrices(prev => {
+        const updated = { ...prev };
+        NUTRITION_PRODUCTS.forEach(p => {
+          if (updated[p.id]) {
+            const change = (Math.random() - 0.48) * 2; // Slight upward bias
+            const newPrice = updated[p.id].current * (1 + change / 100);
+            const clampedPrice = Math.max(p.basePrice * 0.7, Math.min(p.basePrice * 1.5, newPrice));
+            updated[p.id] = {
+              current: clampedPrice,
+              change: ((clampedPrice - updated[p.id].current) / updated[p.id].current) * 100,
+              history: [...updated[p.id].history.slice(1), clampedPrice]
+            };
+          }
+        });
+        return updated;
+      });
+    }, 3000);
+    
+    return () => clearInterval(priceInterval);
+  }, []);
+
+  // Buy/Sell nutrition product
+  const executeNutritionTrade = () => {
+    if (!selectedNutrition || !isLoggedIn) return;
+    
+    const price = nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice;
+    const totalCost = price * tradeAmount;
+    
+    if (tradeType === 'buy' && ftcBalance < totalCost) {
+      toast.error('Insufficient FTC balance! Mine more FTC first.');
+      return;
+    }
+    
+    if (tradeType === 'buy') {
+      setFtcBalance(prev => prev - totalCost);
+      toast.success(`Bought ${tradeAmount} unit(s) of ${selectedNutrition.name}!`, {
+        description: `Total: ${totalCost.toFixed(2)} FTC`
+      });
+    } else {
+      setFtcBalance(prev => prev + totalCost);
+      toast.success(`Sold ${tradeAmount} unit(s) of ${selectedNutrition.name}!`, {
+        description: `Received: ${totalCost.toFixed(2)} FTC`
+      });
+    }
+    
+    setShowNutritionModal(false);
+    setTradeAmount(1);
+  };
 
   // Check login and fetch mining data
   useEffect(() => {
@@ -625,6 +711,83 @@ const FtcMining = () => {
           ))}
         </div>
 
+        {/* Sports Nutrition Trading Section */}
+        <div className="mt-12 mb-8">
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <span className="text-3xl">🏋️</span>
+              <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#FF9F1C] to-[#FFD700]">
+                SPORTS NUTRITION TRADING
+              </h2>
+              <span className="text-3xl">💪</span>
+            </div>
+            <p className="text-white/60 text-sm">Trade with your mined FTC • Real-time prices • Global Market</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {NUTRITION_PRODUCTS.map((product) => {
+              const priceData = nutritionPrices[product.id];
+              const isUp = priceData?.change >= 0;
+              
+              return (
+                <motion.div
+                  key={product.id}
+                  whileHover={{ scale: 1.02 }}
+                  className="glass-card p-4 cursor-pointer border border-white/10 hover:border-[#FFD700]/50 transition-all"
+                  onClick={() => {
+                    setSelectedNutrition(product);
+                    setShowNutritionModal(true);
+                  }}
+                  data-testid={`nutrition-${product.id}`}
+                >
+                  {/* Mini Chart */}
+                  <div className="h-16 mb-3 relative">
+                    <svg viewBox="0 0 100 40" className="w-full h-full">
+                      <defs>
+                        <linearGradient id={`gradient-${product.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0.3" />
+                          <stop offset="100%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      {priceData?.history && (
+                        <>
+                          <path
+                            d={`M 0 ${40 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 35} ${priceData.history.map((p, i) => `L ${i * 5.26} ${40 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 35}`).join(' ')} L 100 40 L 0 40 Z`}
+                            fill={`url(#gradient-${product.id})`}
+                          />
+                          <path
+                            d={`M 0 ${40 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 35} ${priceData.history.map((p, i) => `L ${i * 5.26} ${40 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 35}`).join(' ')}`}
+                            fill="none"
+                            stroke={isUp ? '#00F090' : '#FF2E50'}
+                            strokeWidth="1.5"
+                          />
+                        </>
+                      )}
+                    </svg>
+                    {/* Price change badge */}
+                    <div className={`absolute top-0 right-0 px-2 py-0.5 rounded text-xs font-bold ${isUp ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-[#FF2E50]/20 text-[#FF2E50]'}`}>
+                      {isUp ? '↑' : '↓'} {Math.abs(priceData?.change || 0).toFixed(2)}%
+                    </div>
+                  </div>
+                  
+                  {/* Product Info */}
+                  <p className="text-xs text-[#FFD700] font-bold mb-1">{product.category}</p>
+                  <h4 className="text-sm font-bold text-white truncate mb-2">{product.name}</h4>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className={`text-lg font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                        {(priceData?.current || product.basePrice).toFixed(2)} FTC
+                      </p>
+                    </div>
+                    <TrendingUp className={`h-4 w-4 ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50] rotate-180'}`} />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Admin Panel Link */}
         <div className="glass-card p-6 text-center border border-[#9945FF]/30">
           <div className="flex items-center justify-center gap-3 mb-4">
@@ -775,6 +938,134 @@ const FtcMining = () => {
                   setShowPlanModal(false);
                   setTransactionHash('');
                 }}
+                className="w-full py-2 text-white/60 hover:text-white text-sm mt-2"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Nutrition Trade Modal */}
+      <AnimatePresence>
+        {showNutritionModal && selectedNutrition && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowNutritionModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="glass-card p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Product Header */}
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-[#FFD700]/20 rounded-lg">
+                  <TrendingUp className="h-6 w-6 text-[#FFD700]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">{selectedNutrition.name}</h3>
+                  <p className="text-xs text-[#FFD700]">{selectedNutrition.category}</p>
+                </div>
+              </div>
+              
+              {/* Live Price Chart */}
+              <div className="h-24 mb-4 bg-black/50 rounded-lg p-2">
+                <svg viewBox="0 0 100 50" className="w-full h-full">
+                  {nutritionPrices[selectedNutrition.id]?.history && (
+                    <>
+                      <defs>
+                        <linearGradient id="modalGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                          <stop offset="0%" stopColor={nutritionPrices[selectedNutrition.id]?.change >= 0 ? '#00F090' : '#FF2E50'} stopOpacity="0.4" />
+                          <stop offset="100%" stopColor="transparent" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d={`M 0 ${50 - (nutritionPrices[selectedNutrition.id].history[0] - Math.min(...nutritionPrices[selectedNutrition.id].history)) / (Math.max(...nutritionPrices[selectedNutrition.id].history) - Math.min(...nutritionPrices[selectedNutrition.id].history) + 0.01) * 45} ${nutritionPrices[selectedNutrition.id].history.map((p, i) => `L ${i * 5.26} ${50 - (p - Math.min(...nutritionPrices[selectedNutrition.id].history)) / (Math.max(...nutritionPrices[selectedNutrition.id].history) - Math.min(...nutritionPrices[selectedNutrition.id].history) + 0.01) * 45}`).join(' ')} L 100 50 L 0 50 Z`}
+                        fill="url(#modalGradient)"
+                      />
+                      <path
+                        d={`M 0 ${50 - (nutritionPrices[selectedNutrition.id].history[0] - Math.min(...nutritionPrices[selectedNutrition.id].history)) / (Math.max(...nutritionPrices[selectedNutrition.id].history) - Math.min(...nutritionPrices[selectedNutrition.id].history) + 0.01) * 45} ${nutritionPrices[selectedNutrition.id].history.map((p, i) => `L ${i * 5.26} ${50 - (p - Math.min(...nutritionPrices[selectedNutrition.id].history)) / (Math.max(...nutritionPrices[selectedNutrition.id].history) - Math.min(...nutritionPrices[selectedNutrition.id].history) + 0.01) * 45}`).join(' ')}`}
+                        fill="none"
+                        stroke={nutritionPrices[selectedNutrition.id]?.change >= 0 ? '#00F090' : '#FF2E50'}
+                        strokeWidth="2"
+                      />
+                    </>
+                  )}
+                </svg>
+              </div>
+              
+              {/* Price Info */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="p-3 bg-black/50 rounded-lg">
+                  <p className="text-xs text-white/60">Current Price</p>
+                  <p className={`text-xl font-black ${nutritionPrices[selectedNutrition.id]?.change >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                    {(nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice).toFixed(2)} FTC
+                  </p>
+                </div>
+                <div className="p-3 bg-black/50 rounded-lg">
+                  <p className="text-xs text-white/60">Your FTC Balance</p>
+                  <p className="text-xl font-black text-[#FFD700]">{ftcBalance.toFixed(2)} FTC</p>
+                </div>
+              </div>
+              
+              {/* Trade Type Toggle */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <button
+                  onClick={() => setTradeType('buy')}
+                  className={`py-3 rounded-lg font-bold transition-all ${
+                    tradeType === 'buy' ? 'bg-[#00F090] text-black' : 'bg-white/10 text-white/60'
+                  }`}
+                >
+                  BUY
+                </button>
+                <button
+                  onClick={() => setTradeType('sell')}
+                  className={`py-3 rounded-lg font-bold transition-all ${
+                    tradeType === 'sell' ? 'bg-[#FF2E50] text-white' : 'bg-white/10 text-white/60'
+                  }`}
+                >
+                  SELL
+                </button>
+              </div>
+              
+              {/* Amount Input */}
+              <div className="mb-6">
+                <label className="text-sm text-white/60 mb-2 block">Amount (Units)</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={tradeAmount}
+                  onChange={(e) => setTradeAmount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white text-center text-xl font-bold focus:border-[#FFD700]/50 outline-none"
+                />
+                <p className="text-xs text-white/40 mt-2 text-center">
+                  Total: {((nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice) * tradeAmount).toFixed(2)} FTC
+                </p>
+              </div>
+              
+              {/* Execute Trade Button */}
+              <button
+                onClick={executeNutritionTrade}
+                disabled={!isLoggedIn || (tradeType === 'buy' && ftcBalance < (nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice) * tradeAmount)}
+                className={`w-full py-4 font-bold rounded-lg transition-all disabled:opacity-50 ${
+                  tradeType === 'buy' 
+                    ? 'bg-gradient-to-r from-[#00F090] to-[#00F090]/80 text-black hover:brightness-110'
+                    : 'bg-gradient-to-r from-[#FF2E50] to-[#FF9F1C] text-white hover:brightness-110'
+                }`}
+                data-testid="execute-trade-btn"
+              >
+                {!isLoggedIn ? 'Login First' : tradeType === 'buy' ? `Buy for ${((nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice) * tradeAmount).toFixed(2)} FTC` : `Sell for ${((nutritionPrices[selectedNutrition.id]?.current || selectedNutrition.basePrice) * tradeAmount).toFixed(2)} FTC`}
+              </button>
+              
+              <button
+                onClick={() => setShowNutritionModal(false)}
                 className="w-full py-2 text-white/60 hover:text-white text-sm mt-2"
               >
                 Cancel
