@@ -144,25 +144,26 @@ const FtcMining = () => {
     }, 1000);
   };
 
-  // Mining loop function
+  // Mining loop function - 1 Calorie = 1 FTC (1:1 ratio)
   const runMiningLoop = (speed) => {
     if (miningIntervalRef.current) {
       clearInterval(miningIntervalRef.current);
     }
     
     miningIntervalRef.current = setInterval(() => {
+      // Generate same increment for both calories and FTC (1:1 ratio)
+      const increment = isBoosted ? Math.floor(Math.random() * 15) + 10 : Math.floor(Math.random() * 8) + 3;
+      const maxLimit = activeSubscription?.calories || activeSubscription?.ftc_limit || 100;
+      
       setCaloriesBurned(prev => {
-        const increment = isBoosted ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 10) + 5;
         const newCalories = prev + increment;
-        const maxCalories = activeSubscription?.calories || 500;
-        return Math.min(newCalories, maxCalories);
+        return Math.min(newCalories, maxLimit);
       });
       
+      // FTC = Calories (1:1 ratio)
       setFtcMined(prev => {
-        const increment = isBoosted ? Math.floor(Math.random() * 10) + 5 : Math.floor(Math.random() * 5) + 1;
         const newFtc = prev + increment;
-        const maxFtc = activeSubscription?.ftc_limit || 500;
-        return Math.min(newFtc, maxFtc);
+        return Math.min(newFtc, maxLimit);
       });
     }, speed);
   };
@@ -348,12 +349,12 @@ const FtcMining = () => {
           {isMining ? (
             <>
               <span className="px-3 py-1 bg-[#00F090] text-black text-xs font-bold rounded animate-pulse">MINING ACTIVE</span>
-              <span className="text-sm text-white/80">Converting calories to FTC in real-time</span>
+              <span className="text-sm text-white/80">1 Calorie Kcl = 1 FTC (1:1 ratio)</span>
             </>
           ) : (
             <>
               <span className="px-3 py-1 bg-white/20 text-white text-xs font-bold rounded">STANDBY</span>
-              <span className="text-sm text-white/60">Activate mining to start earning FTC</span>
+              <span className="text-sm text-white/60">1 Calorie Kcl = 1 FTC - Start mining now</span>
             </>
           )}
         </div>
