@@ -11,6 +11,8 @@ import MarketOverview from './pages/MarketOverview';
 import SendReceive from './pages/SendReceive';
 import ClaimFtcCredit from './pages/ClaimFtcCredit';
 import NutritionTrading from './pages/NutritionTrading';
+import FtcMining from './pages/FtcMining';
+import AdminPanel from './pages/AdminPanel';
 import { Toaster } from './components/ui/sonner';
 
 function App() {
@@ -103,6 +105,8 @@ function App() {
           />
           <Route path="/claim-ftc" element={<ClaimFtcCredit />} />
           <Route path="/nutrition-trading" element={<NutritionTrading />} />
+          <Route path="/ftc-mining" element={<FtcMining />} />
+          <Route path="/admin" element={<AdminPanel />} />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" theme="dark" />

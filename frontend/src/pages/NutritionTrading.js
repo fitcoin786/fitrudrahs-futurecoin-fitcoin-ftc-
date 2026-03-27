@@ -10,297 +10,296 @@ import {
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const FCOIN_API_URL = 'https://solana-fitness.emergent.host';
 const FITCOIN_CONTRACT = '5cKaxcoLhjc5A3gUD9nCFRfm69iMiggTHpafz4Gipump';
 
-// Sports Nutrition Products Data (Real products from Nutrabay)
+// Raw Materials Trading Data - Global B2B Trading
 const NUTRITION_PRODUCTS = [
   {
-    id: 'NUT001',
-    name: 'Gold Whey Protein Concentrate',
-    brand: 'FitNutra',
+    id: 'RAW001',
+    name: 'Whey Protein Concentrate 80%',
+    brand: 'Global Trade',
     category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1061-05-1756463421-200x200.webp',
-    weight: '1 kg',
-    mrp: 3899,
-    discountPrice: 2499,
-    rating: 4.7,
-    reviews: 1885,
-    description: '24g protein per serving, Rich Chocolate flavor',
-    totalUnits: 100,
-    soldUnits: 32,
-    isVeg: true
-  },
-  {
-    id: 'NUT002',
-    name: 'Pure Creatine Monohydrate',
-    brand: 'FitNutra',
-    category: 'Creatine',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1009-05-1770199222-200x200.webp',
-    weight: '400g',
-    mrp: 1419,
-    discountPrice: 749,
-    rating: 4.7,
-    reviews: 4623,
-    description: 'Micronized formula, Unflavoured',
+    image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80',
+    weight: '25 kg',
+    mrp: 45000,
+    discountPrice: 38500,
+    rating: 4.8,
+    reviews: 2340,
+    description: 'Premium WPC 80% - USA/EU Origin, Bulk Industrial Grade',
     totalUnits: 100,
     soldUnits: 67,
     isVeg: true
   },
   {
-    id: 'NUT003',
-    name: 'Gold Pea Protein',
-    brand: 'FitNutra',
+    id: 'RAW002',
+    name: 'Whey Protein Isolate 90%',
+    brand: 'Global Trade',
     category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1102-02-1770962118-200x200.webp',
-    weight: '1 kg',
-    mrp: 1669,
-    discountPrice: 1349,
-    rating: 4.7,
-    reviews: 691,
-    description: 'Plant-based protein, Rich Chocolate Creme',
-    totalUnits: 100,
-    soldUnits: 45,
-    isVeg: true
-  },
-  {
-    id: 'NUT004',
-    name: 'RageX Pre-Workout',
-    brand: 'FitNutra',
-    category: 'Pre-Workout',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1095-02-1767359117-200x200.webp',
-    weight: '360g',
-    mrp: 1399,
-    discountPrice: 999,
-    rating: 4.7,
-    reviews: 76,
-    description: 'L-Citrulline, Beta-Alanine, Caffeine, Cola flavor',
-    totalUnits: 100,
-    soldUnits: 28,
-    isVeg: true
-  },
-  {
-    id: 'NUT005',
-    name: 'Fish Oil Omega 3 Triple Strength',
-    brand: 'FitNutra',
-    category: 'Vitamins',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/featured_image-NB-NUT-1027-01-1753300227-400x400.webp',
-    weight: '60 Caps',
-    mrp: 1199,
-    discountPrice: 699,
-    rating: 4.8,
-    reviews: 398,
-    description: '1250mg with EPA & DHA',
-    totalUnits: 100,
-    soldUnits: 55,
-    isVeg: false
-  },
-  {
-    id: 'NUT006',
-    name: 'Mass Gainer Bulk Up',
-    brand: 'FitNutra',
-    category: 'Gainer',
-    image: 'https://cdn.nutrabay.com/wp-content/uploads/2023/06/NB-NUT-1072-02-01-340x340.jpg',
-    weight: '3 kg',
-    mrp: 3899,
-    discountPrice: 2199,
-    rating: 4.7,
-    reviews: 207,
-    description: 'High calorie formula, Chocolate',
-    totalUnits: 100,
-    soldUnits: 41,
-    isVeg: true
-  },
-  {
-    id: 'NUT007',
-    name: 'Multivitamin for Men',
-    brand: 'FitNutra',
-    category: 'Vitamins',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1026-04-1771595719-200x200.webp',
-    weight: '120 Tabs',
-    mrp: 819,
-    discountPrice: 399,
-    rating: 4.7,
-    reviews: 771,
-    description: 'Complete daily nutrition',
-    totalUnits: 100,
-    soldUnits: 72,
-    isVeg: true
-  },
-  {
-    id: 'NUT008',
-    name: 'BCAA Energy Drink',
-    brand: 'FitNutra',
-    category: 'Amino',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1073-04-1772780418-200x200.webp',
-    weight: '250g',
-    mrp: 909,
-    discountPrice: 529,
-    rating: 4.7,
-    reviews: 3340,
-    description: 'Micronized formula, Orange flavor',
-    totalUnits: 100,
-    soldUnits: 38,
-    isVeg: true
-  },
-  {
-    id: 'NUT009',
-    name: 'L-Carnitine Liquid',
-    brand: 'FitNutra',
-    category: 'Fat Burner',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1071-02-400x400.webp',
-    weight: '450ml',
-    mrp: 1269,
-    discountPrice: 749,
-    rating: 4.8,
-    reviews: 155,
-    description: '3000mg + Vitamin B5, Mango Strawberry',
-    totalUnits: 100,
-    soldUnits: 23,
-    isVeg: true
-  },
-  {
-    id: 'NUT010',
-    name: 'ZMA Sleep & Recovery',
-    brand: 'FitNutra',
-    category: 'Recovery',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1033-02-1770723016-200x200.webp',
-    weight: '60 Tabs',
-    mrp: 539,
-    discountPrice: 339,
-    rating: 4.8,
-    reviews: 139,
-    description: 'Zinc + Magnesium + B6',
-    totalUnits: 100,
-    soldUnits: 48,
-    isVeg: true
-  },
-  {
-    id: 'NUT011',
-    name: 'Pure Pea Protein Isolate',
-    brand: 'FitNutra',
-    category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/featured_image-NB-NUT-1048-01-1770381916-400x400.webp',
-    weight: '1 kg',
-    mrp: 1499,
-    discountPrice: 849,
-    rating: 4.7,
-    reviews: 1675,
-    description: '100% Plant protein, Unflavoured',
-    totalUnits: 100,
-    soldUnits: 61,
-    isVeg: true
-  },
-  {
-    id: 'NUT012',
-    name: 'BioAbsorb Whey Protein',
-    brand: 'FitNutra',
-    category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1096-06-400x400.webp',
-    weight: '1 kg',
-    mrp: 4099,
-    discountPrice: 2899,
-    rating: 4.7,
-    reviews: 483,
-    description: '26g Protein, ProDiFi Blend, Milk Chocolate',
-    totalUnits: 100,
-    soldUnits: 19,
-    isVeg: true
-  },
-  {
-    id: 'NUT013',
-    name: 'High Protein Oats',
-    brand: 'FitNutra',
-    category: 'Health Food',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1098-01-1753305037-200x200.webp',
-    weight: '750g',
-    mrp: 699,
-    discountPrice: 499,
-    rating: 4.7,
-    reviews: 172,
-    description: 'Dark Chocolate Raisin flavor',
-    totalUnits: 100,
-    soldUnits: 35,
-    isVeg: true
-  },
-  {
-    id: 'NUT014',
-    name: 'Vital Whey Protein',
-    brand: 'FitNutra',
-    category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1064-03-1758998117-200x200.webp',
-    weight: '1 kg',
-    mrp: 1709,
-    discountPrice: 999,
-    rating: 4.7,
-    reviews: 309,
-    description: 'Beginner friendly, Kesar Kulfi',
+    image: 'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&q=80',
+    weight: '25 kg',
+    mrp: 85000,
+    discountPrice: 72000,
+    rating: 4.9,
+    reviews: 1890,
+    description: 'Ultra-Pure WPI 90% - Premium Grade, Low Lactose',
     totalUnits: 100,
     soldUnits: 52,
     isVeg: true
   },
   {
-    id: 'NUT015',
-    name: 'Tri-Blend Whey Protein',
-    brand: 'FitNutra',
-    category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1014-05-400x400.webp',
-    weight: '1 kg',
-    mrp: 3699,
-    discountPrice: 2699,
+    id: 'RAW003',
+    name: 'Creatine Monohydrate Pure',
+    brand: 'Global Trade',
+    category: 'Creatine',
+    image: 'https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&q=80',
+    weight: '25 kg',
+    mrp: 28000,
+    discountPrice: 22500,
     rating: 4.7,
-    reviews: 172,
-    description: 'Double Chocolate flavor',
+    reviews: 3456,
+    description: 'Micronized Creatine Monohydrate - 200 Mesh, German Quality',
+    totalUnits: 100,
+    soldUnits: 78,
+    isVeg: true
+  },
+  {
+    id: 'RAW004',
+    name: 'L-Glutamine Powder',
+    brand: 'Global Trade',
+    category: 'Amino',
+    image: 'https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80',
+    weight: '25 kg',
+    mrp: 52000,
+    discountPrice: 44000,
+    rating: 4.6,
+    reviews: 1234,
+    description: 'Fermented L-Glutamine - Pharmaceutical Grade',
+    totalUnits: 100,
+    soldUnits: 45,
+    isVeg: true
+  },
+  {
+    id: 'RAW005',
+    name: 'BCAA 2:1:1 Instant',
+    brand: 'Global Trade',
+    category: 'Amino',
+    image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80',
+    weight: '25 kg',
+    mrp: 68000,
+    discountPrice: 58000,
+    rating: 4.8,
+    reviews: 2100,
+    description: 'Instantized BCAA 2:1:1 - Premium Fermented Source',
+    totalUnits: 100,
+    soldUnits: 61,
+    isVeg: true
+  },
+  {
+    id: 'RAW006',
+    name: 'Casein Protein Micellar',
+    brand: 'Global Trade',
+    category: 'Protein',
+    image: 'https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=400&q=80',
+    weight: '25 kg',
+    mrp: 62000,
+    discountPrice: 52000,
+    rating: 4.7,
+    reviews: 890,
+    description: 'Micellar Casein 85% - Slow Release, EU Origin',
+    totalUnits: 100,
+    soldUnits: 38,
+    isVeg: true
+  },
+  {
+    id: 'RAW007',
+    name: 'Pea Protein Isolate 85%',
+    brand: 'Global Trade',
+    category: 'Protein',
+    image: 'https://images.unsplash.com/photo-1622484212850-eb596d769edc?w=400&q=80',
+    weight: '25 kg',
+    mrp: 38000,
+    discountPrice: 32000,
+    rating: 4.6,
+    reviews: 1567,
+    description: 'Organic Pea Protein Isolate - Plant-Based, Non-GMO',
+    totalUnits: 100,
+    soldUnits: 55,
+    isVeg: true
+  },
+  {
+    id: 'RAW008',
+    name: 'Beta-Alanine Pure',
+    brand: 'Global Trade',
+    category: 'Pre-Workout',
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80',
+    weight: '25 kg',
+    mrp: 42000,
+    discountPrice: 35000,
+    rating: 4.7,
+    reviews: 780,
+    description: 'Pure Beta-Alanine - Pharmaceutical Grade, CarnoSyn® Quality',
+    totalUnits: 100,
+    soldUnits: 32,
+    isVeg: true
+  },
+  {
+    id: 'RAW009',
+    name: 'L-Citrulline Malate 2:1',
+    brand: 'Global Trade',
+    category: 'Pre-Workout',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
+    weight: '25 kg',
+    mrp: 55000,
+    discountPrice: 46000,
+    rating: 4.8,
+    reviews: 1120,
+    description: 'Citrulline Malate 2:1 - Enhanced Pumps & Performance',
+    totalUnits: 100,
+    soldUnits: 48,
+    isVeg: true
+  },
+  {
+    id: 'RAW010',
+    name: 'Caffeine Anhydrous USP',
+    brand: 'Global Trade',
+    category: 'Pre-Workout',
+    image: 'https://images.unsplash.com/photo-1495555687398-3f50d6e79e1e?w=400&q=80',
+    weight: '25 kg',
+    mrp: 18000,
+    discountPrice: 14500,
+    rating: 4.5,
+    reviews: 2890,
+    description: 'Pure Caffeine Anhydrous - USP Grade, 99.5% Purity',
+    totalUnits: 100,
+    soldUnits: 72,
+    isVeg: true
+  },
+  {
+    id: 'RAW011',
+    name: 'Maltodextrin DE 18-20',
+    brand: 'Global Trade',
+    category: 'Gainer',
+    image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80',
+    weight: '25 kg',
+    mrp: 12000,
+    discountPrice: 9500,
+    rating: 4.4,
+    reviews: 3200,
+    description: 'High-Quality Maltodextrin - Fast Digesting Carbs',
+    totalUnits: 100,
+    soldUnits: 85,
+    isVeg: true
+  },
+  {
+    id: 'RAW012',
+    name: 'Dextrose Monohydrate',
+    brand: 'Global Trade',
+    category: 'Gainer',
+    image: 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&q=80',
+    weight: '25 kg',
+    mrp: 8500,
+    discountPrice: 6800,
+    rating: 4.3,
+    reviews: 2450,
+    description: 'Pure Dextrose - Instant Energy, Post-Workout Recovery',
+    totalUnits: 100,
+    soldUnits: 68,
+    isVeg: true
+  },
+  {
+    id: 'RAW013',
+    name: 'Soy Protein Isolate 90%',
+    brand: 'Global Trade',
+    category: 'Protein',
+    image: 'https://images.unsplash.com/photo-1628619876503-2db74e724757?w=400&q=80',
+    weight: '25 kg',
+    mrp: 32000,
+    discountPrice: 26000,
+    rating: 4.5,
+    reviews: 1100,
+    description: 'Non-GMO Soy Protein Isolate - Complete Amino Profile',
+    totalUnits: 100,
+    soldUnits: 42,
+    isVeg: true
+  },
+  {
+    id: 'RAW014',
+    name: 'L-Arginine HCL',
+    brand: 'Global Trade',
+    category: 'Amino',
+    image: 'https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80',
+    weight: '25 kg',
+    mrp: 48000,
+    discountPrice: 40000,
+    rating: 4.6,
+    reviews: 890,
+    description: 'L-Arginine Hydrochloride - Nitric Oxide Precursor',
+    totalUnits: 100,
+    soldUnits: 35,
+    isVeg: true
+  },
+  {
+    id: 'RAW015',
+    name: 'Taurine Powder Pure',
+    brand: 'Global Trade',
+    category: 'Amino',
+    image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80',
+    weight: '25 kg',
+    mrp: 28000,
+    discountPrice: 22000,
+    rating: 4.5,
+    reviews: 670,
+    description: 'Pure Taurine - Energy & Cognitive Support',
     totalUnits: 100,
     soldUnits: 29,
     isVeg: true
   },
   {
-    id: 'NUT016',
-    name: 'Yeast Protein Powder',
-    brand: 'FitNutra',
+    id: 'RAW016',
+    name: 'Egg White Protein Powder',
+    brand: 'Global Trade',
     category: 'Protein',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1103-04-1770729316-200x200.webp',
-    weight: '1 kg',
-    mrp: 2399,
-    discountPrice: 1899,
-    rating: 4.4,
-    reviews: 43,
-    description: 'Rich Chocolate Creme',
+    image: 'https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=400&q=80',
+    weight: '25 kg',
+    mrp: 72000,
+    discountPrice: 62000,
+    rating: 4.7,
+    reviews: 540,
+    description: 'Spray-Dried Egg Albumin - High Bioavailability',
     totalUnits: 100,
-    soldUnits: 15,
-    isVeg: true
+    soldUnits: 22,
+    isVeg: false
   },
   {
-    id: 'NUT017',
-    name: 'Ashwagandha Extract',
-    brand: 'FitNutra',
-    category: 'Ayurveda',
-    image: 'https://cdn2.nutrabay.com/marketing-promotions/Ashwagandha-1770189032.webp',
-    weight: '60 Caps',
-    mrp: 599,
-    discountPrice: 349,
-    rating: 4.6,
-    reviews: 892,
-    description: 'KSM-66 formula, Stress relief',
-    totalUnits: 100,
-    soldUnits: 44,
-    isVeg: true
-  },
-  {
-    id: 'NUT018',
-    name: 'Marine Collagen Peptides',
-    brand: 'FitNutra',
-    category: 'Beauty',
-    image: 'https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1056-01-1753303187-200x200.webp',
-    weight: '200g',
-    mrp: 1859,
-    discountPrice: 649,
+    id: 'RAW017',
+    name: 'HMB Calcium Salt',
+    brand: 'Global Trade',
+    category: 'Recovery',
+    image: 'https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=400&q=80',
+    weight: '10 kg',
+    mrp: 95000,
+    discountPrice: 82000,
     rating: 4.8,
-    reviews: 16,
-    description: 'Korean formula with Biotin, Mango',
+    reviews: 320,
+    description: 'β-Hydroxy β-Methylbutyrate - Muscle Preservation',
     totalUnits: 100,
-    soldUnits: 8,
+    soldUnits: 18,
+    isVeg: true
+  },
+  {
+    id: 'RAW018',
+    name: 'Collagen Peptides Hydrolyzed',
+    brand: 'Global Trade',
+    category: 'Recovery',
+    image: 'https://images.unsplash.com/photo-1616391182219-e080b4d1043a?w=400&q=80',
+    weight: '25 kg',
+    mrp: 58000,
+    discountPrice: 48000,
+    rating: 4.6,
+    reviews: 1450,
+    description: 'Type I & III Collagen - Skin, Hair, Joints Support',
+    totalUnits: 100,
+    soldUnits: 56,
     isVeg: false
   }
 ];
@@ -343,7 +342,7 @@ const NutritionTrading = () => {
   const [fitWalletToken, setFitWalletToken] = useState(null);
   const [isMuted, setIsMuted] = useState(true);
   
-  // FitWallet connection states
+  // FitWallet connection states - Now using in-house FTC Mining
   const [showFitWalletLogin, setShowFitWalletLogin] = useState(false);
   const [fitWalletEmail, setFitWalletEmail] = useState('');
   const [fitWalletPassword, setFitWalletPassword] = useState('');
@@ -352,8 +351,8 @@ const NutritionTrading = () => {
   const [fitWalletAddress, setFitWalletAddress] = useState('');
   const [isBalanceSyncing, setIsBalanceSyncing] = useState(false);
 
-  // Categories
-  const categories = ['All', 'Protein', 'Creatine', 'Pre-Workout', 'Vitamins', 'Gainer', 'Amino', 'Fat Burner', 'Recovery', 'Health Food', 'Ayurveda', 'Beauty'];
+  // Categories - Updated for Raw Materials Trading
+  const categories = ['All', 'Protein', 'Creatine', 'Pre-Workout', 'Gainer', 'Amino', 'Recovery'];
 
   // Fetch products from backend (global inventory)
   const fetchProducts = async () => {
@@ -1114,8 +1113,8 @@ const NutritionTrading = () => {
               </div>
               
               {/* Title and CTA */}
-              <h2 className="text-2xl md:text-3xl font-black font-unbounded text-[#FFD700] mb-2 text-center">FTC NUTRITION TRADING</h2>
-              <p className="text-sm text-white/70 mb-4 text-center">Trade Sports Nutrition Products with Fitcoin</p>
+              <h2 className="text-2xl md:text-3xl font-black font-unbounded text-[#FFD700] mb-2 text-center">RAW MATERIALS TRADING</h2>
+              <p className="text-sm text-white/70 mb-4 text-center">Global B2B Trading - USD/FTC/INR</p>
               
               {/* Video Controls */}
               <div className="flex items-center gap-4">
@@ -1124,7 +1123,7 @@ const NutritionTrading = () => {
                   className="px-8 py-3 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold rounded-full hover:brightness-110 transition-all animate-pulse"
                   data-testid="enter-nutrition-btn"
                 >
-                  🚀 ENTER FTC NUTRITION TRADING
+                  🚀 ENTER RAW MATERIALS TRADING
                 </button>
               </div>
               
@@ -1148,8 +1147,8 @@ const NutritionTrading = () => {
             <ArrowLeft className="h-5 w-5 text-white/60" />
             <img src="https://customer-assets.emergentagent.com/job_98e4db14-814c-417e-af31-affa0c6b97bc/artifacts/7fxj3a88_1000161961.webp" alt="Logo" className="h-10 w-10" />
             <div>
-              <span className="text-xl font-black text-[#FF9F1C]">FTC NUTRITION</span>
-              <span className="block text-xs text-white/50">LIVE MODE</span>
+              <span className="text-xl font-black text-[#FF9F1C]">RAW MATERIALS</span>
+              <span className="block text-xs text-white/50">GLOBAL B2B TRADING</span>
             </div>
           </Link>
           
@@ -1186,7 +1185,7 @@ const NutritionTrading = () => {
       <div className="bg-gradient-to-r from-[#00F090]/20 via-[#FFD700]/20 to-[#00F090]/20 border-y border-[#00F090]/30 py-2">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-center gap-4">
           <span className="px-3 py-1 bg-[#00F090] text-black text-xs font-bold rounded animate-pulse">LIVE</span>
-          <span className="text-sm text-white/80">Trade Sports Nutrition with FTC | Buyers become Sellers | 10,000 FTC Welcome Bonus</span>
+          <span className="text-sm text-white/80">Trade Raw Materials with USD/FTC/INR | Global B2B Marketplace | 10,000 FTC Welcome Bonus</span>
           <Gift className="h-5 w-5 text-[#FFD700]" />
         </div>
       </div>
@@ -1196,7 +1195,7 @@ const NutritionTrading = () => {
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Shield className="h-6 w-6 text-[#00F090]" />
-            <span className="text-sm text-white/80">100% Authentic Products | POBC Verified</span>
+            <span className="text-sm text-white/80">Bulk Industrial Grade | Quality Certified</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 px-3 py-1 bg-[#FFD700]/10 rounded border border-[#FFD700]/30">
@@ -1217,19 +1216,17 @@ const NutritionTrading = () => {
               </div>
               <div>
                 <h3 className="text-xl font-bold text-white">Need More FTC?</h3>
-                <p className="text-white/60 text-sm">Earn FTC by mining with the FTC Mining App</p>
+                <p className="text-white/60 text-sm">Earn FTC by mining with our in-house FTC Mining System</p>
               </div>
             </div>
-            <a
-              href="https://solana-fitness.emergent.host/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/ftc-mining"
               className="group flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#00F090] to-[#00F090]/80 text-black font-bold rounded-lg hover:brightness-110 transition-all"
               data-testid="earn-ftc-mining-btn"
             >
-              <span>Mine FTC Now</span>
+              <span>Start Mining FTC</span>
               <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </a>
+            </Link>
           </div>
         </div>
 

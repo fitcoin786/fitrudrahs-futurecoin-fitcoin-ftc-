@@ -1484,24 +1484,24 @@ class NutritionTransferRequest(BaseModel):
 # ============ NUTRITION PRODUCTS DATA ============
 
 NUTRITION_PRODUCTS_SEED = [
-    {"id": "NUT001", "name": "Gold Whey Protein Concentrate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1061-05-1756463421-200x200.webp", "weight": "1 kg", "mrp": 3899, "discount_price": 2499, "rating": 4.7, "reviews": 1885, "description": "24g protein per serving", "total_units": 100, "sold_units": 32},
-    {"id": "NUT002", "name": "Pure Creatine Monohydrate", "brand": "FitNutra", "category": "Creatine", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1009-05-1770199222-200x200.webp", "weight": "400g", "mrp": 1419, "discount_price": 749, "rating": 4.7, "reviews": 4623, "description": "Micronized formula", "total_units": 100, "sold_units": 67},
-    {"id": "NUT003", "name": "BCAA Energy Drink", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1091-04-1768054822-200x200.webp", "weight": "250g", "mrp": 1299, "discount_price": 599, "rating": 4.7, "reviews": 3340, "description": "2:1:1 BCAA ratio", "total_units": 100, "sold_units": 45},
-    {"id": "NUT004", "name": "Pure Pea Protein Isolate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1070-05-1756463621-200x200.webp", "weight": "1 kg", "mrp": 2499, "discount_price": 1399, "rating": 4.7, "reviews": 1675, "description": "Plant-based protein", "total_units": 100, "sold_units": 58},
-    {"id": "NUT005", "name": "Pre-Workout Energy", "brand": "FitNutra", "category": "Pre-Workout", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1015-05-1770199022-200x200.webp", "weight": "300g", "mrp": 1899, "discount_price": 999, "rating": 4.6, "reviews": 2890, "description": "Explosive energy boost", "total_units": 100, "sold_units": 41},
-    {"id": "NUT006", "name": "Mass Gainer XXL", "brand": "FitNutra", "category": "Gainer", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1023-05-1770199222-200x200.webp", "weight": "3 kg", "mrp": 3999, "discount_price": 2299, "rating": 4.5, "reviews": 1456, "description": "60g protein, 1200 calories", "total_units": 100, "sold_units": 23},
-    {"id": "NUT007", "name": "Omega-3 Fish Oil", "brand": "FitNutra", "category": "Vitamins", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1035-05-1770199122-200x200.webp", "weight": "120 capsules", "mrp": 999, "discount_price": 549, "rating": 4.8, "reviews": 5670, "description": "1000mg EPA + DHA", "total_units": 100, "sold_units": 78},
-    {"id": "NUT008", "name": "L-Carnitine Fat Burner", "brand": "FitNutra", "category": "Fat Burner", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1045-05-1770199322-200x200.webp", "weight": "60 capsules", "mrp": 799, "discount_price": 449, "rating": 4.6, "reviews": 2340, "description": "3000mg L-Carnitine", "total_units": 100, "sold_units": 52},
-    {"id": "NUT009", "name": "ZMA Sleep & Recovery", "brand": "FitNutra", "category": "Recovery", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1055-05-1770199422-200x200.webp", "weight": "90 capsules", "mrp": 699, "discount_price": 399, "rating": 4.5, "reviews": 1890, "description": "Better sleep", "total_units": 100, "sold_units": 34},
-    {"id": "NUT010", "name": "Casein Protein Night", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1065-05-1756463521-200x200.webp", "weight": "1 kg", "mrp": 3299, "discount_price": 1899, "rating": 4.7, "reviews": 1234, "description": "Slow-release protein", "total_units": 100, "sold_units": 29},
-    {"id": "NUT011", "name": "Glutamine Recovery", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1095-04-1768054922-200x200.webp", "weight": "300g", "mrp": 1199, "discount_price": 649, "rating": 4.6, "reviews": 987, "description": "5g L-Glutamine", "total_units": 100, "sold_units": 61},
-    {"id": "NUT012", "name": "Multivitamin Daily", "brand": "FitNutra", "category": "Vitamins", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1075-05-1770199522-200x200.webp", "weight": "60 tablets", "mrp": 599, "discount_price": 349, "rating": 4.8, "reviews": 4560, "description": "Complete daily nutrition", "total_units": 100, "sold_units": 89},
-    {"id": "NUT013", "name": "Whey Protein Isolate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1085-05-1756463721-200x200.webp", "weight": "1 kg", "mrp": 4499, "discount_price": 2799, "rating": 4.9, "reviews": 3456, "description": "90% pure protein", "total_units": 100, "sold_units": 47},
-    {"id": "NUT014", "name": "EAA Essential Aminos", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1105-04-1768055022-200x200.webp", "weight": "300g", "mrp": 1599, "discount_price": 899, "rating": 4.7, "reviews": 1678, "description": "9 essential aminos", "total_units": 100, "sold_units": 38},
-    {"id": "NUT015", "name": "Ashwagandha Extract", "brand": "FitNutra", "category": "Ayurveda", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1115-05-1770199622-200x200.webp", "weight": "60 capsules", "mrp": 499, "discount_price": 299, "rating": 4.8, "reviews": 6789, "description": "KSM-66 extract", "total_units": 100, "sold_units": 92},
-    {"id": "NUT016", "name": "Collagen Peptides", "brand": "FitNutra", "category": "Beauty", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1125-05-1770199722-200x200.webp", "weight": "250g", "mrp": 1899, "discount_price": 1099, "rating": 4.6, "reviews": 2345, "description": "Type I & III collagen", "total_units": 100, "sold_units": 55},
-    {"id": "NUT017", "name": "Peanut Butter Natural", "brand": "FitNutra", "category": "Health Food", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1135-05-1770199822-200x200.webp", "weight": "1 kg", "mrp": 599, "discount_price": 399, "rating": 4.7, "reviews": 8901, "description": "100% roasted peanuts", "total_units": 100, "sold_units": 73},
-    {"id": "NUT018", "name": "Citrulline Malate", "brand": "FitNutra", "category": "Pre-Workout", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1145-04-1768055122-200x200.webp", "weight": "200g", "mrp": 999, "discount_price": 599, "rating": 4.6, "reviews": 1234, "description": "Enhanced blood flow", "total_units": 100, "sold_units": 44}
+    {"id": "RAW001", "name": "Whey Protein Concentrate 80%", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1593095948071-474c5cc2989d?w=400&q=80", "weight": "25 kg", "mrp": 45000, "discount_price": 38500, "rating": 4.8, "reviews": 2340, "description": "Premium WPC 80% - USA/EU Origin, Bulk Industrial Grade", "total_units": 100, "sold_units": 67, "is_veg": True},
+    {"id": "RAW002", "name": "Whey Protein Isolate 90%", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&q=80", "weight": "25 kg", "mrp": 85000, "discount_price": 72000, "rating": 4.9, "reviews": 1890, "description": "Ultra-Pure WPI 90% - Premium Grade, Low Lactose", "total_units": 100, "sold_units": 52, "is_veg": True},
+    {"id": "RAW003", "name": "Creatine Monohydrate Pure", "brand": "Global Trade", "category": "Creatine", "image": "https://images.unsplash.com/photo-1594381898411-846e7d193883?w=400&q=80", "weight": "25 kg", "mrp": 28000, "discount_price": 22500, "rating": 4.7, "reviews": 3456, "description": "Micronized Creatine - 200 Mesh, German Quality", "total_units": 100, "sold_units": 78, "is_veg": True},
+    {"id": "RAW004", "name": "L-Glutamine Powder", "brand": "Global Trade", "category": "Amino", "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&q=80", "weight": "25 kg", "mrp": 52000, "discount_price": 44000, "rating": 4.6, "reviews": 1234, "description": "Fermented L-Glutamine - Pharmaceutical Grade", "total_units": 100, "sold_units": 45, "is_veg": True},
+    {"id": "RAW005", "name": "BCAA 2:1:1 Instant", "brand": "Global Trade", "category": "Amino", "image": "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&q=80", "weight": "25 kg", "mrp": 68000, "discount_price": 58000, "rating": 4.8, "reviews": 2100, "description": "Instantized BCAA 2:1:1 - Premium Fermented Source", "total_units": 100, "sold_units": 61, "is_veg": True},
+    {"id": "RAW006", "name": "Casein Protein Micellar", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1606567595334-d39972c85dfd?w=400&q=80", "weight": "25 kg", "mrp": 62000, "discount_price": 52000, "rating": 4.7, "reviews": 890, "description": "Micellar Casein 85% - Slow Release, EU Origin", "total_units": 100, "sold_units": 38, "is_veg": True},
+    {"id": "RAW007", "name": "Pea Protein Isolate 85%", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1622484212850-eb596d769edc?w=400&q=80", "weight": "25 kg", "mrp": 38000, "discount_price": 32000, "rating": 4.6, "reviews": 1567, "description": "Organic Pea Protein Isolate - Plant-Based, Non-GMO", "total_units": 100, "sold_units": 55, "is_veg": True},
+    {"id": "RAW008", "name": "Beta-Alanine Pure", "brand": "Global Trade", "category": "Pre-Workout", "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80", "weight": "25 kg", "mrp": 42000, "discount_price": 35000, "rating": 4.7, "reviews": 780, "description": "Pure Beta-Alanine - Pharmaceutical Grade", "total_units": 100, "sold_units": 32, "is_veg": True},
+    {"id": "RAW009", "name": "L-Citrulline Malate 2:1", "brand": "Global Trade", "category": "Pre-Workout", "image": "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80", "weight": "25 kg", "mrp": 55000, "discount_price": 46000, "rating": 4.8, "reviews": 1120, "description": "Citrulline Malate 2:1 - Enhanced Pumps", "total_units": 100, "sold_units": 48, "is_veg": True},
+    {"id": "RAW010", "name": "Caffeine Anhydrous USP", "brand": "Global Trade", "category": "Pre-Workout", "image": "https://images.unsplash.com/photo-1495555687398-3f50d6e79e1e?w=400&q=80", "weight": "25 kg", "mrp": 18000, "discount_price": 14500, "rating": 4.5, "reviews": 2890, "description": "Pure Caffeine Anhydrous - USP Grade, 99.5% Purity", "total_units": 100, "sold_units": 72, "is_veg": True},
+    {"id": "RAW011", "name": "Maltodextrin DE 18-20", "brand": "Global Trade", "category": "Gainer", "image": "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&q=80", "weight": "25 kg", "mrp": 12000, "discount_price": 9500, "rating": 4.4, "reviews": 3200, "description": "High-Quality Maltodextrin - Fast Digesting Carbs", "total_units": 100, "sold_units": 85, "is_veg": True},
+    {"id": "RAW012", "name": "Dextrose Monohydrate", "brand": "Global Trade", "category": "Gainer", "image": "https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=400&q=80", "weight": "25 kg", "mrp": 8500, "discount_price": 6800, "rating": 4.3, "reviews": 2450, "description": "Pure Dextrose - Instant Energy, Post-Workout Recovery", "total_units": 100, "sold_units": 68, "is_veg": True},
+    {"id": "RAW013", "name": "Soy Protein Isolate 90%", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1628619876503-2db74e724757?w=400&q=80", "weight": "25 kg", "mrp": 32000, "discount_price": 26000, "rating": 4.5, "reviews": 1100, "description": "Non-GMO Soy Protein Isolate - Complete Amino Profile", "total_units": 100, "sold_units": 42, "is_veg": True},
+    {"id": "RAW014", "name": "L-Arginine HCL", "brand": "Global Trade", "category": "Amino", "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?w=400&q=80", "weight": "25 kg", "mrp": 48000, "discount_price": 40000, "rating": 4.6, "reviews": 890, "description": "L-Arginine Hydrochloride - Nitric Oxide Precursor", "total_units": 100, "sold_units": 35, "is_veg": True},
+    {"id": "RAW015", "name": "Taurine Powder Pure", "brand": "Global Trade", "category": "Amino", "image": "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&q=80", "weight": "25 kg", "mrp": 28000, "discount_price": 22000, "rating": 4.5, "reviews": 670, "description": "Pure Taurine - Energy & Cognitive Support", "total_units": 100, "sold_units": 29, "is_veg": True},
+    {"id": "RAW016", "name": "Egg White Protein Powder", "brand": "Global Trade", "category": "Protein", "image": "https://images.unsplash.com/photo-1587486913049-53fc88980cfc?w=400&q=80", "weight": "25 kg", "mrp": 72000, "discount_price": 62000, "rating": 4.7, "reviews": 540, "description": "Spray-Dried Egg Albumin - High Bioavailability", "total_units": 100, "sold_units": 22, "is_veg": False},
+    {"id": "RAW017", "name": "HMB Calcium Salt", "brand": "Global Trade", "category": "Recovery", "image": "https://images.unsplash.com/photo-1532384748853-8f54a8f476e2?w=400&q=80", "weight": "10 kg", "mrp": 95000, "discount_price": 82000, "rating": 4.8, "reviews": 320, "description": "Beta-Hydroxy Beta-Methylbutyrate - Muscle Preservation", "total_units": 100, "sold_units": 18, "is_veg": True},
+    {"id": "RAW018", "name": "Collagen Peptides Hydrolyzed", "brand": "Global Trade", "category": "Recovery", "image": "https://images.unsplash.com/photo-1616391182219-e080b4d1043a?w=400&q=80", "weight": "25 kg", "mrp": 58000, "discount_price": 48000, "rating": 4.6, "reviews": 1450, "description": "Type I & III Collagen - Skin, Hair, Joints Support", "total_units": 100, "sold_units": 56, "is_veg": False}
 ]
 
 # ============ NUTRITION TRADING ENDPOINTS ============
@@ -1809,6 +1809,216 @@ async def get_orderbook():
         asks.append({"price": round(price, 8), "amount": round(amount, 2), "total": round(price * amount, 2)})
     
     return {"bids": bids, "asks": asks}
+
+# ============ FTC MINING MODELS ============
+
+class MiningSubscriptionRequest(BaseModel):
+    plan_id: str
+    plan_name: str
+    calories: int
+    ftc_limit: int
+    payment_method: str
+    price: float
+
+class AdminActivateRequest(BaseModel):
+    request_id: str
+
+# ============ FTC MINING ROUTES ============
+
+@api_router.get("/mining/status")
+async def get_mining_status(user_id: str = Depends(get_current_user)):
+    """Get user's mining status, subscription, and balances"""
+    # Get user's mining wallet
+    mining_wallet = await db.mining_wallets.find_one({"user_id": user_id}, {"_id": 0})
+    if not mining_wallet:
+        # Create default mining wallet
+        mining_wallet = {
+            "user_id": user_id,
+            "ftc_balance": 0,
+            "calories_burned": 0,
+            "ftc_mined_today": 0,
+            "is_mining": False,
+            "last_mining_date": None,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.mining_wallets.insert_one(mining_wallet)
+    
+    # Get active subscription
+    active_sub = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "active"},
+        {"_id": 0}
+    )
+    
+    # Get pending request
+    pending_request = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "pending"},
+        {"_id": 0}
+    )
+    
+    return {
+        "ftc_balance": mining_wallet.get("ftc_balance", 0),
+        "calories_burned": mining_wallet.get("calories_burned", 0),
+        "ftc_mined_today": mining_wallet.get("ftc_mined_today", 0),
+        "is_mining": mining_wallet.get("is_mining", False),
+        "active_subscription": active_sub,
+        "pending_request": pending_request
+    }
+
+@api_router.post("/mining/subscribe")
+async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str = Depends(get_current_user)):
+    """Submit a mining subscription request"""
+    # Check if user already has pending or active subscription
+    existing = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": {"$in": ["pending", "active"]}},
+        {"_id": 0}
+    )
+    
+    if existing and existing.get("status") == "active":
+        raise HTTPException(status_code=400, detail="You already have an active subscription")
+    
+    if existing and existing.get("status") == "pending":
+        raise HTTPException(status_code=400, detail="You already have a pending request")
+    
+    # Get user email
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+    
+    # Create subscription request
+    subscription_id = str(uuid.uuid4())
+    subscription_doc = {
+        "id": subscription_id,
+        "user_id": user_id,
+        "user_email": user.get("email") if user else None,
+        "plan_id": request.plan_id,
+        "plan_name": request.plan_name,
+        "calories": request.calories,
+        "ftc_limit": request.ftc_limit,
+        "payment_method": request.payment_method,
+        "price": request.price,
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "activated_at": None
+    }
+    
+    await db.mining_subscriptions.insert_one(subscription_doc)
+    
+    # Remove _id before returning (MongoDB adds it during insert)
+    subscription_doc.pop("_id", None)
+    
+    return {
+        "success": True,
+        "request": subscription_doc,
+        "message": "Subscription request submitted. Admin will activate shortly."
+    }
+
+@api_router.post("/mining/save-progress")
+async def save_mining_progress(input: dict, user_id: str = Depends(get_current_user)):
+    """Save mining progress (calories burned, FTC mined)"""
+    calories = input.get("calories_burned", 0)
+    ftc_mined = input.get("ftc_mined", 0)
+    
+    # Update mining wallet
+    await db.mining_wallets.update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "calories_burned": calories,
+                "ftc_mined_today": ftc_mined,
+                "last_mining_date": datetime.now(timezone.utc).isoformat()
+            },
+            "$inc": {"ftc_balance": ftc_mined}
+        },
+        upsert=True
+    )
+    
+    return {"success": True, "message": "Mining progress saved"}
+
+# ============ ADMIN PANEL ROUTES ============
+
+@api_router.get("/admin/mining-requests")
+async def get_admin_mining_requests():
+    """Get all mining subscription requests and users for admin panel"""
+    # Get all subscription requests
+    requests = await db.mining_subscriptions.find({}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    
+    # Get all users with their subscription status
+    users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(100)
+    
+    # Enrich users with subscription data
+    enriched_users = []
+    for user in users:
+        user_sub = await db.mining_subscriptions.find_one(
+            {"user_id": user["id"], "status": "active"},
+            {"_id": 0}
+        )
+        mining_wallet = await db.mining_wallets.find_one(
+            {"user_id": user["id"]},
+            {"_id": 0}
+        )
+        
+        enriched_users.append({
+            "id": user["id"],
+            "email": user.get("email"),
+            "full_name": user.get("full_name"),
+            "ftc_balance": mining_wallet.get("ftc_balance", 0) if mining_wallet else 0,
+            "active_subscription": user_sub
+        })
+    
+    return {
+        "requests": requests,
+        "users": enriched_users
+    }
+
+@api_router.post("/admin/activate-subscription")
+async def admin_activate_subscription(request: AdminActivateRequest):
+    """Admin activates a user's mining subscription"""
+    # Find the subscription request
+    sub = await db.mining_subscriptions.find_one(
+        {"id": request.request_id},
+        {"_id": 0}
+    )
+    
+    if not sub:
+        raise HTTPException(status_code=404, detail="Subscription request not found")
+    
+    if sub.get("status") == "active":
+        raise HTTPException(status_code=400, detail="Subscription already active")
+    
+    # Deactivate any existing active subscription for this user
+    await db.mining_subscriptions.update_many(
+        {"user_id": sub["user_id"], "status": "active"},
+        {"$set": {"status": "expired"}}
+    )
+    
+    # Activate the new subscription
+    await db.mining_subscriptions.update_one(
+        {"id": request.request_id},
+        {
+            "$set": {
+                "status": "active",
+                "activated_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    return {"success": True, "message": "Subscription activated successfully"}
+
+@api_router.post("/admin/reject-subscription")
+async def admin_reject_subscription(request: AdminActivateRequest):
+    """Admin rejects a user's mining subscription request"""
+    result = await db.mining_subscriptions.update_one(
+        {"id": request.request_id},
+        {
+            "$set": {
+                "status": "rejected",
+                "rejected_at": datetime.now(timezone.utc).isoformat()
+            }
+        }
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Subscription request not found")
+    
+    return {"success": True, "message": "Subscription rejected"}
 
 # Include router
 app.include_router(api_router)
