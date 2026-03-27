@@ -51,28 +51,43 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - Hero section with FTC branding
 - "Health Is Wealth" AI button
 - "Mine Fitcoin" section
-- **NEW: "Sports Nutrition Trading - Coming Soon" section**
+- **"Sports Nutrition Trading - Coming Soon" section**
 - "Alpha Radar" section
 - Photo links grid
 - FiTOwlSiRinG section
 - Special offers and FAQ
 
-### 7. Sports Nutrition Trading Marketplace (NEW)
+### 7. Sports Nutrition Trading Marketplace - LIVE MODE
 - **Status**: ✅ Complete (Mar 27, 2026)
 - **Route**: `/nutrition-trading`
-- 18 premium sports nutrition products
-- Crypto-style trading mechanics
+
+#### Features Implemented:
+- **Real Intro Video**: VID-20251012-WA00032.mp4 with mute/unmute control
+- **18 premium sports nutrition products** with crypto-style trading
 - **10,000 FTC first-time login bonus** (one-time only)
-- **20% FTC holder exclusive discount**
-- 100 units max per product
-- When 50 units sold → TRADING OPEN (user-to-user selling unlocks)
-- Price increases 25% for remaining base units after 50 sold
-- Categories: Protein, Creatine, Pre-Workout, Vitamins, etc.
-- Grid/List view modes
-- Search and filter functionality
-- Real-time price fluctuation for trading-open products
-- **Demo Mode**: Uses localStorage for balances and holdings
-- "Need More FTC?" section with mining redirect
+- **20% FTC holder exclusive discount** on all products
+- **Trading Mechanics**:
+  - 100 units max per product
+  - When 50 units sold → TRADING OPEN (user-to-user selling unlocks)
+  - Price increases 25% for remaining base units after 50 sold
+  - Real-time price fluctuation for trading-open products
+- **Category Filters**: Protein, Creatine, Pre-Workout, Vitamins, Gainer, Amino, Fat Burner, Recovery, Health Food, Ayurveda, Beauty
+- **Grid/List view modes**, Search, Sort (Popular, Price, Rating, Sold)
+
+#### Wallet Integration:
+- **Wallet Modal** with dual balance display:
+  - Nutrition Wallet (local FTC balance)
+  - Mining Wallet (from FTC Mining App)
+- **Wallet Address** generation with copy function
+- **Transfer FTC** between Mining Wallet and Nutrition Wallet
+- **FCOIN Blockchain Explorer** link (Solscan)
+- **"Need More FTC?"** section linking to Mining App
+
+#### Current Mode:
+- **LIVE MODE** (uses localStorage for demo purposes)
+- FTC balance stored in `localStorage.ftc_nutrition_balance`
+- Holdings stored in `localStorage.ftc_nutrition_holdings`
+- First-time bonus flag in `localStorage.ftc_nutrition_bonus_received`
 
 ### 8. Portfolio
 - **Status**: ✅ Basic UI Complete
@@ -102,7 +117,7 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 │   │   │   ├── MarketOverview.js
 │   │   │   ├── CryptoSearch.js
 │   │   │   ├── ClaimFtcCredit.js    # FCOIN blockchain integration
-│   │   │   ├── NutritionTrading.js  # NEW: Sports Nutrition Trading
+│   │   │   ├── NutritionTrading.js  # UPDATED: Video + Wallet integration
 │   │   │   ├── Portfolio.js
 │   │   │   ├── TradeHistory.js
 │   │   │   └── SendReceive.js
@@ -132,63 +147,59 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 | `/api/trade/history` | GET | ✅ | Get trade history |
 | `/api/orderbook` | GET | ✅ | Get order book |
 
+## External Integrations
+
+| Service | Purpose | Status |
+|---------|---------|--------|
+| CoinGecko API | Live crypto data | ✅ Active |
+| Birdeye.so | Chart iframe | ✅ Active |
+| FCOIN Blockchain API | Real blockchain ledger | ✅ Active |
+| Solscan | Blockchain explorer | ✅ Active |
+| Resend | Email OTPs | ✅ Active |
+
 ## Recent Changes (Mar 27, 2026)
 
-### Sports Nutrition Trading Marketplace (NEW FEATURE)
-- Added `/nutrition-trading` route to App.js
-- Created NutritionTrading.js with:
-  - 18 hardcoded Nutrabay-style products
-  - Intro modal with animated badges
-  - FTC price ticker with real-time fluctuation
-  - Category filtering (12 categories)
-  - Search by product name/brand
-  - Grid/List view toggle
-  - Sort options (Popular, Price, Rating, Sold)
-  - Trading mechanics: 
-    - 100 units max per product
-    - After 50 sold: TRADING OPEN badge, 25% price increase
-    - Price fluctuation for open-trading products
-  - Buy/Sell modals with quantity controls
-  - "Need More FTC?" section linking to mining app
-  - Footer with mining and home links
-
-### Landing Page Updates
-- Added "Sports Nutrition Trading - Coming Soon" section
-- 10,000 FTC Bonus and 20% FTC Discount badges
-- "Preview Nutrition Trading" button linking to /nutrition-trading
+### Nutrition Trading - Major Update
+1. **Real Intro Video** added with mute/unmute button
+2. **LIVE MODE** badge throughout (header, banner, footer)
+3. **Wallet Modal** with:
+   - Dual balance display (Nutrition + Mining)
+   - Wallet address with copy function
+   - Transfer FTC functionality (From/To Mining)
+   - Blockchain Ledger section
+   - Mine FTC and FTC Explorer quick links
+4. **Footer** updated with wallet button and contract address
+5. **"Need More FTC?" section** linking to FTC Mining App
 
 ## Pending/Future Work
 
 ### P0 - Critical
-- [x] Sports Nutrition Trading Marketplace ✅ DONE (Mar 27)
+- [x] Sports Nutrition Trading Marketplace ✅ DONE
+- [x] Real Intro Video ✅ DONE
+- [x] Wallet Integration ✅ DONE
 
 ### P1 - High Priority
+- [ ] Real Place Order functionality (update balances in MongoDB)
 - [ ] AI Suggestions UI improvement (+X more coins indicator)
-- [ ] Real Place Order functionality (update balances)
 - [ ] Send/Receive/Exchange backend logic
 
 ### P2 - Medium Priority
-- [ ] Intro video on landing page (proper video upload)
 - [ ] Portfolio watchlist feature
 - [ ] Refactor server.py into modules
+- [ ] Backend integration for Nutrition Trading (global inventory)
 
 ### P3 - Low Priority
 - [ ] Replace Birdeye iframe with native chart library
 - [ ] Refactor ClaimFtcCredit.js (1100+ lines)
-- [ ] Backend integration for Nutrition Trading (global inventory)
 
 ## Test Reports
 - `/app/test_reports/iteration_1.json` - FCOIN blockchain integration tests
-- `/app/test_reports/iteration_2.json` - Sports Nutrition Trading tests (100% pass)
+- `/app/test_reports/iteration_2.json` - Sports Nutrition Trading tests
+- `/app/test_reports/iteration_3.json` - Video + Wallet modal tests (100% pass)
 
-## Demo Mode Note
-The Sports Nutrition Trading feature operates in **DEMO MODE**:
-- FTC balance stored in localStorage (`ftc_nutrition_balance`)
-- Product holdings stored in localStorage (`ftc_nutrition_holdings`)
-- First-time bonus flag in localStorage (`ftc_nutrition_bonus_received`)
-- Products are hardcoded (not fetched from backend)
-
-For production, backend APIs needed for:
-- Global inventory tracking (100 units per product across all users)
-- User-to-user trading when 50+ units sold
-- FTC balance sync with main wallet
+## Demo/MOCKED Features Note
+The Sports Nutrition Trading feature uses **MOCKED** transfer functionality:
+- FTC transfers are simulated locally (no actual blockchain transaction)
+- FTC balance stored in localStorage
+- Wallet address generated from user email
+- For production, backend APIs needed for real transfers via FCOIN blockchain
