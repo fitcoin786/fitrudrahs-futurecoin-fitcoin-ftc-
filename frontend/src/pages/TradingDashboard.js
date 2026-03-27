@@ -126,14 +126,12 @@ const TradingDashboard = ({ user, onLogout }) => {
             <Link to="/trade" className="text-white hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Trade</Link>
             <Link to="/market" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Markets</Link>
             <Link to="/search" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Search</Link>
-            <a 
-              href="https://solana-fitness.emergent.host/" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <Link 
+              to="/ftc-mining"
               className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase tracking-wider text-sm flex items-center gap-1"
             >
               ⛏️ Mine FTC
-            </a>
+            </Link>
             <Link to="/portfolio" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">Portfolio</Link>
             <Link to="/history" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase tracking-wider text-sm">History</Link>
           </div>
@@ -169,14 +167,12 @@ const TradingDashboard = ({ user, onLogout }) => {
               <Link to="/trade" className="text-white hover:text-[#FF9F1C] transition-colors font-bold uppercase">Trade</Link>
               <Link to="/market" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Markets</Link>
               <Link to="/search" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Search</Link>
-              <a 
-                href="https://solana-fitness.emergent.host/" 
-                target="_blank" 
-                rel="noopener noreferrer"
+              <Link 
+                to="/ftc-mining"
                 className="text-[#00F090] hover:text-[#00F090]/80 transition-colors font-bold uppercase"
               >
                 ⛏️ Mine FTC
-              </a>
+              </Link>
               <Link to="/portfolio" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">Portfolio</Link>
               <Link to="/history" className="text-white/60 hover:text-[#FF9F1C] transition-colors font-bold uppercase">History</Link>
               <button

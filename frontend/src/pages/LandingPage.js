@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { TrendingUp, Shield, Zap, ArrowRight, Flame, Activity, Users, Watch, Sparkles, Heart, Award, Gift, ExternalLink } from 'lucide-react';
 import Marquee from 'react-fast-marquee';
 import { useEffect, useState } from 'react';
@@ -132,10 +132,8 @@ const LandingPage = () => {
               <p className="text-white/70 text-center mb-6">
                 Start mining FTC tokens with our official mining application
               </p>
-              <a
-                href="https://solana-fitness.emergent.host/"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/ftc-mining"
                 className="group relative w-full inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-black uppercase tracking-widest hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(255,159,28,0.5)] hover:shadow-[0_0_35px_rgba(255,159,28,0.8)] rounded-sm overflow-hidden"
                 data-testid="mine-ftc-btn"
               >
@@ -143,7 +141,7 @@ const LandingPage = () => {
                 <Activity className="h-5 w-5" />
                 <span className="relative z-10">Open FTC Mining App</span>
                 <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </a>
+              </Link>
             </div>
 
             {/* Sports Nutrition Trading - Coming Soon */}
@@ -237,10 +235,8 @@ const LandingPage = () => {
               </a>
 
               {/* Mining Cal-Ftc Photo */}
-              <a
-                href="https://solana-fitness.emergent.host/"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/ftc-mining"
                 className="group glass-card p-3 border-2 border-[#00F090]/50 hover:border-[#00F090] transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,144,0.4)]"
                 data-testid="mining-photo-link"
               >
@@ -252,13 +248,11 @@ const LandingPage = () => {
                 <p className="text-center text-[#00F090] font-bold uppercase tracking-wider text-xs">
                   Tap to Mining Cal-Ftc
                 </p>
-              </a>
+              </Link>
 
               {/* Fast Tap to Join Fit Pool */}
-              <a
-                href="https://hacker-mine-ftc.emergent.host/"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/ftc-mining"
                 className="group glass-card p-3 border-2 border-[#FF9F1C]/50 hover:border-[#FF9F1C] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,159,28,0.4)]"
                 data-testid="fit-pool-link"
               >
@@ -270,13 +264,11 @@ const LandingPage = () => {
                 <p className="text-center text-[#FF9F1C] font-bold uppercase tracking-wider text-xs">
                   Fast Tap to Join Fit Pool
                 </p>
-              </a>
+              </Link>
 
               {/* FTC Wellness Photo 2 */}
-              <a
-                href="https://ftc-mining.preview.emergentagent.com?ref="
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                to="/ftc-mining"
                 className="group glass-card p-3 border-2 border-[#FF2E50]/50 hover:border-[#FF2E50] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,46,80,0.4)]"
                 data-testid="wellness-photo-link-2"
               >
@@ -288,7 +280,7 @@ const LandingPage = () => {
                 <p className="text-center text-[#FF2E50] font-bold uppercase tracking-wider text-xs">
                   Tap to FTC Wellness
                 </p>
-              </a>
+              </Link>
             </div>
           </motion.div>
         </div>
@@ -517,15 +509,13 @@ const LandingPage = () => {
               <h3 className="text-3xl font-black font-unbounded uppercase text-[#00F090]">Mine Fitcoin</h3>
             </div>
             <p className="text-lg text-white/80 mb-6">Start mining FTC tokens with our official mining application</p>
-            <a
-              href="https://solana-fitness.emergent.host/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/ftc-mining"
               className="inline-block rounded-sm px-12 py-4 bg-gradient-to-r from-[#00F090] to-[#00F090]/80 text-black font-black uppercase tracking-widest text-lg hover:brightness-110 transition-all duration-300 shadow-[0_0_20px_rgba(0,240,144,0.5)] hover:shadow-[0_0_30px_rgba(0,240,144,0.7)]"
               data-testid="mine-ftc-overview-btn"
             >
               Open FTC Mining App →
-            </a>
+            </Link>
           </motion.div>
         </div>
       </section>

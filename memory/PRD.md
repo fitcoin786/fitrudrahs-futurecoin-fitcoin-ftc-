@@ -13,7 +13,7 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - Order book visualization
 - Portfolio tracking
 
-### 2. FTC Mining System (NEW) ✅
+### 2. FTC Mining System (IN-HOUSE) ✅
 **Location**: `/ftc-mining`
 - In-house Web5 Hacker themed mining page
 - StepsApp integration via `https://invite.steps.app/zkK1vmJRdARK`
@@ -26,6 +26,7 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
   - Elite: 5,000 calories/FTC
   - Ultra: 7,500 calories/FTC
   - Max: 10,000 calories/FTC
+- **All old FitWallet/solana-fitness redirects removed - now uses in-house system**
 
 ### 3. Admin Panel ✅
 **Location**: `/admin`
@@ -87,14 +88,16 @@ Features:
 4. ✅ Updated Raw Materials Trading with working images
 5. ✅ Fixed MongoDB ObjectId serialization bug
 6. ✅ Added App.js routes for new pages
-7. ✅ All tests passing (11/11 backend, 100% frontend)
+7. ✅ **Removed all old FitWallet/solana-fitness redirects**
+8. ✅ **All "Mine FTC" links now go to in-house `/ftc-mining` page**
+9. ✅ All tests passing (11/11 backend, 100% frontend)
 
 ## Pending Work
 - P1: Real "Place Order" for main trading dashboard (currently mocked)
 - P1: AI Suggestions UI fix ("+X more coins" label)
 - P2: Send/Receive/Exchange feature implementation
 - P2: Refactor backend/server.py monolith
-- P2: Remove deprecated FitWallet proxy code
+- P2: Remove deprecated FitWallet proxy code from backend
 - P3: Leaderboard UI for top FTC traders
 - P3: Portfolio Watchlist
 

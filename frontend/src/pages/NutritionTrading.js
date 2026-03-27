@@ -1723,14 +1723,12 @@ const NutritionTrading = () => {
                           {fitWalletLoading ? 'Connecting...' : 'Connect'}
                         </button>
                       </div>
-                      <a
-                        href="https://solana-fitness.emergent.host/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link
+                        to="/ftc-mining"
                         className="block text-center text-xs text-[#9945FF] hover:underline"
                       >
-                        Don't have FitWallet? Create one →
-                      </a>
+                        Don't have FTC? Mine here →
+                      </Link>
                     </div>
                   ) : (
                     <button
@@ -1865,16 +1863,14 @@ const NutritionTrading = () => {
               
               {/* Quick Actions */}
               <div className="grid grid-cols-2 gap-3 mb-6">
-                <a
-                  href="https://solana-fitness.emergent.host/"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Link
+                  to="/ftc-mining"
                   className="flex items-center justify-center gap-2 p-3 bg-[#00F090]/10 border border-[#00F090]/30 rounded-lg hover:bg-[#00F090]/20 transition-all"
                   data-testid="mine-ftc-wallet-btn"
                 >
                   <Zap className="h-4 w-4 text-[#00F090]" />
                   <span className="text-sm font-bold text-[#00F090]">Mine FTC</span>
-                </a>
+                </Link>
                 <a
                   href={`https://solscan.io/token/${FITCOIN_CONTRACT}`}
                   target="_blank"
@@ -1924,14 +1920,12 @@ const NutritionTrading = () => {
                   ) : (
                     <div className="text-center py-4 text-white/40 text-xs">
                       <p>No transactions yet</p>
-                      <a 
-                        href="https://solana-fitness.emergent.host/"
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <Link 
+                        to="/ftc-mining"
                         className="text-[#00F090] hover:underline"
                       >
                         Start mining to earn FTC →
-                      </a>
+                      </Link>
                     </div>
                   )}
                 </div>
@@ -1952,18 +1946,16 @@ const NutritionTrading = () => {
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6 text-center text-white/50 text-sm mt-12">
         <div className="max-w-4xl mx-auto">
-          <p className="mb-4 text-lg font-bold text-[#FFD700]">🔗 LIVE MODE - Sports Nutrition Trading powered by Fitcoin (FTC)</p>
+          <p className="mb-4 text-lg font-bold text-[#FFD700]">🔗 LIVE MODE - Raw Materials Trading powered by Fitcoin (FTC)</p>
           <div className="flex flex-wrap items-center justify-center gap-4 mb-4">
-            <a
-              href="https://solana-fitness.emergent.host/"
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to="/ftc-mining"
               className="flex items-center gap-2 px-4 py-2 bg-[#00F090]/10 border border-[#00F090]/30 rounded-lg hover:bg-[#00F090]/20 transition-all"
               data-testid="footer-mining-link"
             >
               <Zap className="h-4 w-4 text-[#00F090]" />
               <span className="text-[#00F090] font-bold text-sm">Mine More FTC</span>
-            </a>
+            </Link>
             <button
               onClick={() => setShowWalletModal(true)}
               className="flex items-center gap-2 px-4 py-2 bg-[#FFD700]/10 border border-[#FFD700]/30 rounded-lg hover:bg-[#FFD700]/20 transition-all"
