@@ -116,12 +116,16 @@ const FtcMining = () => {
     }
     
     if (tradeType === 'buy') {
-      setFtcBalance(prev => prev - totalCost);
+      const newBalance = ftcBalance - totalCost;
+      setFtcBalance(newBalance);
+      localStorage.setItem('ftc_mining_balance', newBalance.toString());
       toast.success(`Bought ${tradeAmount} unit(s) of ${selectedNutrition.name}!`, {
         description: `Total: ${totalCost.toFixed(2)} FTC`
       });
     } else {
-      setFtcBalance(prev => prev + totalCost);
+      const newBalance = ftcBalance + totalCost;
+      setFtcBalance(newBalance);
+      localStorage.setItem('ftc_mining_balance', newBalance.toString());
       toast.success(`Sold ${tradeAmount} unit(s) of ${selectedNutrition.name}!`, {
         description: `Received: ${totalCost.toFixed(2)} FTC`
       });
@@ -137,17 +141,60 @@ const FtcMining = () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
       
+      // Load saved FTC balance from localStorage first
+      const savedBalance = localStorage.getItem('ftc_mining_balance');
+      const savedMined = localStorage.getItem('ftc_mined_today');
+      const savedCalories = localStorage.getItem('ftc_calories_burned');
+      
+      console.log('Loading from localStorage:', { savedBalance, savedMined, savedCalories });
+      
+      if (savedBalance && parseFloat(savedBalance) > 0) {
+        setFtcBalance(parseFloat(savedBalance));
+      }
+      if (savedMined && parseFloat(savedMined) > 0) {
+        setFtcMined(parseFloat(savedMined));
+      }
+      if (savedCalories && parseFloat(savedCalories) > 0) {
+        setCaloriesBurned(parseFloat(savedCalories));
+      }
+      
       if (token && userData) {
         setIsLoggedIn(true);
         setUser(JSON.parse(userData));
         
-        // Fetch mining data
+        // Fetch mining data from backend and merge with local
         await fetchMiningData(token);
       }
     };
     
     checkLogin();
   }, []);
+
+  // Save FTC balance to localStorage whenever it changes (only if > 0 or was set before)
+  const balanceInitializedRef = useRef(false);
+  useEffect(() => {
+    // Skip initial render to avoid overwriting with 0
+    if (!balanceInitializedRef.current) {
+      balanceInitializedRef.current = true;
+      return;
+    }
+    localStorage.setItem('ftc_mining_balance', ftcBalance.toString());
+    console.log('Saved balance to localStorage:', ftcBalance);
+  }, [ftcBalance]);
+
+  // Save mined FTC to localStorage
+  useEffect(() => {
+    if (ftcMined > 0) {
+      localStorage.setItem('ftc_mined_today', ftcMined.toString());
+    }
+  }, [ftcMined]);
+
+  // Save calories to localStorage
+  useEffect(() => {
+    if (caloriesBurned > 0) {
+      localStorage.setItem('ftc_calories_burned', caloriesBurned.toString());
+    }
+  }, [caloriesBurned]);
 
   // Fetch mining data from backend
   const fetchMiningData = async (token) => {
@@ -158,15 +205,30 @@ const FtcMining = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setFtcBalance(data.ftc_balance || 0);
-        setCaloriesBurned(data.calories_burned || 0);
-        setFtcMined(data.ftc_mined_today || 0);
+        
+        // Get local balance and use the higher value (in case backend hasn't synced)
+        const localBalance = parseFloat(localStorage.getItem('ftc_mining_balance') || '0');
+        const backendBalance = data.ftc_balance || 0;
+        const finalBalance = Math.max(localBalance, backendBalance);
+        
+        setFtcBalance(finalBalance);
+        localStorage.setItem('ftc_mining_balance', finalBalance.toString());
+        
+        // Set other data from backend
         setActiveSubscription(data.active_subscription);
         setSubscriptionRequest(data.pending_request);
-        setIsMining(data.is_mining || false);
+        
+        // If backend has higher values, use those
+        if (data.ftc_mined_today > ftcMined) {
+          setFtcMined(data.ftc_mined_today);
+        }
+        if (data.calories_burned > caloriesBurned) {
+          setCaloriesBurned(data.calories_burned);
+        }
       }
     } catch (error) {
       console.log('Mining data fetch error:', error);
+      // On error, still use localStorage data
     }
   };
 
@@ -287,15 +349,15 @@ const FtcMining = () => {
     const transferAmount = ftcMined;
     
     // Add mined FTC to balance
-    setFtcBalance(prev => {
-      const newBalance = prev + transferAmount;
-      localStorage.setItem('ftc_mining_balance', newBalance.toString());
-      return newBalance;
-    });
+    const newBalance = ftcBalance + transferAmount;
+    setFtcBalance(newBalance);
+    localStorage.setItem('ftc_mining_balance', newBalance.toString());
     
     // Reset mined amounts
     setFtcMined(0);
     setCaloriesBurned(0);
+    localStorage.setItem('ftc_mined_today', '0');
+    localStorage.setItem('ftc_calories_burned', '0');
     
     toast.success(`💰 Transferred ${transferAmount} FTC to your balance!`, {
       description: 'FTC added to Total FTC Balance'
