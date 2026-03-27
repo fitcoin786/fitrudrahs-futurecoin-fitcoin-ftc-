@@ -1851,9 +1851,9 @@ async def get_mining_status(user_id: str = Depends(get_current_user)):
         {"_id": 0}
     )
     
-    # Get pending request
+    # Get pending request (new subscription or upgrade)
     pending_request = await db.mining_subscriptions.find_one(
-        {"user_id": user_id, "status": "pending"},
+        {"user_id": user_id, "status": {"$in": ["pending", "pending_upgrade"]}},
         {"_id": 0}
     )
     
@@ -1876,7 +1876,69 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
     )
     
     if existing and existing.get("status") == "active":
-        raise HTTPException(status_code=400, detail="You already have an active subscription. Contact admin to upgrade.")
+        # Check if there's already a pending upgrade request
+        pending_upgrade = await db.mining_subscriptions.find_one(
+            {"user_id": user_id, "status": "pending_upgrade"},
+            {"_id": 0}
+        )
+        
+        if pending_upgrade:
+            # Update existing upgrade request
+            await db.mining_subscriptions.update_one(
+                {"user_id": user_id, "status": "pending_upgrade"},
+                {
+                    "$set": {
+                        "plan_id": request.plan_id,
+                        "plan_name": request.plan_name,
+                        "calories": request.calories,
+                        "ftc_limit": request.ftc_limit,
+                        "payment_method": request.payment_method,
+                        "price": request.price,
+                        "transaction_hash": request.transaction_hash,
+                        "is_free_trial": request.is_free_trial,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            updated = await db.mining_subscriptions.find_one(
+                {"user_id": user_id, "status": "pending_upgrade"},
+                {"_id": 0}
+            )
+            return {
+                "success": True,
+                "request": updated,
+                "message": "Upgrade request updated. Admin will verify and activate your new plan."
+            }
+        
+        # Create new upgrade request
+        user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
+        upgrade_id = str(uuid.uuid4())
+        upgrade_doc = {
+            "id": upgrade_id,
+            "user_id": user_id,
+            "user_email": user.get("email") if user else None,
+            "plan_id": request.plan_id,
+            "plan_name": request.plan_name,
+            "calories": request.calories,
+            "ftc_limit": request.ftc_limit,
+            "payment_method": request.payment_method,
+            "price": request.price,
+            "transaction_hash": request.transaction_hash,
+            "is_free_trial": request.is_free_trial,
+            "status": "pending_upgrade",
+            "current_plan": existing.get("plan_name"),
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "activated_at": None
+        }
+        
+        await db.mining_subscriptions.insert_one(upgrade_doc)
+        upgrade_doc.pop("_id", None)
+        
+        return {
+            "success": True,
+            "request": upgrade_doc,
+            "message": f"Upgrade request submitted! Admin will verify payment and upgrade from {existing.get('plan_name')} to {request.plan_name}."
+        }
     
     if existing and existing.get("status") == "pending":
         # Update the existing pending request with new transaction hash

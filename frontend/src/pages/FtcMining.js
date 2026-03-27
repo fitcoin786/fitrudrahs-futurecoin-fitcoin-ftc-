@@ -611,12 +611,27 @@ const FtcMining = () => {
         toast.success(selectedPlan.isFree ? '✅ Free Trial request submitted!' : '✅ Subscription request submitted!', {
           description: selectedPlan.isFree ? 'Admin will approve your 7-day free trial' : 'Admin will verify payment and activate your plan'
         });
+        // Refresh mining data to get updated status
+        const token = localStorage.getItem('token');
+        if (token) {
+          await fetchMiningData(token);
+        }
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to submit request');
+        const errorMessage = error.detail || 'Failed to submit request';
+        
+        // Check if user already has active subscription - show upgrade option
+        if (errorMessage.includes('already have an active subscription')) {
+          toast.error('⚠️ You already have an active subscription!', {
+            description: 'Contact admin to upgrade your plan or wait for current plan to expire.'
+          });
+        } else {
+          toast.error(errorMessage);
+        }
       }
     } catch (error) {
-      toast.error('Failed to submit request');
+      console.error('Subscription error:', error);
+      toast.error('Failed to submit request. Please check your connection and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -867,12 +882,33 @@ const FtcMining = () => {
                       <p className="font-bold text-white">{activeSubscription.calories}</p>
                     </div>
                   </div>
+                  {/* Show pending upgrade if exists */}
+                  {subscriptionRequest && subscriptionRequest.status === 'pending_upgrade' && (
+                    <div className="mt-3 pt-3 border-t border-white/10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-[#9945FF]">⬆️ Upgrade to {subscriptionRequest.plan_name}</span>
+                        <span className="px-2 py-0.5 bg-[#9945FF] text-white text-xs font-bold rounded">PENDING</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Allow upgrade button */}
+                  {(!subscriptionRequest || subscriptionRequest.status !== 'pending_upgrade') && (
+                    <button
+                      onClick={() => setShowPlanModal(true)}
+                      className="mt-3 w-full py-2 bg-[#9945FF]/20 border border-[#9945FF]/50 text-[#9945FF] font-bold rounded-lg hover:bg-[#9945FF]/30 transition-all text-sm"
+                      data-testid="upgrade-plan-btn"
+                    >
+                      ⬆️ Upgrade Plan
+                    </button>
+                  )}
                 </div>
               ) : subscriptionRequest ? (
                 <div className="p-4 bg-[#FFD700]/10 rounded-lg border border-[#FFD700]/30">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-bold text-[#FFD700]">{subscriptionRequest.plan_name}</span>
-                    <span className="px-2 py-1 bg-[#FFD700] text-black text-xs font-bold rounded">PENDING</span>
+                    <span className="px-2 py-1 bg-[#FFD700] text-black text-xs font-bold rounded">
+                      {subscriptionRequest.status === 'pending_upgrade' ? 'UPGRADE PENDING' : 'PENDING'}
+                    </span>
                   </div>
                   <p className="text-sm text-white/60">Awaiting admin activation</p>
                 </div>

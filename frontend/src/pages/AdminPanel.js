@@ -450,12 +450,18 @@ const AdminPanel = () => {
                             FREE TRIAL
                           </span>
                         ) : null}
+                        {request.status === 'pending_upgrade' && (
+                          <span className="px-2 py-1 text-xs font-bold rounded bg-[#9945FF] text-white">
+                            ⬆️ UPGRADE
+                          </span>
+                        )}
                         <span className={`px-2 py-1 text-xs font-bold rounded ${
                           request.status === 'pending' ? 'bg-[#FFD700] text-black' :
+                          request.status === 'pending_upgrade' ? 'bg-[#9945FF] text-white' :
                           request.status === 'active' ? 'bg-[#00F090] text-black' :
                           'bg-[#FF2E50] text-white'
                         }`}>
-                          {request.status?.toUpperCase()}
+                          {request.status === 'pending_upgrade' ? 'PENDING' : request.status?.toUpperCase()}
                         </span>
                       </div>
                       <div className="grid grid-cols-4 gap-4 text-sm mb-3">
@@ -481,6 +487,12 @@ const AdminPanel = () => {
                           </p>
                         </div>
                       </div>
+                      {/* Show upgrade from info */}
+                      {request.current_plan && (
+                        <div className="mb-3 p-2 bg-[#9945FF]/10 rounded-lg border border-[#9945FF]/30">
+                          <p className="text-sm text-[#9945FF]">⬆️ Upgrading from: <span className="font-bold">{request.current_plan}</span></p>
+                        </div>
+                      )}
                       {/* Transaction Hash - Hide for Free Trial */}
                       {request.transaction_hash && !request.is_free_trial && request.payment_method !== 'FREE' && (
                         <div className="p-2 bg-black/50 rounded-lg border border-white/10">
@@ -501,12 +513,12 @@ const AdminPanel = () => {
                       )}
                     </div>
                     
-                    {request.status === 'pending' && (
+                    {(request.status === 'pending' || request.status === 'pending_upgrade') && (
                       <div className="flex gap-2 ml-4">
                         <button
                           onClick={() => activateSubscription(request.id)}
                           className="p-3 bg-[#00F090] text-black rounded-lg hover:brightness-110 transition-all"
-                          title="Activate Now"
+                          title={request.status === 'pending_upgrade' ? 'Approve Upgrade' : 'Activate Now'}
                           data-testid={`approve-${request.id}`}
                         >
                           <Check className="h-5 w-5" />

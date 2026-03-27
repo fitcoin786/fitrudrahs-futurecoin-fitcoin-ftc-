@@ -30,21 +30,24 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - 5-second BOOST mode
 - Transaction hash for paid plans
 - Free trial needs only admin approval
+- **UPGRADE FUNCTIONALITY** - Users with active subscription can submit upgrade request with TX hash
 
 ### 3. Admin Control Panel ✅
 **Location**: `/admin`
 **Credentials**: FITRUDRAH / 786786 / 0000
 - View FREE TRIAL requests (no hash needed)
+- View UPGRADE requests (shows "from current plan")
 - Approve/Reject subscriptions
 - Shows "FREE TRIAL" badge for free requests
+- Shows "⬆️ UPGRADE" badge for upgrade requests
 
-### 4. Sports Nutrition Trading ✅ (NEW)
+### 4. Sports Nutrition Trading ✅
 **Location**: `/ftc-mining` (within Mining page)
 - 12 raw material products with real-time price fluctuations
 - Trade using mined FTC balance
 - Live mini-charts on each product card
 
-### 5. Blockchain Verified Ledger ✅ (NEW - March 2026)
+### 5. Blockchain Verified Ledger ✅
 **Location**: `/ftc-mining` > "View Blockchain Ledger" button
 - Real-time transaction history for all buy/sell trades
 - Blockchain-style verification (tx hash, block number, confirmations)
@@ -52,13 +55,30 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - Active Holdings section with per-product P/L tracking
 - All data persists in localStorage
 
-### 6. AI-ML Trading Analysis ✅ (NEW - March 2026)
+### 6. AI-ML Trading Analysis ✅
 **Location**: Within Nutrition Trade Modal
 - Trading signals: STRONG BUY / BUY / HOLD / SELL / STRONG SELL
 - Confidence percentage (65-95%)
 - Risk assessment: LOW / MEDIUM / HIGH
 - Technical indicators: RSI, MACD, Sentiment (Bullish/Bearish)
 - Target price predictions
+
+## Subscription Flow (March 2026 Update) ✅
+
+### New User Flow:
+1. User selects plan → Enters TX hash → Submits
+2. Status: "pending" → Admin approves → Status: "active"
+
+### Upgrade Flow (NEW):
+1. User with ACTIVE subscription → Clicks "Upgrade Plan" button
+2. Selects new plan → Enters TX hash → Submits
+3. Status: "pending_upgrade" → Shows in Admin with "UPGRADE" badge
+4. Admin approves → Old subscription expires → New subscription activates
+
+### Error Handling:
+- Clear error message when already has active subscription
+- Shows upgrade option in UI
+- Admin sees "Upgrading from: [current plan]" info
 
 ## What's Complete
 1. ✅ Free 7-day trial mining option
@@ -72,6 +92,7 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 9. ✅ AI-ML Trading Analysis panel
 10. ✅ Portfolio P/L tracking with localStorage persistence
 11. ✅ Product cards show user holdings with P/L
+12. ✅ **SUBSCRIPTION UPGRADE FLOW** - Users can upgrade with TX hash
 
 ## Pending Work
 - P1: Real "Place Order" backend logic (currently mocked)
