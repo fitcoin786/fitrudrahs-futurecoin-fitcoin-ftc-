@@ -1820,6 +1820,7 @@ class MiningSubscriptionRequest(BaseModel):
     payment_method: str
     price: float
     transaction_hash: Optional[str] = None
+    is_free_trial: Optional[bool] = False
 
 class AdminActivateRequest(BaseModel):
     request_id: str
@@ -1890,6 +1891,7 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
                     "payment_method": request.payment_method,
                     "price": request.price,
                     "transaction_hash": request.transaction_hash,
+                    "is_free_trial": request.is_free_trial,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
             }
@@ -1921,6 +1923,7 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
         "payment_method": request.payment_method,
         "price": request.price,
         "transaction_hash": request.transaction_hash,
+        "is_free_trial": request.is_free_trial,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "activated_at": None

@@ -9,55 +9,47 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 
 ### 1. Real-Time Trading Dashboard ✅
 **Location**: `/trade`
-**Features**:
-- **New Candlestick Chart** - Real-time OHLC candlesticks with green/red colors
-- Automatic price fluctuation every 5 seconds
-- Volume bars at bottom
-- Price labels on y-axis
-- Live FTC/USDT pair with current price display
-- **New meditation Fitcoin logo**
-- Buy/Sell order panel
-- Order book visualization
+- Candlestick chart with real-time price fluctuations
+- Volume bars and price labels
+- FTC/USDT trading pair
+- New meditation Fitcoin logo
 
 ### 2. FTC Mining System (IN-HOUSE) ✅
 **Location**: `/ftc-mining`
+**Plans**:
+- **FREE TRIAL** (NEW) - 7 days, 100 FTC/day, no payment required, admin approval only
+- Basic Miner - $5/1500 FTC, 500 FTC/day
+- Standard Miner - $9/2500 FTC, 1000 FTC/day
+- Pro Miner - $15/4000 FTC, 2000 FTC/day
+- Elite Miner - $20/5500 FTC, 3000 FTC/day
+- Ultra Miner - $30/8000 FTC, 5000 FTC/day
+- Max Miner - $50/12000 FTC, 10000 FTC/day
+
 **Features**:
-- **New meditation Fitcoin logo** (red/green yin-yang style)
-- 1 Calorie = 1 FTC mining
-- 5-second BOOST mode (2x speed)
-- Transaction hash required for subscription
-- **Fixed: Can update existing pending request with new hash**
-- Subscription plans: Basic to Max (500-10,000 FTC/day)
+- New meditation Fitcoin logo
+- 5-second BOOST mode
+- Transaction hash for paid plans
+- Free trial needs only admin approval
 
 ### 3. Admin Control Panel ✅
 **Location**: `/admin`
 **Credentials**: FITRUDRAH / 786786 / 0000
-**Features**:
-- New meditation Fitcoin logo
+- View FREE TRIAL requests (no hash needed)
 - Approve/Reject subscriptions
-- View transaction hashes
-- FTC/USD received totals
-- Forgot password with OTP
+- Shows "FREE TRIAL" badge for free requests
 
 ### 4. Raw Materials Trading ✅
 **Location**: `/nutrition-trading`
 - 18 raw materials with working images
-- USD/FTC/INR trading
 
-## Fixes This Session
-1. ✅ Replaced Fitcoin logo with new meditation logo everywhere
-2. ✅ Fixed subscription submission - now updates existing pending request instead of failing
-3. ✅ Added realistic candlestick trading chart with price fluctuations
-4. ✅ Volume bars and price labels on chart
-5. ✅ Real-time chart updates every 5 seconds
+## What's Complete
+1. ✅ Free 7-day trial mining option
+2. ✅ Free trial first in plan list
+3. ✅ No payment/transaction hash for free trial
+4. ✅ Admin sees "FREE TRIAL" badge
+5. ✅ New meditation Fitcoin logo everywhere
+6. ✅ Candlestick trading chart
 
 ## Pending Work
-- P1: AI Suggestions UI fix ("+X more coins")
+- P1: AI Suggestions UI fix
 - P2: Send/Receive/Exchange feature
-- P2: Refactor backend/server.py
-
-## Tech Stack
-- Frontend: React, Tailwind CSS, Canvas API (charts)
-- Backend: FastAPI, Python
-- Database: MongoDB
-- Integrations: CoinGecko, Resend

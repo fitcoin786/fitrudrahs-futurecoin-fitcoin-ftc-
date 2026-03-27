@@ -445,6 +445,11 @@ const AdminPanel = () => {
                       <div className="flex items-center gap-3 mb-2">
                         <img src={FTC_LOGO} alt="FTC" className="h-8 w-8 rounded-full" />
                         <span className="font-bold text-white">{request.user_email || request.user_id}</span>
+                        {request.is_free_trial || request.payment_method === 'FREE' ? (
+                          <span className="px-2 py-1 text-xs font-bold rounded bg-[#00BFFF] text-black">
+                            FREE TRIAL
+                          </span>
+                        ) : null}
                         <span className={`px-2 py-1 text-xs font-bold rounded ${
                           request.status === 'pending' ? 'bg-[#FFD700] text-black' :
                           request.status === 'active' ? 'bg-[#00F090] text-black' :
@@ -469,12 +474,15 @@ const AdminPanel = () => {
                         <div>
                           <p className="text-white/60">Payment</p>
                           <p className="font-bold text-[#FFD700]">
-                            {request.payment_method === 'USD' ? `$${request.price}` : `${request.price} FTC`}
+                            {request.is_free_trial || request.payment_method === 'FREE' 
+                              ? <span className="text-[#00BFFF]">FREE TRIAL</span>
+                              : request.payment_method === 'USD' ? `$${request.price}` : `${request.price} FTC`
+                            }
                           </p>
                         </div>
                       </div>
-                      {/* Transaction Hash */}
-                      {request.transaction_hash && (
+                      {/* Transaction Hash - Hide for Free Trial */}
+                      {request.transaction_hash && !request.is_free_trial && request.payment_method !== 'FREE' && (
                         <div className="p-2 bg-black/50 rounded-lg border border-white/10">
                           <p className="text-xs text-white/60 mb-1">Transaction Hash:</p>
                           <div className="flex items-center gap-2">

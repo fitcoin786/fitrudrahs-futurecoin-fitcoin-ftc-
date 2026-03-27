@@ -13,8 +13,9 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 // Fitcoin Logo - New Meditation Logo
 const FTC_LOGO = 'https://customer-assets.emergentagent.com/job_8ab2343f-b785-4283-8178-10a5f0187955/artifacts/aghohvl9_998.jpg';
 
-// Subscription Plans
+// Subscription Plans - Free Trial first, then paid plans
 const SUBSCRIPTION_PLANS = [
+  { id: 'free_trial', name: 'Free Trial', calories: 100, ftcLimit: 100, priceUSD: 0, priceFTC: 0, color: '#00BFFF', icon: Gift, isFree: true, duration: '7 Days' },
   { id: 'basic', name: 'Basic Miner', calories: 500, ftcLimit: 500, priceUSD: 5, priceFTC: 1500, color: '#00F090', icon: Zap },
   { id: 'standard', name: 'Standard Miner', calories: 1000, ftcLimit: 1000, priceUSD: 9, priceFTC: 2500, color: '#FFD700', icon: Flame },
   { id: 'pro', name: 'Pro Miner', calories: 2000, ftcLimit: 2000, priceUSD: 15, priceFTC: 4000, color: '#FF9F1C', icon: Activity },
@@ -199,7 +200,8 @@ const FtcMining = () => {
   const submitSubscriptionRequest = async () => {
     if (!selectedPlan) return;
     
-    if (!transactionHash.trim()) {
+    // Free trial doesn't need transaction hash
+    if (!selectedPlan.isFree && !transactionHash.trim()) {
       toast.error('Please enter transaction hash');
       return;
     }
@@ -219,9 +221,10 @@ const FtcMining = () => {
           plan_name: selectedPlan.name,
           calories: selectedPlan.calories,
           ftc_limit: selectedPlan.ftcLimit,
-          payment_method: paymentMethod,
-          price: paymentMethod === 'USD' ? selectedPlan.priceUSD : selectedPlan.priceFTC,
-          transaction_hash: transactionHash.trim()
+          payment_method: selectedPlan.isFree ? 'FREE' : paymentMethod,
+          price: selectedPlan.isFree ? 0 : (paymentMethod === 'USD' ? selectedPlan.priceUSD : selectedPlan.priceFTC),
+          transaction_hash: selectedPlan.isFree ? 'FREE_TRIAL_7_DAYS' : transactionHash.trim(),
+          is_free_trial: selectedPlan.isFree || false
         })
       });
       
@@ -230,8 +233,8 @@ const FtcMining = () => {
         setSubscriptionRequest(data.request);
         setShowPlanModal(false);
         setTransactionHash('');
-        toast.success('✅ Subscription request submitted!', {
-          description: 'Admin will verify payment and activate your plan'
+        toast.success(selectedPlan.isFree ? '✅ Free Trial request submitted!' : '✅ Subscription request submitted!', {
+          description: selectedPlan.isFree ? 'Admin will approve your 7-day free trial' : 'Admin will verify payment and activate your plan'
         });
       } else {
         const error = await response.json();
@@ -539,20 +542,28 @@ const FtcMining = () => {
           MINING SUBSCRIPTION PLANS
         </h2>
         
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
           {SUBSCRIPTION_PLANS.map((plan) => (
             <motion.div
               key={plan.id}
               whileHover={{ scale: 1.02 }}
-              className={`glass-card p-6 border-2 cursor-pointer transition-all ${
+              className={`glass-card p-6 border-2 cursor-pointer transition-all relative ${
                 selectedPlan?.id === plan.id ? `border-[${plan.color}]` : 'border-transparent hover:border-white/20'
-              }`}
+              } ${plan.isFree ? 'ring-2 ring-[#00BFFF] ring-offset-2 ring-offset-[#050505]' : ''}`}
               onClick={() => {
                 setSelectedPlan(plan);
                 setShowPlanModal(true);
               }}
               style={{ borderColor: selectedPlan?.id === plan.id ? plan.color : 'transparent' }}
+              data-testid={`plan-${plan.id}`}
             >
+              {/* Free Trial Badge */}
+              {plan.isFree && (
+                <div className="absolute -top-3 -right-3 px-3 py-1 bg-gradient-to-r from-[#00BFFF] to-[#00F090] text-black text-xs font-black rounded-full animate-pulse">
+                  FREE 7 DAYS
+                </div>
+              )}
+              
               <div className="flex items-center justify-between mb-4">
                 <plan.icon className="h-8 w-8" style={{ color: plan.color }} />
                 <span className="px-3 py-1 rounded-full text-xs font-bold" style={{ backgroundColor: `${plan.color}20`, color: plan.color }}>
@@ -564,10 +575,17 @@ const FtcMining = () => {
               <p className="text-sm text-white/60 mb-4">{plan.calories} calories conversion</p>
               
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-black text-white">${plan.priceUSD}</p>
-                  <p className="text-xs text-white/40">or {plan.priceFTC} FTC</p>
-                </div>
+                {plan.isFree ? (
+                  <div>
+                    <p className="text-2xl font-black text-[#00BFFF]">FREE</p>
+                    <p className="text-xs text-white/40">No payment required</p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-2xl font-black text-white">${plan.priceUSD}</p>
+                    <p className="text-xs text-white/40">or {plan.priceFTC} FTC</p>
+                  </div>
+                )}
                 <ArrowRight className="h-5 w-5 text-white/40" />
               </div>
             </motion.div>
@@ -611,8 +629,13 @@ const FtcMining = () => {
                   <h3 className="text-xl font-bold flex items-center gap-2">
                     <selectedPlan.icon className="h-5 w-5" style={{ color: selectedPlan.color }} />
                     {selectedPlan.name}
+                    {selectedPlan.isFree && (
+                      <span className="px-2 py-0.5 bg-[#00BFFF] text-black text-xs font-bold rounded">FREE</span>
+                    )}
                   </h3>
-                  <p className="text-xs text-white/60">Subscription Request</p>
+                  <p className="text-xs text-white/60">
+                    {selectedPlan.isFree ? '7-Day Free Trial Request' : 'Subscription Request'}
+                  </p>
                 </div>
               </div>
               
@@ -623,65 +646,90 @@ const FtcMining = () => {
                     <p className="text-xl font-bold" style={{ color: selectedPlan.color }}>{selectedPlan.ftcLimit} FTC</p>
                   </div>
                   <div>
-                    <p className="text-white/60 text-sm">Calories</p>
-                    <p className="text-xl font-bold text-white">{selectedPlan.calories}</p>
+                    <p className="text-white/60 text-sm">{selectedPlan.isFree ? 'Duration' : 'Calories'}</p>
+                    <p className="text-xl font-bold text-white">{selectedPlan.isFree ? '7 Days' : selectedPlan.calories}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="mb-4">
-                <p className="text-sm text-white/60 mb-2">Payment Method</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => setPaymentMethod('USD')}
-                    className={`p-3 rounded-lg border transition-all ${
-                      paymentMethod === 'USD' ? 'border-[#00F090] bg-[#00F090]/10' : 'border-white/10'
-                    }`}
-                  >
-                    <p className="font-bold text-white">${selectedPlan.priceUSD}</p>
-                    <p className="text-xs text-white/60">USD</p>
-                  </button>
-                  <button
-                    onClick={() => setPaymentMethod('FTC')}
-                    className={`p-3 rounded-lg border transition-all ${
-                      paymentMethod === 'FTC' ? 'border-[#FFD700] bg-[#FFD700]/10' : 'border-white/10'
-                    }`}
-                  >
-                    <p className="font-bold text-[#FFD700]">{selectedPlan.priceFTC}</p>
-                    <p className="text-xs text-white/60">FTC</p>
-                  </button>
+              {/* Free Trial Info */}
+              {selectedPlan.isFree ? (
+                <div className="p-4 bg-[#00BFFF]/10 border border-[#00BFFF]/30 rounded-lg mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="h-5 w-5 text-[#00BFFF]" />
+                    <p className="font-bold text-[#00BFFF]">7-Day Free Trial</p>
+                  </div>
+                  <ul className="text-sm text-white/60 space-y-1">
+                    <li>• No payment required</li>
+                    <li>• 100 FTC daily mining limit</li>
+                    <li>• 100 calories conversion</li>
+                    <li>• Admin approval within 24 hours</li>
+                  </ul>
                 </div>
-              </div>
-              
-              {/* Transaction Hash Input */}
-              <div className="mb-6">
-                <label className="text-sm text-white/60 mb-2 block">
-                  Transaction Hash <span className="text-[#FF2E50]">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={transactionHash}
-                  onChange={(e) => setTransactionHash(e.target.value)}
-                  placeholder="Enter your payment transaction hash"
-                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-[#00F090]/50 outline-none font-mono text-sm"
-                  data-testid="transaction-hash-input"
-                />
-                <p className="text-xs text-white/40 mt-2">
-                  After sending {paymentMethod === 'USD' ? `$${selectedPlan.priceUSD}` : `${selectedPlan.priceFTC} FTC`}, paste the transaction hash here
-                </p>
-              </div>
+              ) : (
+                <>
+                  <div className="mb-4">
+                    <p className="text-sm text-white/60 mb-2">Payment Method</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        onClick={() => setPaymentMethod('USD')}
+                        className={`p-3 rounded-lg border transition-all ${
+                          paymentMethod === 'USD' ? 'border-[#00F090] bg-[#00F090]/10' : 'border-white/10'
+                        }`}
+                      >
+                        <p className="font-bold text-white">${selectedPlan.priceUSD}</p>
+                        <p className="text-xs text-white/60">USD</p>
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('FTC')}
+                        className={`p-3 rounded-lg border transition-all ${
+                          paymentMethod === 'FTC' ? 'border-[#FFD700] bg-[#FFD700]/10' : 'border-white/10'
+                        }`}
+                      >
+                        <p className="font-bold text-[#FFD700]">{selectedPlan.priceFTC}</p>
+                        <p className="text-xs text-white/60">FTC</p>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Transaction Hash Input */}
+                  <div className="mb-6">
+                    <label className="text-sm text-white/60 mb-2 block">
+                      Transaction Hash <span className="text-[#FF2E50]">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={transactionHash}
+                      onChange={(e) => setTransactionHash(e.target.value)}
+                      placeholder="Enter your payment transaction hash"
+                      className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-[#00F090]/50 outline-none font-mono text-sm"
+                      data-testid="transaction-hash-input"
+                    />
+                    <p className="text-xs text-white/40 mt-2">
+                      After sending {paymentMethod === 'USD' ? `$${selectedPlan.priceUSD}` : `${selectedPlan.priceFTC} FTC`}, paste the transaction hash here
+                    </p>
+                  </div>
+                </>
+              )}
               
               <button
                 onClick={submitSubscriptionRequest}
-                disabled={isSubmitting || !isLoggedIn || !transactionHash.trim()}
-                className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50"
+                disabled={isSubmitting || !isLoggedIn || (!selectedPlan.isFree && !transactionHash.trim())}
+                className={`w-full py-4 font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 ${
+                  selectedPlan.isFree 
+                    ? 'bg-gradient-to-r from-[#00BFFF] to-[#00F090] text-black' 
+                    : 'bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black'
+                }`}
                 data-testid="submit-subscription-btn"
               >
-                {isSubmitting ? 'Submitting...' : isLoggedIn ? 'Submit Request' : 'Login First'}
+                {isSubmitting ? 'Submitting...' : !isLoggedIn ? 'Login First' : selectedPlan.isFree ? 'Request Free Trial' : 'Submit Request'}
               </button>
               
               <p className="text-xs text-white/40 text-center mt-4">
-                Admin will verify payment and activate your subscription immediately
+                {selectedPlan.isFree 
+                  ? 'Admin will approve your free trial request' 
+                  : 'Admin will verify payment and activate your subscription immediately'
+                }
               </p>
               
               <button
