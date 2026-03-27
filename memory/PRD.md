@@ -1,48 +1,105 @@
 # Future Trade - Product Requirements Document
 
-## Sports Nutrition Trading - LIVE MODE ✅
+## Last Updated: December 2025
 
-### FitWallet Integration via Backend Proxy (CORS Fix)
-- **Problem**: Browser couldn't call FitWallet API directly due to CORS
-- **Solution**: Backend proxy endpoints that call FitWallet API server-to-server
+## Original Problem Statement
+Building a full-stack trading application called "Future Trade" for a cryptocurrency named "Fitcoin (FTC)".
 
-### Backend Proxy Endpoints
+## Core Features
+
+### 1. Real-Time Trading Dashboard ✅
+- Live crypto charts with CoinGecko integration
+- Buy/Sell functionality
+- Order book visualization
+- Portfolio tracking
+
+### 2. FTC Mining System (NEW) ✅
+**Location**: `/ftc-mining`
+- In-house Web5 Hacker themed mining page
+- StepsApp integration via `https://invite.steps.app/zkK1vmJRdARK`
+- 1 Calorie burned = 1 FTC mined
+- Max 10,000 FTC per 24 hours
+- Subscription-based daily limits:
+  - Basic: 500 calories/FTC
+  - Standard: 1,000 calories/FTC
+  - Pro: 2,000 calories/FTC
+  - Elite: 5,000 calories/FTC
+  - Ultra: 7,500 calories/FTC
+  - Max: 10,000 calories/FTC
+
+### 3. Admin Panel ✅
+**Location**: `/admin`
+**Credentials**: 
+- Username: `Fitrudrah`
+- Password: `000000`
+- Secret Code: `0000`
+
+Features:
+- View all users and their mining subscriptions
+- Approve/Reject subscription requests
+- Dashboard with stats (total users, pending requests, active subscriptions)
+
+### 4. Raw Materials Trading ✅
+**Location**: `/nutrition-trading`
+- Pivoted from brand products to global B2B raw materials
+- 18 products with working Unsplash images
+- Categories: Protein, Creatine, Pre-Workout, Gainer, Amino, Recovery
+- Trading with USD/FTC/INR support
+- Global inventory tracking
+- 10,000 FTC welcome bonus
+- 20% FTC holder discount
+
+### Key API Endpoints
+
+#### Mining APIs
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/fitwallet/login` | POST | Login to FitWallet, returns token & balance |
-| `/api/fitwallet/balance` | GET | Get real FTC balance from FitWallet |
-| `/api/fitwallet/send` | POST | Send FTC via FitWallet blockchain |
-| `/api/fitwallet/receive` | POST | Receive FTC via FitWallet blockchain |
-| `/api/fitwallet/ledger` | GET | Get transaction history |
+| `/api/mining/status` | GET | Get user mining status & balance |
+| `/api/mining/subscribe` | POST | Submit subscription request |
+| `/api/mining/save-progress` | POST | Save mining progress |
 
-### Flow
-```
-Mine FTC (solana-fitness.emergent.host)
-    ↓
-Frontend connects FitWallet via /api/fitwallet/login
-    ↓
-Backend calls FitWallet API (no CORS)
-    ↓
-Returns token + balance to frontend
-    ↓
-Mining Wallet shows REAL FitWallet balance
-    ↓
-Transfers use /api/fitwallet/send & /api/fitwallet/receive
-```
+#### Admin APIs
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/admin/mining-requests` | GET | Get all subscription requests & users |
+| `/api/admin/activate-subscription` | POST | Activate user subscription |
+| `/api/admin/reject-subscription` | POST | Reject subscription request |
 
-### Features
-- 18 products with global inventory
-- 10,000 FTC first-time bonus
-- 20% FTC holder discount
-- Trading opens at 50+ units sold
-- Real-time balance sync via backend proxy
+#### Nutrition Trading APIs
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/nutrition/products` | GET | Get all raw materials products |
+| `/api/nutrition/buy` | POST | Buy products with FTC |
+| `/api/nutrition/sell` | POST | Sell products for FTC |
 
-## Recent Changes
-- Added backend proxy for FitWallet API (bypasses CORS)
-- All FitWallet calls now go through our backend
-- Balance fetch uses /api/fitwallet/balance
-- Transfers use /api/fitwallet/send and /api/fitwallet/receive
+## Database Collections
+- `users` - User accounts
+- `mining_wallets` - FTC mining balances
+- `mining_subscriptions` - Subscription requests/status
+- `nutrition_products` - Raw materials inventory
+- `nutrition_wallets` - User trading balances
+- `nutrition_orders` - Order history
+
+## What's Been Completed (This Session)
+1. ✅ Built FTC Mining System with Web5 hacker theme
+2. ✅ Built Admin Panel with subscription management
+3. ✅ Added mining & admin backend APIs
+4. ✅ Updated Raw Materials Trading with working images
+5. ✅ Fixed MongoDB ObjectId serialization bug
+6. ✅ Added App.js routes for new pages
+7. ✅ All tests passing (11/11 backend, 100% frontend)
 
 ## Pending Work
-- P1: Real Place Order for main dashboard
-- P1: AI Suggestions UI fix
+- P1: Real "Place Order" for main trading dashboard (currently mocked)
+- P1: AI Suggestions UI fix ("+X more coins" label)
+- P2: Send/Receive/Exchange feature implementation
+- P2: Refactor backend/server.py monolith
+- P2: Remove deprecated FitWallet proxy code
+- P3: Leaderboard UI for top FTC traders
+- P3: Portfolio Watchlist
+
+## Tech Stack
+- Frontend: React, Tailwind CSS
+- Backend: FastAPI, Python
+- Database: MongoDB
+- Integrations: CoinGecko (crypto data), Resend (email OTPs)
