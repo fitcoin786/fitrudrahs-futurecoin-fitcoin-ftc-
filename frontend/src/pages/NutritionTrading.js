@@ -350,8 +350,7 @@ const NutritionTrading = () => {
   const [isFitWalletConnected, setIsFitWalletConnected] = useState(false);
   const [fitWalletLoading, setFitWalletLoading] = useState(false);
   const [fitWalletAddress, setFitWalletAddress] = useState('');
-  const [showManualBalanceInput, setShowManualBalanceInput] = useState(false);
-  const [manualBalanceInput, setManualBalanceInput] = useState('');
+  const [isBalanceSyncing, setIsBalanceSyncing] = useState(false);
 
   // Categories
   const categories = ['All', 'Protein', 'Creatine', 'Pre-Workout', 'Vitamins', 'Gainer', 'Amino', 'Fat Burner', 'Recovery', 'Health Food', 'Ayurveda', 'Beauty'];
@@ -529,6 +528,7 @@ const NutritionTrading = () => {
   
   // Fetch FitWallet balance from blockchain - REAL BALANCE
   const fetchFitWalletBalance = async (token) => {
+    setIsBalanceSyncing(true);
     try {
       // Try multiple endpoints to get the balance
       const endpoints = [
@@ -554,39 +554,45 @@ const NutritionTrading = () => {
             // Try different balance field names
             let balance = null;
             
-            // Direct balance fields
-            if (data.balance !== undefined) balance = data.balance;
-            else if (data.ftc_balance !== undefined) balance = data.ftc_balance;
-            else if (data.available_balance !== undefined) balance = data.available_balance;
-            else if (data.wallet_balance !== undefined) balance = data.wallet_balance;
+            // Check all possible balance locations
+            const possibleBalances = [
+              data.balance,
+              data.ftc_balance,
+              data.available_balance,
+              data.wallet_balance,
+              data.user?.balance,
+              data.user?.ftc_balance,
+              data.wallet?.balance,
+              data.wallet?.ftc_balance,
+              data.balances?.FTC,
+              data.balances?.ftc,
+              data.data?.balance,
+              data.data?.ftc_balance
+            ];
             
-            // Nested in user object
-            else if (data.user?.balance !== undefined) balance = data.user.balance;
-            else if (data.user?.ftc_balance !== undefined) balance = data.user.ftc_balance;
-            
-            // Nested in wallet object
-            else if (data.wallet?.balance !== undefined) balance = data.wallet.balance;
-            else if (data.wallet?.ftc_balance !== undefined) balance = data.wallet.ftc_balance;
-            
-            // In balances object
-            else if (data.balances?.FTC !== undefined) balance = data.balances.FTC;
-            else if (data.balances?.ftc !== undefined) balance = data.balances.ftc;
-            
-            if (balance !== null && balance !== undefined) {
-              const numBalance = parseFloat(balance);
-              if (!isNaN(numBalance)) {
-                setMiningWalletBalance(numBalance);
-                localStorage.setItem('mining_wallet_balance', numBalance.toString());
-                
-                // Also get wallet address if available
-                const addr = data.wallet_address || data.user?.wallet_address || data.address;
-                if (addr && !fitWalletAddress) {
-                  setFitWalletAddress(addr);
-                  localStorage.setItem('fit_wallet_address', addr);
+            for (const bal of possibleBalances) {
+              if (bal !== undefined && bal !== null) {
+                const numBal = parseFloat(bal);
+                if (!isNaN(numBal)) {
+                  balance = numBal;
+                  break;
                 }
-                
-                return numBalance;
               }
+            }
+            
+            if (balance !== null) {
+              setMiningWalletBalance(balance);
+              localStorage.setItem('mining_wallet_balance', balance.toString());
+              
+              // Also get wallet address if available
+              const addr = data.wallet_address || data.user?.wallet_address || data.address;
+              if (addr && !fitWalletAddress) {
+                setFitWalletAddress(addr);
+                localStorage.setItem('fit_wallet_address', addr);
+              }
+              
+              setIsBalanceSyncing(false);
+              return balance;
             }
           }
         } catch (endpointError) {
@@ -600,12 +606,14 @@ const NutritionTrading = () => {
         const numBalance = parseFloat(savedBalance);
         if (!isNaN(numBalance)) {
           setMiningWalletBalance(numBalance);
+          setIsBalanceSyncing(false);
           return numBalance;
         }
       }
     } catch (error) {
       console.log('Balance fetch error:', error);
     }
+    setIsBalanceSyncing(false);
     return 0;
   };
   
@@ -613,10 +621,10 @@ const NutritionTrading = () => {
   useEffect(() => {
     let intervalId;
     if (isFitWalletConnected && fitWalletToken) {
-      // Refresh balance every 30 seconds
+      // Refresh balance every 15 seconds for real-time sync
       intervalId = setInterval(() => {
         fetchFitWalletBalance(fitWalletToken);
-      }, 30000);
+      }, 15000);
     }
     return () => {
       if (intervalId) clearInterval(intervalId);
@@ -1704,56 +1712,13 @@ const NutritionTrading = () => {
                   <p className="text-xs text-white/40">FTC (FitWallet)</p>
                   {isFitWalletConnected && (
                     <div className="mt-1">
-                      <p className="text-[10px] text-[#00F090]/60">↻ Auto-syncs from FitWallet</p>
-                      {miningWalletBalance === 0 && (
-                        <button
-                          onClick={() => setShowManualBalanceInput(true)}
-                          className="text-[10px] text-[#FFD700] hover:underline mt-1"
-                        >
-                          Balance not syncing? Enter manually →
-                        </button>
-                      )}
+                      <p className="text-[10px] text-[#00F090]/60">
+                        {isBalanceSyncing ? '↻ Syncing...' : '✓ Live from FitWallet'}
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-              
-              {/* Manual Balance Input (when auto-sync fails) */}
-              {showManualBalanceInput && isFitWalletConnected && (
-                <div className="mb-4 p-3 bg-[#FFD700]/10 rounded-lg border border-[#FFD700]/30">
-                  <p className="text-xs text-white/70 mb-2">Enter your FitWallet balance manually:</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={manualBalanceInput}
-                      onChange={(e) => setManualBalanceInput(e.target.value)}
-                      placeholder="Enter FTC balance from FitWallet"
-                      className="flex-1 px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 outline-none text-sm"
-                      data-testid="manual-balance-input"
-                    />
-                    <button
-                      onClick={() => {
-                        const balance = parseFloat(manualBalanceInput);
-                        if (!isNaN(balance) && balance >= 0) {
-                          setMiningWalletBalance(balance);
-                          localStorage.setItem('mining_wallet_balance', balance.toString());
-                          setShowManualBalanceInput(false);
-                          setManualBalanceInput('');
-                          toast.success(`Mining Wallet balance set to ${balance.toLocaleString()} FTC`);
-                        } else {
-                          toast.error('Please enter a valid balance');
-                        }
-                      }}
-                      className="px-4 py-2 bg-[#FFD700] text-black font-bold rounded-lg text-sm hover:brightness-110"
-                    >
-                      Set
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-white/40 mt-2">
-                    Check your balance at: <a href="https://solana-fitness.emergent.host/" target="_blank" rel="noopener noreferrer" className="text-[#00F090] hover:underline">solana-fitness.emergent.host</a>
-                  </p>
-                </div>
-              )}
               
               {/* FitWallet Connection Status */}
               {!isFitWalletConnected ? (
