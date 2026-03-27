@@ -350,6 +350,8 @@ const NutritionTrading = () => {
   const [isFitWalletConnected, setIsFitWalletConnected] = useState(false);
   const [fitWalletLoading, setFitWalletLoading] = useState(false);
   const [fitWalletAddress, setFitWalletAddress] = useState('');
+  const [showManualBalanceInput, setShowManualBalanceInput] = useState(false);
+  const [manualBalanceInput, setManualBalanceInput] = useState('');
 
   // Categories
   const categories = ['All', 'Protein', 'Creatine', 'Pre-Workout', 'Vitamins', 'Gainer', 'Amino', 'Fat Burner', 'Recovery', 'Health Food', 'Ayurveda', 'Beauty'];
@@ -498,8 +500,15 @@ const NutritionTrading = () => {
             localStorage.setItem('fit_wallet_address', data.wallet_address);
           }
           
-          // Fetch balance
-          await fetchFitWalletBalance(token);
+          // Get balance directly from login response if available
+          if (data.balance !== undefined || data.ftc_balance !== undefined || data.user?.balance !== undefined) {
+            const balance = data.balance || data.ftc_balance || data.user?.balance || 0;
+            setMiningWalletBalance(balance);
+            localStorage.setItem('mining_wallet_balance', balance.toString());
+          } else {
+            // Fetch balance separately
+            await fetchFitWalletBalance(token);
+          }
           
           setShowFitWalletLogin(false);
           toast.success('✅ FitWallet connected successfully!', {
@@ -521,54 +530,81 @@ const NutritionTrading = () => {
   // Fetch FitWallet balance from blockchain - REAL BALANCE
   const fetchFitWalletBalance = async (token) => {
     try {
-      // First try the wallet balance endpoint
-      const response = await fetch(`${FCOIN_API_URL}/api/wallet/balance`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      // Try multiple endpoints to get the balance
+      const endpoints = [
+        `${FCOIN_API_URL}/api/wallet/balance`,
+        `${FCOIN_API_URL}/api/auth/me`,
+        `${FCOIN_API_URL}/api/user/profile`,
+        `${FCOIN_API_URL}/api/user/wallet`,
+        `${FCOIN_API_URL}/api/blockchain/balance`
+      ];
       
-      if (response.ok) {
-        const data = await response.json();
-        const balance = data.balance || data.ftc_balance || data.available_balance || 0;
-        setMiningWalletBalance(balance);
-        localStorage.setItem('mining_wallet_balance', balance.toString());
-        
-        // Also get wallet address if available
-        if (data.wallet_address && !fitWalletAddress) {
-          setFitWalletAddress(data.wallet_address);
-          localStorage.setItem('fit_wallet_address', data.wallet_address);
-        }
-        return balance;
-      } else {
-        // Try alternative endpoint - /api/user/me or /api/auth/me
-        const meResponse = await fetch(`${FCOIN_API_URL}/api/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (meResponse.ok) {
-          const meData = await meResponse.json();
-          const balance = meData.balance || meData.ftc_balance || meData.user?.balance || 0;
-          setMiningWalletBalance(balance);
-          localStorage.setItem('mining_wallet_balance', balance.toString());
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
           
-          if (meData.wallet_address || meData.user?.wallet_address) {
-            const addr = meData.wallet_address || meData.user?.wallet_address;
-            setFitWalletAddress(addr);
-            localStorage.setItem('fit_wallet_address', addr);
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Try different balance field names
+            let balance = null;
+            
+            // Direct balance fields
+            if (data.balance !== undefined) balance = data.balance;
+            else if (data.ftc_balance !== undefined) balance = data.ftc_balance;
+            else if (data.available_balance !== undefined) balance = data.available_balance;
+            else if (data.wallet_balance !== undefined) balance = data.wallet_balance;
+            
+            // Nested in user object
+            else if (data.user?.balance !== undefined) balance = data.user.balance;
+            else if (data.user?.ftc_balance !== undefined) balance = data.user.ftc_balance;
+            
+            // Nested in wallet object
+            else if (data.wallet?.balance !== undefined) balance = data.wallet.balance;
+            else if (data.wallet?.ftc_balance !== undefined) balance = data.wallet.ftc_balance;
+            
+            // In balances object
+            else if (data.balances?.FTC !== undefined) balance = data.balances.FTC;
+            else if (data.balances?.ftc !== undefined) balance = data.balances.ftc;
+            
+            if (balance !== null && balance !== undefined) {
+              const numBalance = parseFloat(balance);
+              if (!isNaN(numBalance)) {
+                setMiningWalletBalance(numBalance);
+                localStorage.setItem('mining_wallet_balance', numBalance.toString());
+                
+                // Also get wallet address if available
+                const addr = data.wallet_address || data.user?.wallet_address || data.address;
+                if (addr && !fitWalletAddress) {
+                  setFitWalletAddress(addr);
+                  localStorage.setItem('fit_wallet_address', addr);
+                }
+                
+                return numBalance;
+              }
+            }
           }
-          return balance;
+        } catch (endpointError) {
+          console.log(`Endpoint ${endpoint} failed:`, endpointError.message);
+        }
+      }
+      
+      // If all endpoints fail, try to get balance from localStorage
+      const savedBalance = localStorage.getItem('mining_wallet_balance');
+      if (savedBalance) {
+        const numBalance = parseFloat(savedBalance);
+        if (!isNaN(numBalance)) {
+          setMiningWalletBalance(numBalance);
+          return numBalance;
         }
       }
     } catch (error) {
       console.log('Balance fetch error:', error);
-      // Load from localStorage as fallback
-      const savedBalance = localStorage.getItem('mining_wallet_balance');
-      if (savedBalance) {
-        setMiningWalletBalance(parseFloat(savedBalance));
-      }
     }
     return 0;
   };
@@ -1667,10 +1703,57 @@ const NutritionTrading = () => {
                   <p className="text-2xl font-black text-[#00F090]">{miningWalletBalance.toLocaleString()}</p>
                   <p className="text-xs text-white/40">FTC (FitWallet)</p>
                   {isFitWalletConnected && (
-                    <p className="text-[10px] text-[#00F090]/60 mt-1">↻ Auto-syncs from FitWallet</p>
+                    <div className="mt-1">
+                      <p className="text-[10px] text-[#00F090]/60">↻ Auto-syncs from FitWallet</p>
+                      {miningWalletBalance === 0 && (
+                        <button
+                          onClick={() => setShowManualBalanceInput(true)}
+                          className="text-[10px] text-[#FFD700] hover:underline mt-1"
+                        >
+                          Balance not syncing? Enter manually →
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
+              
+              {/* Manual Balance Input (when auto-sync fails) */}
+              {showManualBalanceInput && isFitWalletConnected && (
+                <div className="mb-4 p-3 bg-[#FFD700]/10 rounded-lg border border-[#FFD700]/30">
+                  <p className="text-xs text-white/70 mb-2">Enter your FitWallet balance manually:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={manualBalanceInput}
+                      onChange={(e) => setManualBalanceInput(e.target.value)}
+                      placeholder="Enter FTC balance from FitWallet"
+                      className="flex-1 px-3 py-2 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 outline-none text-sm"
+                      data-testid="manual-balance-input"
+                    />
+                    <button
+                      onClick={() => {
+                        const balance = parseFloat(manualBalanceInput);
+                        if (!isNaN(balance) && balance >= 0) {
+                          setMiningWalletBalance(balance);
+                          localStorage.setItem('mining_wallet_balance', balance.toString());
+                          setShowManualBalanceInput(false);
+                          setManualBalanceInput('');
+                          toast.success(`Mining Wallet balance set to ${balance.toLocaleString()} FTC`);
+                        } else {
+                          toast.error('Please enter a valid balance');
+                        }
+                      }}
+                      className="px-4 py-2 bg-[#FFD700] text-black font-bold rounded-lg text-sm hover:brightness-110"
+                    >
+                      Set
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-white/40 mt-2">
+                    Check your balance at: <a href="https://solana-fitness.emergent.host/" target="_blank" rel="noopener noreferrer" className="text-[#00F090] hover:underline">solana-fitness.emergent.host</a>
+                  </p>
+                </div>
+              )}
               
               {/* FitWallet Connection Status */}
               {!isFitWalletConnected ? (
