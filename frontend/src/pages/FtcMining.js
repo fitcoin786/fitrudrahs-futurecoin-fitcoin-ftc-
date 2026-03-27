@@ -10,8 +10,8 @@ import {
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
-// Fitcoin Logo
-const FTC_LOGO = 'https://customer-assets.emergentagent.com/job_8ab2343f-b785-4283-8178-10a5f0187955/artifacts/m800590q_7715.jpg';
+// Fitcoin Logo - New Meditation Logo
+const FTC_LOGO = 'https://customer-assets.emergentagent.com/job_8ab2343f-b785-4283-8178-10a5f0187955/artifacts/aghohvl9_998.jpg';
 
 // Subscription Plans
 const SUBSCRIPTION_PLANS = [

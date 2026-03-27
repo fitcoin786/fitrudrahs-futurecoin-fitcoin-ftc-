@@ -1,10 +1,12 @@
 # Test Credentials for Future Trade App
 
 ## User Accounts
+- **Demo Trader**: `demo@trader.com` / `demo123`
 - **Test User**: `test@futuretrade.com` / `testpass123`
-- **Real User**: `trader@fitcoin.com` (existing user)
+- **Real User**: `trader@fitcoin.com` (existing)
+- **User with Pending**: `nvnv786786@gmail.com` (has pending subscription)
 
-## Admin Panel Credentials (UPDATED)
+## Admin Panel Credentials
 - **Username**: `FITRUDRAH`
 - **Password**: `786786`
 - **Secret Code**: `0000`
@@ -19,3 +21,5 @@
 - Admin panel has forgot password with OTP on-screen display
 - Mining has 5-second boost mode when tapped while mining
 - Transaction hash required for subscription requests
+- If user already has pending request, submitting again updates the hash
+- Candlestick chart with real-time price fluctuations

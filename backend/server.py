@@ -1875,10 +1875,35 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
     )
     
     if existing and existing.get("status") == "active":
-        raise HTTPException(status_code=400, detail="You already have an active subscription")
+        raise HTTPException(status_code=400, detail="You already have an active subscription. Contact admin to upgrade.")
     
     if existing and existing.get("status") == "pending":
-        raise HTTPException(status_code=400, detail="You already have a pending request")
+        # Update the existing pending request with new transaction hash
+        await db.mining_subscriptions.update_one(
+            {"user_id": user_id, "status": "pending"},
+            {
+                "$set": {
+                    "plan_id": request.plan_id,
+                    "plan_name": request.plan_name,
+                    "calories": request.calories,
+                    "ftc_limit": request.ftc_limit,
+                    "payment_method": request.payment_method,
+                    "price": request.price,
+                    "transaction_hash": request.transaction_hash,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
+        # Return the updated request
+        updated = await db.mining_subscriptions.find_one(
+            {"user_id": user_id, "status": "pending"},
+            {"_id": 0}
+        )
+        return {
+            "success": True,
+            "request": updated,
+            "message": "Subscription request updated with new transaction hash. Admin will verify and activate."
+        }
     
     # Get user email
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
