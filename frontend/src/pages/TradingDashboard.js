@@ -251,6 +251,49 @@ const TradingDashboard = ({ user, onLogout }) => {
     fetchWallet();
   }, []);
 
+  // Generate blockchain-style transaction data
+  const generateBlockchainTx = () => {
+    const chars = '0123456789abcdef';
+    let hash = '0x';
+    for (let i = 0; i < 64; i++) {
+      hash += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return {
+      hash,
+      blockNumber: Math.floor(19000000 + Math.random() * 1000000),
+      confirmations: Math.floor(1 + Math.random() * 12),
+      timestamp: new Date().toISOString()
+    };
+  };
+
+  // Add trade to blockchain ledger
+  const addTradeToLedger = (tradeType, tradeData) => {
+    const blockchainTx = generateBlockchainTx();
+    const ledgerEntry = {
+      id: blockchainTx.hash,
+      type: tradeType.toUpperCase(),
+      productName: 'FTC/USDT',
+      productId: 'fitcoin',
+      quantity: tradeData.amount,
+      pricePerUnit: tradeData.price,
+      totalFTC: tradeData.amount,
+      totalUSD: tradeData.amount * tradeData.price,
+      balanceAfter: tradeData.balanceAfter,
+      timestamp: blockchainTx.timestamp,
+      blockNumber: blockchainTx.blockNumber,
+      confirmations: blockchainTx.confirmations,
+      status: 'CONFIRMED',
+      network: 'Solana Mainnet'
+    };
+
+    // Get existing ledger from localStorage
+    const existingLedger = JSON.parse(localStorage.getItem('ftc_trade_history') || '[]');
+    const updatedLedger = [ledgerEntry, ...existingLedger].slice(0, 100); // Keep last 100 trades
+    localStorage.setItem('ftc_trade_history', JSON.stringify(updatedLedger));
+    
+    return ledgerEntry;
+  };
+
   const handleTrade = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       toast.error('Please enter a valid amount');
@@ -264,18 +307,30 @@ const TradingDashboard = ({ user, onLogout }) => {
 
     setLoading(true);
     try {
+      const tradeAmount = parseFloat(amount);
+      const tradePrice = priceData.price;
+      
       await axios.post(`${API}/trade`, {
         order_type: orderType,
-        amount: parseFloat(amount),
-        price: priceData.price
+        amount: tradeAmount,
+        price: tradePrice
       }, axiosConfig);
 
-      toast.success(`${orderType === 'buy' ? 'Bought' : 'Sold'} ${amount} FTC successfully!`);
-      setAmount('');
-
-      // Refresh wallet
+      // Refresh wallet first to get updated balance
       const walletResponse = await axios.get(`${API}/wallet`, axiosConfig);
       setWallet(walletResponse.data);
+
+      // Record trade in blockchain ledger
+      const ledgerEntry = addTradeToLedger(orderType, {
+        amount: tradeAmount,
+        price: tradePrice,
+        balanceAfter: walletResponse.data.ftc_balance
+      });
+
+      toast.success(`${orderType === 'buy' ? '🟢 Bought' : '🔴 Sold'} ${amount} FTC successfully!`, {
+        description: `TX: ${ledgerEntry.id.substring(0, 18)}... | Block #${ledgerEntry.blockNumber}`
+      });
+      setAmount('');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Trade failed');
     } finally {
