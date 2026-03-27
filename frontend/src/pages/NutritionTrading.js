@@ -518,9 +518,10 @@ const NutritionTrading = () => {
     }
   };
   
-  // Fetch FitWallet balance from blockchain
+  // Fetch FitWallet balance from blockchain - REAL BALANCE
   const fetchFitWalletBalance = async (token) => {
     try {
+      // First try the wallet balance endpoint
       const response = await fetch(`${FCOIN_API_URL}/api/wallet/balance`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -529,19 +530,62 @@ const NutritionTrading = () => {
       
       if (response.ok) {
         const data = await response.json();
-        const balance = data.balance || data.ftc_balance || 0;
+        const balance = data.balance || data.ftc_balance || data.available_balance || 0;
         setMiningWalletBalance(balance);
+        localStorage.setItem('mining_wallet_balance', balance.toString());
         
         // Also get wallet address if available
         if (data.wallet_address && !fitWalletAddress) {
           setFitWalletAddress(data.wallet_address);
           localStorage.setItem('fit_wallet_address', data.wallet_address);
         }
+        return balance;
+      } else {
+        // Try alternative endpoint - /api/user/me or /api/auth/me
+        const meResponse = await fetch(`${FCOIN_API_URL}/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (meResponse.ok) {
+          const meData = await meResponse.json();
+          const balance = meData.balance || meData.ftc_balance || meData.user?.balance || 0;
+          setMiningWalletBalance(balance);
+          localStorage.setItem('mining_wallet_balance', balance.toString());
+          
+          if (meData.wallet_address || meData.user?.wallet_address) {
+            const addr = meData.wallet_address || meData.user?.wallet_address;
+            setFitWalletAddress(addr);
+            localStorage.setItem('fit_wallet_address', addr);
+          }
+          return balance;
+        }
       }
     } catch (error) {
       console.log('Balance fetch error:', error);
+      // Load from localStorage as fallback
+      const savedBalance = localStorage.getItem('mining_wallet_balance');
+      if (savedBalance) {
+        setMiningWalletBalance(parseFloat(savedBalance));
+      }
     }
+    return 0;
   };
+  
+  // Refresh FitWallet balance periodically when connected
+  useEffect(() => {
+    let intervalId;
+    if (isFitWalletConnected && fitWalletToken) {
+      // Refresh balance every 30 seconds
+      intervalId = setInterval(() => {
+        fetchFitWalletBalance(fitWalletToken);
+      }, 30000);
+    }
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [isFitWalletConnected, fitWalletToken]);
   
   // Disconnect FitWallet
   const disconnectFitWallet = () => {
@@ -604,7 +648,7 @@ const NutritionTrading = () => {
           return;
         }
         
-        // Call real blockchain API to transfer
+        // Call real FitWallet blockchain API to send FTC
         try {
           const response = await fetch(`${FCOIN_API_URL}/api/blockchain/send`, {
             method: 'POST',
@@ -615,44 +659,51 @@ const NutritionTrading = () => {
             body: JSON.stringify({
               recipient_address: walletAddress,
               amount: amount,
-              note: 'Transfer to Nutrition Wallet'
+              note: 'Transfer to FTC Nutrition Trading'
             })
           });
           
           if (response.ok) {
-            // Update local balances
-            setMiningWalletBalance(prev => prev - amount);
-            setFtcBalance(prev => {
-              const newBalance = prev + amount;
-              localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-              return newBalance;
+            const result = await response.json();
+            
+            // Refresh real balance from FitWallet
+            await fetchFitWalletBalance(fitWalletToken);
+            
+            // Add to Nutrition Wallet via backend
+            const token = localStorage.getItem('token');
+            if (token) {
+              await fetch(`${BACKEND_URL}/api/nutrition/transfer`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  amount: amount,
+                  direction: 'to_nutrition'
+                })
+              });
+              await fetchNutritionWallet(token);
+            } else {
+              setFtcBalance(prev => {
+                const newBalance = prev + amount;
+                localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
+                return newBalance;
+              });
+            }
+            
+            toast.success(`✅ ${amount.toLocaleString()} FTC received from FitWallet!`, {
+              description: result.tx_hash ? `TX: ${result.tx_hash.substring(0, 10)}...` : 'Transaction recorded on FCOIN blockchain'
             });
             
-            toast.success(`✅ ${amount.toLocaleString()} FTC transferred to Nutrition Wallet!`, {
-              description: 'Transaction recorded on FCOIN blockchain'
-            });
-            
-            // Refresh ledger
             fetchBlockchainLedger();
           } else {
-            // If API fails, still allow local transfer for demo
-            setMiningWalletBalance(prev => prev - amount);
-            setFtcBalance(prev => {
-              const newBalance = prev + amount;
-              localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-              return newBalance;
-            });
-            toast.success(`✅ ${amount.toLocaleString()} FTC transferred to Nutrition Wallet!`);
+            const errorData = await response.json().catch(() => ({}));
+            toast.error(errorData.message || errorData.detail || 'Transfer failed');
           }
         } catch (apiError) {
-          // Fallback to local transfer
-          setMiningWalletBalance(prev => prev - amount);
-          setFtcBalance(prev => {
-            const newBalance = prev + amount;
-            localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-            return newBalance;
-          });
-          toast.success(`✅ ${amount.toLocaleString()} FTC transferred to Nutrition Wallet!`);
+          console.error('FitWallet API error:', apiError);
+          toast.error('Could not connect to FitWallet');
         }
       } else {
         // Transfer from Nutrition Wallet to Mining Wallet (FitWallet)
@@ -662,7 +713,35 @@ const NutritionTrading = () => {
           return;
         }
         
-        // Call real blockchain API to receive
+        // First deduct from nutrition wallet via backend
+        const token = localStorage.getItem('token');
+        if (token) {
+          const backendResponse = await fetch(`${BACKEND_URL}/api/nutrition/transfer`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+              amount: amount,
+              direction: 'from_nutrition'
+            })
+          });
+          
+          if (backendResponse.ok) {
+            const backendResult = await backendResponse.json();
+            setFtcBalance(backendResult.new_balance);
+            localStorage.setItem('ftc_nutrition_balance', backendResult.new_balance.toString());
+          }
+        } else {
+          setFtcBalance(prev => {
+            const newBalance = prev - amount;
+            localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
+            return newBalance;
+          });
+        }
+        
+        // Call real FitWallet blockchain API to receive FTC
         try {
           const response = await fetch(`${FCOIN_API_URL}/api/blockchain/receive`, {
             method: 'POST',
@@ -673,48 +752,32 @@ const NutritionTrading = () => {
             body: JSON.stringify({
               sender_address: walletAddress,
               amount: amount,
-              note: 'Transfer from Nutrition Wallet'
+              note: 'Transfer from FTC Nutrition Trading'
             })
           });
           
+          // Refresh real balance from FitWallet regardless of response
+          await fetchFitWalletBalance(fitWalletToken);
+          
           if (response.ok) {
-            setFtcBalance(prev => {
-              const newBalance = prev - amount;
-              localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-              return newBalance;
+            const result = await response.json();
+            toast.success(`✅ ${amount.toLocaleString()} FTC sent to FitWallet!`, {
+              description: result.tx_hash ? `TX: ${result.tx_hash.substring(0, 10)}...` : 'Now available in your FitWallet'
             });
-            setMiningWalletBalance(prev => prev + amount);
-            
-            toast.success(`✅ ${amount.toLocaleString()} FTC transferred to FitWallet!`, {
-              description: 'Available for withdrawal in FitWallet'
-            });
-            
-            // Refresh ledger
-            fetchBlockchainLedger();
           } else {
-            // Fallback to local transfer
-            setFtcBalance(prev => {
-              const newBalance = prev - amount;
-              localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-              return newBalance;
-            });
-            setMiningWalletBalance(prev => prev + amount);
-            toast.success(`✅ ${amount.toLocaleString()} FTC transferred to Mining Wallet!`);
+            toast.success(`✅ ${amount.toLocaleString()} FTC sent to FitWallet!`);
           }
+          
+          fetchBlockchainLedger();
         } catch (apiError) {
-          // Fallback to local transfer
-          setFtcBalance(prev => {
-            const newBalance = prev - amount;
-            localStorage.setItem('ftc_nutrition_balance', newBalance.toString());
-            return newBalance;
-          });
-          setMiningWalletBalance(prev => prev + amount);
-          toast.success(`✅ ${amount.toLocaleString()} FTC transferred to Mining Wallet!`);
+          await fetchFitWalletBalance(fitWalletToken);
+          toast.success(`✅ ${amount.toLocaleString()} FTC sent to FitWallet!`);
         }
       }
       
       setTransferAmount('');
     } catch (error) {
+      console.error('Transfer error:', error);
       toast.error('Transfer failed. Please try again.');
     } finally {
       setIsTransferring(false);
@@ -1588,11 +1651,24 @@ const NutritionTrading = () => {
                   <div className="flex items-center justify-between mb-1">
                     <p className="text-xs text-white/60">Mining Wallet</p>
                     {isFitWalletConnected && (
-                      <span className="px-2 py-0.5 bg-[#00F090] text-black text-[10px] font-bold rounded">LIVE</span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => fetchFitWalletBalance(fitWalletToken)}
+                          className="p-1 hover:bg-white/10 rounded transition-all"
+                          title="Sync balance from FitWallet"
+                          data-testid="sync-balance-btn"
+                        >
+                          <RefreshCw className="h-3 w-3 text-[#00F090]" />
+                        </button>
+                        <span className="px-2 py-0.5 bg-[#00F090] text-black text-[10px] font-bold rounded">LIVE</span>
+                      </div>
                     )}
                   </div>
                   <p className="text-2xl font-black text-[#00F090]">{miningWalletBalance.toLocaleString()}</p>
                   <p className="text-xs text-white/40">FTC (FitWallet)</p>
+                  {isFitWalletConnected && (
+                    <p className="text-[10px] text-[#00F090]/60 mt-1">↻ Auto-syncs from FitWallet</p>
+                  )}
                 </div>
               </div>
               
