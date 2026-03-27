@@ -310,7 +310,7 @@ const FTC_TO_INR = 0.50;
 
 const NutritionTrading = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState(NUTRITION_PRODUCTS);
+  const [products, setProducts] = useState([]);
   const [ftcBalance, setFtcBalance] = useState(0);
   const [ftcPrice, setFtcPrice] = useState(0.00000349);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -327,6 +327,9 @@ const NutritionTrading = () => {
   const [userHoldings, setUserHoldings] = useState({});
   const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [priceFluctuation, setPriceFluctuation] = useState({});
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true);
+  const [isBuying, setIsBuying] = useState(false);
+  const [isSelling, setIsSelling] = useState(false);
   
   // New wallet states
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -351,7 +354,56 @@ const NutritionTrading = () => {
   // Categories
   const categories = ['All', 'Protein', 'Creatine', 'Pre-Workout', 'Vitamins', 'Gainer', 'Amino', 'Fat Burner', 'Recovery', 'Health Food', 'Ayurveda', 'Beauty'];
 
-  // Check login status and grant first-time 10,000 FTC bonus
+  // Fetch products from backend (global inventory)
+  const fetchProducts = async () => {
+    setIsLoadingProducts(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/nutrition/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data.products || []);
+      } else {
+        // Fallback to local data
+        setProducts(NUTRITION_PRODUCTS);
+      }
+    } catch (error) {
+      console.log('Error fetching products:', error);
+      setProducts(NUTRITION_PRODUCTS);
+    } finally {
+      setIsLoadingProducts(false);
+    }
+  };
+
+  // Fetch wallet from backend
+  const fetchNutritionWallet = async (token) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/nutrition/wallet`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setFtcBalance(data.wallet?.ftc_balance || 0);
+        
+        // Convert holdings array to object
+        const holdingsObj = {};
+        (data.holdings || []).forEach(h => {
+          holdingsObj[h.product_id] = h.quantity;
+        });
+        setUserHoldings(holdingsObj);
+        
+        // Update local storage
+        localStorage.setItem('ftc_nutrition_balance', (data.wallet?.ftc_balance || 0).toString());
+        localStorage.setItem('ftc_nutrition_holdings', JSON.stringify(holdingsObj));
+        
+        return data;
+      }
+    } catch (error) {
+      console.log('Error fetching wallet:', error);
+    }
+    return null;
+  };
+
+  // Check login status and fetch wallet from backend
   useEffect(() => {
     const checkLoginAndBonus = async () => {
       const token = localStorage.getItem('token');
@@ -385,34 +437,33 @@ const NutritionTrading = () => {
           localStorage.setItem('nutrition_wallet_address', generatedAddress);
         }
         
-        // Check if user already received promotional FTC (first-time login only)
-        const hasReceivedBonus = localStorage.getItem('ftc_nutrition_bonus_received');
-        if (!hasReceivedBonus) {
-          // Grant 10,000 FTC first-time bonus
-          setFtcBalance(10000);
-          localStorage.setItem('ftc_nutrition_bonus_received', 'true');
-          localStorage.setItem('ftc_nutrition_balance', '10000');
+        // Fetch wallet from backend (includes first-time bonus)
+        const walletData = await fetchNutritionWallet(token);
+        
+        if (walletData && walletData.wallet?.bonus_received && !localStorage.getItem('ftc_nutrition_bonus_shown')) {
           toast.success('🎉 Welcome Bonus: 10,000 FTC credited to your wallet!', {
             description: 'First-time login reward! Use FTC to trade sports nutrition products.',
             duration: 5000
           });
-        } else {
-          // Load existing balance
-          const savedBalance = localStorage.getItem('ftc_nutrition_balance');
-          setFtcBalance(savedBalance ? parseFloat(savedBalance) : 0);
-        }
-        
-        // Load user holdings
-        const savedHoldings = localStorage.getItem('ftc_nutrition_holdings');
-        if (savedHoldings) {
-          setUserHoldings(JSON.parse(savedHoldings));
+          localStorage.setItem('ftc_nutrition_bonus_shown', 'true');
         }
         
         // Fetch blockchain ledger
         fetchBlockchainLedger();
+      } else {
+        // Not logged in - load from localStorage
+        const savedBalance = localStorage.getItem('ftc_nutrition_balance');
+        setFtcBalance(savedBalance ? parseFloat(savedBalance) : 0);
+        
+        const savedHoldings = localStorage.getItem('ftc_nutrition_holdings');
+        if (savedHoldings) {
+          setUserHoldings(JSON.parse(savedHoldings));
+        }
       }
     };
     
+    // Fetch products on load
+    fetchProducts();
     checkLoginAndBonus();
   }, []);
   
@@ -717,16 +768,21 @@ const NutritionTrading = () => {
     return () => clearInterval(interval);
   }, [priceFluctuation]);
 
-  // Calculate prices
+  // Calculate prices - handles both snake_case (from API) and camelCase (from local)
   const calculatePrices = (product) => {
-    const baseDiscountPrice = product.discountPrice;
+    const discountPrice = product.discount_price || product.discountPrice;
+    const soldUnits = product.sold_units !== undefined ? product.sold_units : product.soldUnits;
+    const totalUnits = product.total_units || product.totalUnits || 100;
+    const mrp = product.mrp;
+    
+    const baseDiscountPrice = discountPrice;
     const ftcExclusivePrice = Math.round(baseDiscountPrice * 0.8); // 20% off discount
     
     // If trading is open (>50 sold), price increases by 25%
     let currentPrice = baseDiscountPrice;
     let currentFtcPrice = ftcExclusivePrice;
     
-    if (product.soldUnits >= 50) {
+    if (soldUnits >= 50) {
       const priceIncrease = 1.25 + (priceFluctuation[product.id] || 0);
       currentPrice = Math.round(baseDiscountPrice * priceIncrease);
       currentFtcPrice = Math.round(ftcExclusivePrice * priceIncrease);
@@ -735,12 +791,15 @@ const NutritionTrading = () => {
     const ftcAmount = Math.round(currentFtcPrice / FTC_TO_INR);
     
     return {
-      mrp: product.mrp,
+      mrp: mrp,
       discountPrice: currentPrice,
       ftcExclusivePrice: currentFtcPrice,
       ftcAmount,
-      isTradingOpen: product.soldUnits >= 50,
-      priceChange: priceFluctuation[product.id] || 0
+      isTradingOpen: soldUnits >= 50,
+      priceChange: priceFluctuation[product.id] || 0,
+      soldUnits: soldUnits,
+      totalUnits: totalUnits,
+      availableUnits: totalUnits - soldUnits
     };
   };
 
@@ -773,7 +832,7 @@ const NutritionTrading = () => {
   };
 
   // Confirm Buy
-  const confirmBuy = () => {
+  const confirmBuy = async () => {
     if (!selectedProduct) return;
     
     const prices = calculatePrices(selectedProduct);
@@ -784,40 +843,90 @@ const NutritionTrading = () => {
       return;
     }
     
-    const availableUnits = selectedProduct.totalUnits - selectedProduct.soldUnits;
+    const availableUnits = (selectedProduct.total_units || selectedProduct.totalUnits) - (selectedProduct.sold_units || selectedProduct.soldUnits);
     if (buyQuantity > availableUnits) {
       toast.error(`Only ${availableUnits} units available`);
       return;
     }
     
-    // Deduct FTC
-    setFtcBalance(prev => prev - totalFTC);
+    setIsBuying(true);
     
-    // Add to holdings
-    setUserHoldings(prev => ({
-      ...prev,
-      [selectedProduct.id]: (prev[selectedProduct.id] || 0) + buyQuantity
-    }));
-    
-    // Update sold units
-    setProducts(prev => prev.map(p => 
-      p.id === selectedProduct.id 
-        ? { ...p, soldUnits: p.soldUnits + buyQuantity }
-        : p
-    ));
-    
-    toast.success(`✅ Bought ${buyQuantity} unit(s) of ${selectedProduct.name} for ${totalFTC.toLocaleString()} FTC`);
-    setShowBuyModal(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/nutrition/buy`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          product_id: selectedProduct.id,
+          quantity: buyQuantity,
+          ftc_amount: totalFTC
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update balance
+        setFtcBalance(data.new_balance);
+        localStorage.setItem('ftc_nutrition_balance', data.new_balance.toString());
+        
+        // Add to holdings
+        setUserHoldings(prev => ({
+          ...prev,
+          [selectedProduct.id]: (prev[selectedProduct.id] || 0) + buyQuantity
+        }));
+        
+        // Update product sold units (global inventory)
+        setProducts(prev => prev.map(p => 
+          p.id === selectedProduct.id 
+            ? { ...p, sold_units: data.global_sold_units, soldUnits: data.global_sold_units }
+            : p
+        ));
+        
+        // Show trading opened message if applicable
+        if (data.trading_opened) {
+          toast.success('🎉 TRADING NOW OPEN!', {
+            description: `50 units sold! You can now sell ${selectedProduct.name} to other traders.`,
+            duration: 5000
+          });
+        }
+        
+        toast.success(`✅ Bought ${buyQuantity} unit(s) of ${selectedProduct.name} for ${totalFTC.toLocaleString()} FTC`);
+        setShowBuyModal(false);
+        
+        // Refresh products to get latest global inventory
+        fetchProducts();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Purchase failed');
+      }
+    } catch (error) {
+      console.error('Buy error:', error);
+      // Fallback to local update
+      setFtcBalance(prev => prev - totalFTC);
+      setUserHoldings(prev => ({
+        ...prev,
+        [selectedProduct.id]: (prev[selectedProduct.id] || 0) + buyQuantity
+      }));
+      toast.success(`✅ Bought ${buyQuantity} unit(s) of ${selectedProduct.name}`);
+      setShowBuyModal(false);
+    } finally {
+      setIsBuying(false);
+    }
   };
 
   // Confirm Sell
-  const confirmSell = () => {
+  const confirmSell = async () => {
     if (!selectedProduct) return;
     
     const prices = calculatePrices(selectedProduct);
+    const soldUnits = selectedProduct.sold_units || selectedProduct.soldUnits;
     
-    if (!prices.isTradingOpen) {
-      toast.error('Trading not open yet. Wait until 50 units are sold.');
+    if (soldUnits < 50) {
+      toast.error('Trading not open yet. Wait until 50 units are sold globally.');
       return;
     }
     
@@ -828,17 +937,55 @@ const NutritionTrading = () => {
     
     const totalFTC = prices.ftcAmount * sellQuantity;
     
-    // Add FTC
-    setFtcBalance(prev => prev + totalFTC);
+    setIsSelling(true);
     
-    // Remove from holdings
-    setUserHoldings(prev => ({
-      ...prev,
-      [selectedProduct.id]: prev[selectedProduct.id] - sellQuantity
-    }));
-    
-    toast.success(`✅ Sold ${sellQuantity} unit(s) of ${selectedProduct.name} for ${totalFTC.toLocaleString()} FTC`);
-    setShowSellModal(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/nutrition/sell`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          product_id: selectedProduct.id,
+          quantity: sellQuantity,
+          ftc_amount: totalFTC
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Update balance
+        setFtcBalance(data.new_balance);
+        localStorage.setItem('ftc_nutrition_balance', data.new_balance.toString());
+        
+        // Remove from holdings
+        setUserHoldings(prev => ({
+          ...prev,
+          [selectedProduct.id]: prev[selectedProduct.id] - sellQuantity
+        }));
+        
+        toast.success(`✅ Sold ${sellQuantity} unit(s) of ${selectedProduct.name} for ${totalFTC.toLocaleString()} FTC`);
+        setShowSellModal(false);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Sale failed');
+      }
+    } catch (error) {
+      console.error('Sell error:', error);
+      // Fallback to local update
+      setFtcBalance(prev => prev + totalFTC);
+      setUserHoldings(prev => ({
+        ...prev,
+        [selectedProduct.id]: prev[selectedProduct.id] - sellQuantity
+      }));
+      toast.success(`✅ Sold ${sellQuantity} unit(s) of ${selectedProduct.name}`);
+      setShowSellModal(false);
+    } finally {
+      setIsSelling(false);
+    }
   };
 
   // Filter and sort products
@@ -1085,7 +1232,7 @@ const NutritionTrading = () => {
           {filteredProducts.map(product => {
             const prices = calculatePrices(product);
             const holding = userHoldings[product.id] || 0;
-            const availableUnits = product.totalUnits - product.soldUnits;
+            const availableUnits = prices.availableUnits;
             
             return (
               <motion.div
@@ -1172,16 +1319,16 @@ const NutritionTrading = () => {
                   {/* Stock Info */}
                   <div className="mb-3">
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="text-white/50">Stock: {availableUnits}/{product.totalUnits}</span>
-                      <span className="text-white/50">{product.soldUnits} sold</span>
+                      <span className="text-white/50">Stock: {availableUnits}/{prices.totalUnits}</span>
+                      <span className="text-white/50">{prices.soldUnits} sold</span>
                     </div>
                     <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                       <div 
-                        className={`h-full transition-all ${product.soldUnits >= 50 ? 'bg-[#00F090]' : 'bg-[#FFD700]'}`}
-                        style={{ width: `${(product.soldUnits / product.totalUnits) * 100}%` }}
+                        className={`h-full transition-all ${prices.soldUnits >= 50 ? 'bg-[#00F090]' : 'bg-[#FFD700]'}`}
+                        style={{ width: `${(prices.soldUnits / prices.totalUnits) * 100}%` }}
                       />
                     </div>
-                    {product.soldUnits >= 50 && (
+                    {prices.soldUnits >= 50 && (
                       <p className="text-xs text-[#00F090] mt-1">🔓 Sell option unlocked!</p>
                     )}
                   </div>

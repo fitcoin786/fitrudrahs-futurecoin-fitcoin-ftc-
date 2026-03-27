@@ -188,8 +188,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # ============ PRICE FETCHING ============
 
 # Cache for Fitcoin price with fluctuation
-import random
-from datetime import datetime, timezone
 
 # Volume mode: 'daily' = $50-$250, 'hourly' = $5-$10
 VOLUME_MODE = 'daily'
@@ -1254,6 +1252,345 @@ async def exchange_transaction(input: dict, user_id: str = Depends(get_current_u
     await db.orders.insert_one(tx_doc)
     
     return {"success": True, "transaction_id": tx_id, "message": "Exchange completed"}
+
+# ============ NUTRITION TRADING MODELS ============
+
+class NutritionProduct(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str
+    name: str
+    brand: str
+    category: str
+    image: str
+    weight: str
+    mrp: float
+    discount_price: float
+    rating: float
+    reviews: int
+    description: str
+    total_units: int = 100
+    sold_units: int = 0
+    is_veg: bool = True
+
+class NutritionBuyRequest(BaseModel):
+    product_id: str
+    quantity: int
+    ftc_amount: float
+
+class NutritionSellRequest(BaseModel):
+    product_id: str
+    quantity: int
+    ftc_amount: float
+
+class NutritionTransferRequest(BaseModel):
+    amount: float
+    direction: str  # 'to_nutrition' or 'from_nutrition'
+
+# ============ NUTRITION PRODUCTS DATA ============
+
+NUTRITION_PRODUCTS_SEED = [
+    {"id": "NUT001", "name": "Gold Whey Protein Concentrate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1061-05-1756463421-200x200.webp", "weight": "1 kg", "mrp": 3899, "discount_price": 2499, "rating": 4.7, "reviews": 1885, "description": "24g protein per serving", "total_units": 100, "sold_units": 32},
+    {"id": "NUT002", "name": "Pure Creatine Monohydrate", "brand": "FitNutra", "category": "Creatine", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1009-05-1770199222-200x200.webp", "weight": "400g", "mrp": 1419, "discount_price": 749, "rating": 4.7, "reviews": 4623, "description": "Micronized formula", "total_units": 100, "sold_units": 67},
+    {"id": "NUT003", "name": "BCAA Energy Drink", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1091-04-1768054822-200x200.webp", "weight": "250g", "mrp": 1299, "discount_price": 599, "rating": 4.7, "reviews": 3340, "description": "2:1:1 BCAA ratio", "total_units": 100, "sold_units": 45},
+    {"id": "NUT004", "name": "Pure Pea Protein Isolate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1070-05-1756463621-200x200.webp", "weight": "1 kg", "mrp": 2499, "discount_price": 1399, "rating": 4.7, "reviews": 1675, "description": "Plant-based protein", "total_units": 100, "sold_units": 58},
+    {"id": "NUT005", "name": "Pre-Workout Energy", "brand": "FitNutra", "category": "Pre-Workout", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1015-05-1770199022-200x200.webp", "weight": "300g", "mrp": 1899, "discount_price": 999, "rating": 4.6, "reviews": 2890, "description": "Explosive energy boost", "total_units": 100, "sold_units": 41},
+    {"id": "NUT006", "name": "Mass Gainer XXL", "brand": "FitNutra", "category": "Gainer", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1023-05-1770199222-200x200.webp", "weight": "3 kg", "mrp": 3999, "discount_price": 2299, "rating": 4.5, "reviews": 1456, "description": "60g protein, 1200 calories", "total_units": 100, "sold_units": 23},
+    {"id": "NUT007", "name": "Omega-3 Fish Oil", "brand": "FitNutra", "category": "Vitamins", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1035-05-1770199122-200x200.webp", "weight": "120 capsules", "mrp": 999, "discount_price": 549, "rating": 4.8, "reviews": 5670, "description": "1000mg EPA + DHA", "total_units": 100, "sold_units": 78},
+    {"id": "NUT008", "name": "L-Carnitine Fat Burner", "brand": "FitNutra", "category": "Fat Burner", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1045-05-1770199322-200x200.webp", "weight": "60 capsules", "mrp": 799, "discount_price": 449, "rating": 4.6, "reviews": 2340, "description": "3000mg L-Carnitine", "total_units": 100, "sold_units": 52},
+    {"id": "NUT009", "name": "ZMA Sleep & Recovery", "brand": "FitNutra", "category": "Recovery", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1055-05-1770199422-200x200.webp", "weight": "90 capsules", "mrp": 699, "discount_price": 399, "rating": 4.5, "reviews": 1890, "description": "Better sleep", "total_units": 100, "sold_units": 34},
+    {"id": "NUT010", "name": "Casein Protein Night", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1065-05-1756463521-200x200.webp", "weight": "1 kg", "mrp": 3299, "discount_price": 1899, "rating": 4.7, "reviews": 1234, "description": "Slow-release protein", "total_units": 100, "sold_units": 29},
+    {"id": "NUT011", "name": "Glutamine Recovery", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1095-04-1768054922-200x200.webp", "weight": "300g", "mrp": 1199, "discount_price": 649, "rating": 4.6, "reviews": 987, "description": "5g L-Glutamine", "total_units": 100, "sold_units": 61},
+    {"id": "NUT012", "name": "Multivitamin Daily", "brand": "FitNutra", "category": "Vitamins", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1075-05-1770199522-200x200.webp", "weight": "60 tablets", "mrp": 599, "discount_price": 349, "rating": 4.8, "reviews": 4560, "description": "Complete daily nutrition", "total_units": 100, "sold_units": 89},
+    {"id": "NUT013", "name": "Whey Protein Isolate", "brand": "FitNutra", "category": "Protein", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1085-05-1756463721-200x200.webp", "weight": "1 kg", "mrp": 4499, "discount_price": 2799, "rating": 4.9, "reviews": 3456, "description": "90% pure protein", "total_units": 100, "sold_units": 47},
+    {"id": "NUT014", "name": "EAA Essential Aminos", "brand": "FitNutra", "category": "Amino", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1105-04-1768055022-200x200.webp", "weight": "300g", "mrp": 1599, "discount_price": 899, "rating": 4.7, "reviews": 1678, "description": "9 essential aminos", "total_units": 100, "sold_units": 38},
+    {"id": "NUT015", "name": "Ashwagandha Extract", "brand": "FitNutra", "category": "Ayurveda", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1115-05-1770199622-200x200.webp", "weight": "60 capsules", "mrp": 499, "discount_price": 299, "rating": 4.8, "reviews": 6789, "description": "KSM-66 extract", "total_units": 100, "sold_units": 92},
+    {"id": "NUT016", "name": "Collagen Peptides", "brand": "FitNutra", "category": "Beauty", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1125-05-1770199722-200x200.webp", "weight": "250g", "mrp": 1899, "discount_price": 1099, "rating": 4.6, "reviews": 2345, "description": "Type I & III collagen", "total_units": 100, "sold_units": 55},
+    {"id": "NUT017", "name": "Peanut Butter Natural", "brand": "FitNutra", "category": "Health Food", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1135-05-1770199822-200x200.webp", "weight": "1 kg", "mrp": 599, "discount_price": 399, "rating": 4.7, "reviews": 8901, "description": "100% roasted peanuts", "total_units": 100, "sold_units": 73},
+    {"id": "NUT018", "name": "Citrulline Malate", "brand": "FitNutra", "category": "Pre-Workout", "image": "https://cdn2.nutrabay.com/uploads/variant/images/thumbnail_image-NB-NUT-1145-04-1768055122-200x200.webp", "weight": "200g", "mrp": 999, "discount_price": 599, "rating": 4.6, "reviews": 1234, "description": "Enhanced blood flow", "total_units": 100, "sold_units": 44}
+]
+
+# ============ NUTRITION TRADING ENDPOINTS ============
+
+@api_router.get("/nutrition/products")
+async def get_nutrition_products():
+    """Get all nutrition products with global inventory"""
+    # Check if products exist in DB, if not seed them
+    count = await db.nutrition_products.count_documents({})
+    if count == 0:
+        # Seed products
+        for product in NUTRITION_PRODUCTS_SEED:
+            product['created_at'] = datetime.now(timezone.utc).isoformat()
+            await db.nutrition_products.insert_one(product)
+    
+    # Fetch all products
+    products = await db.nutrition_products.find({}, {"_id": 0}).to_list(length=100)
+    return {"products": products, "total": len(products)}
+
+@api_router.get("/nutrition/products/{product_id}")
+async def get_nutrition_product(product_id: str):
+    """Get single nutrition product"""
+    product = await db.nutrition_products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
+
+@api_router.post("/nutrition/buy")
+async def buy_nutrition_product(request: NutritionBuyRequest, user_id: str = Depends(get_current_user)):
+    """Buy nutrition product with FTC - updates global inventory"""
+    # Get product
+    product = await db.nutrition_products.find_one({"id": request.product_id})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Check if enough units available
+    available_units = product['total_units'] - product['sold_units']
+    if request.quantity > available_units:
+        raise HTTPException(status_code=400, detail=f"Only {available_units} units available")
+    
+    if request.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be greater than 0")
+    
+    # Get user's nutrition wallet balance
+    user_wallet = await db.nutrition_wallets.find_one({"user_id": user_id})
+    if not user_wallet:
+        # Create wallet with 0 balance if not exists
+        user_wallet = {"user_id": user_id, "ftc_balance": 0, "created_at": datetime.now(timezone.utc).isoformat()}
+        await db.nutrition_wallets.insert_one(user_wallet)
+    
+    if user_wallet.get('ftc_balance', 0) < request.ftc_amount:
+        raise HTTPException(status_code=400, detail="Insufficient FTC balance")
+    
+    # Update product sold units (global inventory)
+    new_sold_units = product['sold_units'] + request.quantity
+    await db.nutrition_products.update_one(
+        {"id": request.product_id},
+        {"$set": {"sold_units": new_sold_units}}
+    )
+    
+    # Deduct FTC from user wallet
+    new_balance = user_wallet.get('ftc_balance', 0) - request.ftc_amount
+    await db.nutrition_wallets.update_one(
+        {"user_id": user_id},
+        {"$set": {"ftc_balance": new_balance}}
+    )
+    
+    # Add to user holdings
+    existing_holding = await db.nutrition_holdings.find_one({"user_id": user_id, "product_id": request.product_id})
+    if existing_holding:
+        new_quantity = existing_holding.get('quantity', 0) + request.quantity
+        new_total_invested = existing_holding.get('total_invested', 0) + request.ftc_amount
+        await db.nutrition_holdings.update_one(
+            {"user_id": user_id, "product_id": request.product_id},
+            {"$set": {"quantity": new_quantity, "total_invested": new_total_invested, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    else:
+        await db.nutrition_holdings.insert_one({
+            "user_id": user_id,
+            "product_id": request.product_id,
+            "product_name": product['name'],
+            "quantity": request.quantity,
+            "total_invested": request.ftc_amount,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        })
+    
+    # Record transaction
+    await db.nutrition_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "product_id": request.product_id,
+        "product_name": product['name'],
+        "type": "buy",
+        "quantity": request.quantity,
+        "ftc_amount": request.ftc_amount,
+        "global_sold_units": new_sold_units,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Check if trading just opened (50+ units sold)
+    trading_opened = product['sold_units'] < 50 and new_sold_units >= 50
+    
+    return {
+        "success": True,
+        "message": f"Successfully purchased {request.quantity} units of {product['name']}",
+        "new_balance": new_balance,
+        "global_sold_units": new_sold_units,
+        "trading_opened": trading_opened,
+        "available_units": product['total_units'] - new_sold_units
+    }
+
+@api_router.post("/nutrition/sell")
+async def sell_nutrition_product(request: NutritionSellRequest, user_id: str = Depends(get_current_user)):
+    """Sell nutrition product for FTC - only available after 50 units sold globally"""
+    # Get product
+    product = await db.nutrition_products.find_one({"id": request.product_id})
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    
+    # Check if trading is open (50+ units sold)
+    if product['sold_units'] < 50:
+        raise HTTPException(status_code=400, detail="Trading not yet open. 50 units must be sold first.")
+    
+    # Check user holdings
+    holding = await db.nutrition_holdings.find_one({"user_id": user_id, "product_id": request.product_id})
+    if not holding or holding.get('quantity', 0) < request.quantity:
+        raise HTTPException(status_code=400, detail="Insufficient holdings to sell")
+    
+    # Update user holdings
+    new_quantity = holding['quantity'] - request.quantity
+    if new_quantity == 0:
+        await db.nutrition_holdings.delete_one({"user_id": user_id, "product_id": request.product_id})
+    else:
+        await db.nutrition_holdings.update_one(
+            {"user_id": user_id, "product_id": request.product_id},
+            {"$set": {"quantity": new_quantity, "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+    
+    # Add FTC to user wallet
+    user_wallet = await db.nutrition_wallets.find_one({"user_id": user_id})
+    new_balance = user_wallet.get('ftc_balance', 0) + request.ftc_amount
+    await db.nutrition_wallets.update_one(
+        {"user_id": user_id},
+        {"$set": {"ftc_balance": new_balance}}
+    )
+    
+    # Record transaction
+    await db.nutrition_transactions.insert_one({
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "product_id": request.product_id,
+        "product_name": product['name'],
+        "type": "sell",
+        "quantity": request.quantity,
+        "ftc_amount": request.ftc_amount,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "success": True,
+        "message": f"Successfully sold {request.quantity} units of {product['name']}",
+        "new_balance": new_balance,
+        "ftc_received": request.ftc_amount
+    }
+
+@api_router.get("/nutrition/wallet")
+async def get_nutrition_wallet(user_id: str = Depends(get_current_user)):
+    """Get user's nutrition wallet balance and holdings"""
+    # Get or create wallet
+    wallet = await db.nutrition_wallets.find_one({"user_id": user_id}, {"_id": 0})
+    if not wallet:
+        # Create with first-time bonus
+        wallet = {
+            "user_id": user_id,
+            "ftc_balance": 10000,  # First-time bonus
+            "bonus_received": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.nutrition_wallets.insert_one(wallet)
+        wallet.pop('_id', None)
+    
+    # Get holdings
+    holdings = await db.nutrition_holdings.find({"user_id": user_id}, {"_id": 0}).to_list(length=100)
+    
+    # Get recent transactions
+    transactions = await db.nutrition_transactions.find(
+        {"user_id": user_id}, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(10).to_list(length=10)
+    
+    return {
+        "wallet": wallet,
+        "holdings": holdings,
+        "transactions": transactions
+    }
+
+@api_router.post("/nutrition/transfer")
+async def transfer_nutrition_ftc(request: NutritionTransferRequest, user_id: str = Depends(get_current_user)):
+    """Transfer FTC to/from nutrition wallet"""
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+    
+    # Get or create nutrition wallet
+    wallet = await db.nutrition_wallets.find_one({"user_id": user_id})
+    if not wallet:
+        wallet = {
+            "user_id": user_id,
+            "ftc_balance": 10000,
+            "bonus_received": True,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.nutrition_wallets.insert_one(wallet)
+    
+    if request.direction == 'to_nutrition':
+        # Transfer from FitWallet to Nutrition Wallet
+        new_balance = wallet.get('ftc_balance', 0) + request.amount
+        await db.nutrition_wallets.update_one(
+            {"user_id": user_id},
+            {"$set": {"ftc_balance": new_balance}}
+        )
+        
+        # Record transaction
+        await db.nutrition_transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": "transfer_in",
+            "amount": request.amount,
+            "source": "fitwallet",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return {"success": True, "new_balance": new_balance, "message": f"Transferred {request.amount} FTC to Nutrition Wallet"}
+    
+    elif request.direction == 'from_nutrition':
+        # Transfer from Nutrition Wallet to FitWallet
+        if wallet.get('ftc_balance', 0) < request.amount:
+            raise HTTPException(status_code=400, detail="Insufficient balance in Nutrition Wallet")
+        
+        new_balance = wallet.get('ftc_balance', 0) - request.amount
+        await db.nutrition_wallets.update_one(
+            {"user_id": user_id},
+            {"$set": {"ftc_balance": new_balance}}
+        )
+        
+        # Record transaction
+        await db.nutrition_transactions.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user_id,
+            "type": "transfer_out",
+            "amount": request.amount,
+            "destination": "fitwallet",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return {"success": True, "new_balance": new_balance, "message": f"Transferred {request.amount} FTC to FitWallet"}
+    
+    else:
+        raise HTTPException(status_code=400, detail="Invalid transfer direction")
+
+@api_router.get("/nutrition/leaderboard")
+async def get_nutrition_leaderboard():
+    """Get top traders leaderboard"""
+    # Aggregate top traders by total invested
+    pipeline = [
+        {"$group": {"_id": "$user_id", "total_invested": {"$sum": "$total_invested"}, "total_products": {"$sum": "$quantity"}}},
+        {"$sort": {"total_invested": -1}},
+        {"$limit": 10}
+    ]
+    
+    leaderboard = await db.nutrition_holdings.aggregate(pipeline).to_list(length=10)
+    
+    # Get usernames
+    result = []
+    for entry in leaderboard:
+        user = await db.users.find_one({"id": entry['_id']}, {"_id": 0, "full_name": 1})
+        result.append({
+            "user_id": entry['_id'],
+            "name": user.get('full_name', 'Anonymous') if user else 'Anonymous',
+            "total_invested": entry['total_invested'],
+            "total_products": entry['total_products']
+        })
+    
+    return {"leaderboard": result}
 
 # ============ ORDER BOOK ============
 
