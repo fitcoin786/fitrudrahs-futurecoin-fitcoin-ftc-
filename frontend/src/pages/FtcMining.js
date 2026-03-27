@@ -396,6 +396,48 @@ const FtcMining = () => {
     setTotalProfitLoss(totalPL);
   }, [portfolio, nutritionPrices]);
 
+  // Periodic refresh of subscription status (every 10 seconds when pending)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token || !isLoggedIn) return;
+
+    // Only poll when there's a pending subscription
+    if (subscriptionRequest && (subscriptionRequest.status === 'pending' || subscriptionRequest.status === 'pending_upgrade')) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const response = await fetch(`${BACKEND_URL}/api/mining/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            
+            // Check if subscription was activated
+            if (data.active_subscription && 
+                (!activeSubscription || data.active_subscription.id !== activeSubscription?.id)) {
+              // Subscription was just activated!
+              setActiveSubscription(data.active_subscription);
+              setSubscriptionRequest(data.pending_request);
+              
+              toast.success('🎉 Your subscription has been ACTIVATED!', {
+                description: `${data.active_subscription.plan_name} is now active. Start mining now!`
+              });
+            }
+            
+            // Update pending request status
+            if (data.pending_request?.status !== subscriptionRequest?.status) {
+              setSubscriptionRequest(data.pending_request);
+            }
+          }
+        } catch (error) {
+          console.log('Status poll error:', error);
+        }
+      }, 10000); // Check every 10 seconds
+
+      return () => clearInterval(pollInterval);
+    }
+  }, [subscriptionRequest, activeSubscription, isLoggedIn]);
+
   // Save calories to localStorage
   useEffect(() => {
     if (caloriesBurned > 0) {
@@ -609,7 +651,9 @@ const FtcMining = () => {
         setShowPlanModal(false);
         setTransactionHash('');
         toast.success(selectedPlan.isFree ? '✅ Free Trial request submitted!' : '✅ Subscription request submitted!', {
-          description: selectedPlan.isFree ? 'Admin will approve your 7-day free trial' : 'Admin will verify payment and activate your plan'
+          description: selectedPlan.isFree 
+            ? 'Admin will approve your 7-day free trial. Status will update automatically!' 
+            : 'Admin will verify payment and activate your plan. Status will update automatically!'
         });
         // Refresh mining data to get updated status
         const token = localStorage.getItem('token');
@@ -910,7 +954,28 @@ const FtcMining = () => {
                       {subscriptionRequest.status === 'pending_upgrade' ? 'UPGRADE PENDING' : 'PENDING'}
                     </span>
                   </div>
-                  <p className="text-sm text-white/60">Awaiting admin activation</p>
+                  <p className="text-sm text-white/60 mb-2">Awaiting admin activation</p>
+                  <p className="text-xs text-white/40 mb-3">Status will update automatically when approved</p>
+                  <button
+                    onClick={async () => {
+                      const token = localStorage.getItem('token');
+                      if (token) {
+                        toast.loading('Checking status...');
+                        await fetchMiningData(token);
+                        toast.dismiss();
+                        if (activeSubscription) {
+                          toast.success('🎉 Subscription activated!');
+                        } else {
+                          toast.info('Still pending. Admin will review soon.');
+                        }
+                      }
+                    }}
+                    className="w-full py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2"
+                    data-testid="refresh-status-btn"
+                  >
+                    <Clock className="h-4 w-4" />
+                    Refresh Status
+                  </button>
                 </div>
               ) : (
                 <div className="text-center py-4">

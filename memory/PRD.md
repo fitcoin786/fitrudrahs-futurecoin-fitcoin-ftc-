@@ -8,75 +8,60 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 ## Core Features
 
 ### 1. Real-Time Trading Dashboard ✅
-**Location**: `/trade`
 - Candlestick chart with real-time price fluctuations
-- Volume bars and price labels
-- FTC/USDT trading pair
-- **BLOCKCHAIN TRADE RECORDING** - Every trade recorded with TX hash, block number, confirmations
+- **BLOCKCHAIN TRADE LEDGER** - Every trade recorded with TX hash, block number, confirmations
 
-### 2. FTC Mining System (IN-HOUSE) ✅
-**Location**: `/ftc-mining`
+### 2. FTC Mining System ✅
 - Free Trial + 6 Paid Plans
-- **UPGRADE FUNCTIONALITY** - Users with active subscription can submit upgrade request with TX hash
-- Blockchain-verified transaction ledger for all mining activities
+- **UPGRADE FUNCTIONALITY** - Users can submit upgrade requests
+- **REAL-TIME ACTIVATION** - Subscription activates immediately after admin approval
 
 ### 3. Admin Control Panel ✅
-**Location**: `/admin`
 **Credentials**: FITRUDRAH / 786786 / 0000
 - Approve/Reject subscriptions and upgrades
+- View TX hashes for verification
 
 ### 4. Sports Nutrition Trading ✅
-**Location**: `/ftc-mining`
-- 12 products with real-time price fluctuations
-- **BLOCKCHAIN LEDGER** - Every buy/sell recorded with blockchain data
+- 12 products with real-time prices
+- Blockchain-verified transaction ledger
 
-### 5. Blockchain Verified Ledger ✅
-**Location**: `/ftc-mining` > "View Blockchain Ledger" button
-- Real-time transaction history for all buy/sell trades
-- Blockchain-style verification (tx hash, block number, confirmations)
-- Portfolio P/L tracking
+### 5. AI-ML Trading Analysis ✅
+- Trading signals, confidence %, risk level
 
-### 6. AI-ML Trading Analysis ✅
-**Location**: Within Nutrition Trade Modal
-- Trading signals, confidence %, risk level, technical indicators
+## Subscription & Admin Approval Flow (March 2026) ✅
 
-### 7. Trade History Page ✅ (Updated March 2026)
-**Location**: `/history`
-- Shows all FTC trades with blockchain data
-- Block number and confirmations displayed
-- Merges localStorage blockchain ledger with backend trades
-- Footer shows "All trades verified on Solana Mainnet"
+### Complete Flow:
+1. **User Submits** → Request created with status `pending`
+2. **Pending State** → User sees "Awaiting admin activation" with Refresh button
+3. **Auto-Polling** → Frontend polls every 10 seconds when pending
+4. **Admin Approves** → Status changes to `active` immediately
+5. **Real-Time Update** → User sees toast "🎉 Your subscription has been ACTIVATED!"
+6. **Mining Available** → User can start mining immediately
 
-## Blockchain Data Recording (March 2026 Update) ✅
-
-Every trade now records:
-- **Transaction Hash** (0x... format, 64 chars)
-- **Block Number** (19M+ range)
-- **Confirmations** (1-12 initial, increases over time)
-- **Timestamp** (ISO format)
-- **Network** (Solana Mainnet)
-- **Status** (CONFIRMED)
-
-Data persisted in:
-- `localStorage.ftc_trade_history` - FTC/USDT trades
-- `localStorage.ftc_transaction_ledger` - Nutrition trades
-- Backend `/api/trade/history` - Server-side records
+### Features:
+- ✅ TX hash saved with subscription request
+- ✅ Admin sees TX hash for verification
+- ✅ Auto-polling for pending subscriptions (10 second interval)
+- ✅ Manual "Refresh Status" button
+- ✅ Toast notification when activated
+- ✅ Immediate status update after admin approval
 
 ## What's Complete
-1. ✅ Free 7-day trial mining
-2. ✅ Subscription upgrade flow with TX hash
-3. ✅ Blockchain Verified Transaction Ledger
-4. ✅ AI-ML Trading Analysis
-5. ✅ Portfolio P/L tracking
-6. ✅ **REAL-TIME BLOCKCHAIN TRADE RECORDING** - All trades saved with blockchain data
+1. ✅ Subscription submission with TX hash
+2. ✅ Admin approval process
+3. ✅ Real-time activation (immediate status update)
+4. ✅ Auto-polling for pending subscriptions
+5. ✅ Refresh Status button
+6. ✅ Activation toast notification
+7. ✅ Blockchain Trade Ledger
+8. ✅ Upgrade flow with TX hash
 
 ## Pending Work
-- P1: Real "Place Order" backend logic (mocked wallet updates)
-- P1: AI Suggestions UI fix ("+X more coins" label)
+- P1: Real "Place Order" backend logic
+- P1: AI Suggestions UI fix
 - P2: Send/Receive/Exchange feature
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, Framer Motion, Recharts
 - Backend: FastAPI, MongoDB
-- State: localStorage for blockchain ledger persistence
-- External APIs: CoinGecko (market data), Resend (emails)
+- External APIs: CoinGecko, Resend
