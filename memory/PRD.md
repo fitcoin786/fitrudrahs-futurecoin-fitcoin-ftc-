@@ -39,42 +39,50 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - Detailed view on click with price, market cap, volume, blockchain info
 
 ### 5. Claim FTC Credit Page (FCOIN Blockchain Integration)
-- **Status**: ✅ Complete (Updated Mar 19, 2026)
+- **Status**: ✅ Complete
 - **CONNECTED TO REAL FCOIN BLOCKCHAIN API**
-- Login with FitWallet credentials via `https://solana-fitness.emergent.host/api/auth/login`
-- Real-time blockchain data from `https://solana-fitness.emergent.host/api/blockchain/ledger`
-- Displays real blockchain stats: Total Blocks, Total Mined, Transferred, Users
-- Real transactions: Mining, New User, Referral Commission
+- Login with FitWallet credentials
+- Real-time blockchain data display
 - Health-based FTC calculator
 - Send/Exchange FTC functionality
-- Auto-refresh every 30 seconds
-- Manual refresh button
 
 ### 6. Landing Page
-- **Status**: ✅ Complete (Updated Mar 19, 2026)
+- **Status**: ✅ Complete (Updated Mar 27, 2026)
 - Hero section with FTC branding
 - "Health Is Wealth" AI button
 - "Mine Fitcoin" section
+- **NEW: "Sports Nutrition Trading - Coming Soon" section**
 - "Alpha Radar" section
-- Photo links grid including:
-  - Tap to Trading Buy-Sell
-  - Tap to Mining Cal-FTC
-  - **Fast tap to join Fit Pool** → `https://hacker-mine-ftc.emergent.host/`
-  - Tap to FTC Wellness
+- Photo links grid
 - FiTOwlSiRinG section
-- Special offers
-- FAQ section
-- Extensive ecosystem links
+- Special offers and FAQ
 
-### 7. Portfolio
+### 7. Sports Nutrition Trading Marketplace (NEW)
+- **Status**: ✅ Complete (Mar 27, 2026)
+- **Route**: `/nutrition-trading`
+- 18 premium sports nutrition products
+- Crypto-style trading mechanics
+- **10,000 FTC first-time login bonus** (one-time only)
+- **20% FTC holder exclusive discount**
+- 100 units max per product
+- When 50 units sold → TRADING OPEN (user-to-user selling unlocks)
+- Price increases 25% for remaining base units after 50 sold
+- Categories: Protein, Creatine, Pre-Workout, Vitamins, etc.
+- Grid/List view modes
+- Search and filter functionality
+- Real-time price fluctuation for trading-open products
+- **Demo Mode**: Uses localStorage for balances and holdings
+- "Need More FTC?" section with mining redirect
+
+### 8. Portfolio
 - **Status**: ✅ Basic UI Complete
 - Shows user wallet balances
 
-### 8. Trade History
+### 9. Trade History
 - **Status**: ✅ Basic UI Complete
 - Shows user's past orders
 
-### 9. Send/Receive Feature
+### 10. Send/Receive Feature
 - **Status**: ⚠️ Placeholder only
 - UI exists but blockchain integration pending
 
@@ -89,11 +97,12 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/
-│   │   │   ├── LandingPage.js       # Updated with Fit Pool link
+│   │   │   ├── LandingPage.js       # Updated with Nutrition Coming Soon
 │   │   │   ├── TradingDashboard.js
 │   │   │   ├── MarketOverview.js
 │   │   │   ├── CryptoSearch.js
 │   │   │   ├── ClaimFtcCredit.js    # FCOIN blockchain integration
+│   │   │   ├── NutritionTrading.js  # NEW: Sports Nutrition Trading
 │   │   │   ├── Portfolio.js
 │   │   │   ├── TradeHistory.js
 │   │   │   └── SendReceive.js
@@ -123,53 +132,35 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 | `/api/trade/history` | GET | ✅ | Get trade history |
 | `/api/orderbook` | GET | ✅ | Get order book |
 
-## External API Integrations
+## Recent Changes (Mar 27, 2026)
 
-| Service | Status | Notes |
-|---------|--------|-------|
-| CoinGecko API | ✅ Active | Free tier, async thread pool wrapper |
-| Birdeye.so | ✅ Active | Via iframe for FTC chart |
-| MongoDB | ✅ Active | User data, wallets, orders |
-| FCOIN Blockchain API | ✅ Active | Real-time blockchain data from solana-fitness.emergent.host |
-| Resend | ✅ Active | Email OTP for password reset |
+### Sports Nutrition Trading Marketplace (NEW FEATURE)
+- Added `/nutrition-trading` route to App.js
+- Created NutritionTrading.js with:
+  - 18 hardcoded Nutrabay-style products
+  - Intro modal with animated badges
+  - FTC price ticker with real-time fluctuation
+  - Category filtering (12 categories)
+  - Search by product name/brand
+  - Grid/List view toggle
+  - Sort options (Popular, Price, Rating, Sold)
+  - Trading mechanics: 
+    - 100 units max per product
+    - After 50 sold: TRADING OPEN badge, 25% price increase
+    - Price fluctuation for open-trading products
+  - Buy/Sell modals with quantity controls
+  - "Need More FTC?" section linking to mining app
+  - Footer with mining and home links
 
-## FCOIN Blockchain Integration (Mar 19, 2026)
-
-### API Base URL
-`https://solana-fitness.emergent.host`
-
-### Endpoints Used
-- `POST /api/auth/login` - Login to FitWallet
-- `POST /api/auth/register` - Register new FitWallet
-- `GET /api/blockchain/ledger` - Get blockchain transactions (requires auth)
-- `GET /api/stats` - Get user mining stats (requires auth)
-
-### Data Retrieved
-- **Network Stats**: Total mined (119M+ FTC), total transferred, total users
-- **Transactions**: Mining rewards, new user registrations, referral commissions
-- **User Data**: Wallet address, FTC balance, referral code
-
-## Recent Changes (Mar 19, 2026)
-
-1. **Landing Page Update**
-   - Replaced "Tap to FTC Wellness" with **"Fast tap to join Fit Pool"**
-   - New link: `https://hacker-mine-ftc.emergent.host/`
-   - Updated data-testid to `fit-pool-link`
-
-2. **FCOIN Blockchain Integration** 
-   - Connected ClaimFtcCredit page to **REAL FCOIN blockchain API**
-   - Login authenticates via `https://solana-fitness.emergent.host/api/auth/login`
-   - Fetches real blockchain data from `/api/blockchain/ledger`
-   - Displays real stats: 360 blocks, 119M+ FTC mined, 53 users
-   - Shows real transactions: Mining, New User, Referral Commission
-   - Auto-refresh every 30 seconds
-   - Manual refresh button added
-   - Link to FCOIN Explorer
+### Landing Page Updates
+- Added "Sports Nutrition Trading - Coming Soon" section
+- 10,000 FTC Bonus and 20% FTC Discount badges
+- "Preview Nutrition Trading" button linking to /nutrition-trading
 
 ## Pending/Future Work
 
 ### P0 - Critical
-- [x] Connect Claim FTC page to real blockchain API ✅ DONE
+- [x] Sports Nutrition Trading Marketplace ✅ DONE (Mar 27)
 
 ### P1 - High Priority
 - [ ] AI Suggestions UI improvement (+X more coins indicator)
@@ -177,24 +168,27 @@ Build a full-stack trading application called "Future Trade" for cryptocurrency 
 - [ ] Send/Receive/Exchange backend logic
 
 ### P2 - Medium Priority
-- [ ] Intro video on landing page
+- [ ] Intro video on landing page (proper video upload)
 - [ ] Portfolio watchlist feature
 - [ ] Refactor server.py into modules
 
 ### P3 - Low Priority
 - [ ] Replace Birdeye iframe with native chart library
 - [ ] Refactor ClaimFtcCredit.js (1100+ lines)
-
-## User Credentials for Testing
-
-### Local App
-- New users can register through `/auth` page
-- Initial balance: $10,000 USD, 0 FTC
-
-### FCOIN API Test Account
-- Email: `test@futuretrade.com`
-- Password: `testpass123`
-- Wallet: `FTC1D1AC4129EBC4B0F90E2297123459E03`
+- [ ] Backend integration for Nutrition Trading (global inventory)
 
 ## Test Reports
-- `/app/test_reports/iteration_1.json` - FCOIN blockchain integration tests (100% pass)
+- `/app/test_reports/iteration_1.json` - FCOIN blockchain integration tests
+- `/app/test_reports/iteration_2.json` - Sports Nutrition Trading tests (100% pass)
+
+## Demo Mode Note
+The Sports Nutrition Trading feature operates in **DEMO MODE**:
+- FTC balance stored in localStorage (`ftc_nutrition_balance`)
+- Product holdings stored in localStorage (`ftc_nutrition_holdings`)
+- First-time bonus flag in localStorage (`ftc_nutrition_bonus_received`)
+- Products are hardcoded (not fetched from backend)
+
+For production, backend APIs needed for:
+- Global inventory tracking (100 units per product across all users)
+- User-to-user trading when 50+ units sold
+- FTC balance sync with main wallet
