@@ -188,13 +188,32 @@ const FtcMining = () => {
       miningIntervalRef.current = null;
     }
     
-    // Save mined FTC to balance
-    setFtcBalance(prev => prev + ftcMined);
-    localStorage.setItem('ftc_mining_balance', (ftcBalance + ftcMined).toString());
+    toast.success(`⏹ Mining Stopped! You have ${ftcMined} FTC to transfer`);
+  };
+
+  // Transfer mined FTC to total balance
+  const transferToBalance = () => {
+    if (ftcMined <= 0) {
+      toast.error('No FTC to transfer. Start mining first!');
+      return;
+    }
     
-    toast.success(`💰 Mining Stopped! Earned ${ftcMined} FTC`);
+    const transferAmount = ftcMined;
+    
+    // Add mined FTC to balance
+    setFtcBalance(prev => {
+      const newBalance = prev + transferAmount;
+      localStorage.setItem('ftc_mining_balance', newBalance.toString());
+      return newBalance;
+    });
+    
+    // Reset mined amounts
     setFtcMined(0);
     setCaloriesBurned(0);
+    
+    toast.success(`💰 Transferred ${transferAmount} FTC to your balance!`, {
+      description: 'FTC added to Total FTC Balance'
+    });
   };
 
   // Submit subscription request
@@ -452,6 +471,19 @@ const FtcMining = () => {
             
             {isMining && !isBoosted && (
               <p className="text-xs text-white/40 mt-2">Tap again for 5-second speed boost!</p>
+            )}
+            
+            {/* Transfer to Balance Button */}
+            {ftcMined > 0 && (
+              <button
+                onClick={transferToBalance}
+                className="mt-4 w-full px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#FF2E50] text-white font-bold rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 animate-pulse"
+                data-testid="transfer-btn"
+              >
+                <Wallet className="h-5 w-5" />
+                Transfer {ftcMined} FTC to Balance
+                <ArrowRight className="h-5 w-5" />
+              </button>
             )}
           </div>
 
