@@ -147,3 +147,18 @@ h1, h2, h3, h4, h5, h6 {
         border-bottom-color: inherit;
     }
 }
+
+
+/* Slow spin animation for mining */
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+}

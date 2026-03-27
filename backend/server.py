@@ -1819,6 +1819,7 @@ class MiningSubscriptionRequest(BaseModel):
     ftc_limit: int
     payment_method: str
     price: float
+    transaction_hash: Optional[str] = None
 
 class AdminActivateRequest(BaseModel):
     request_id: str
@@ -1894,6 +1895,7 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
         "ftc_limit": request.ftc_limit,
         "payment_method": request.payment_method,
         "price": request.price,
+        "transaction_hash": request.transaction_hash,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "activated_at": None
@@ -1907,7 +1909,7 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
     return {
         "success": True,
         "request": subscription_doc,
-        "message": "Subscription request submitted. Admin will activate shortly."
+        "message": "Subscription request submitted. Admin will verify and activate."
     }
 
 @api_router.post("/mining/save-progress")

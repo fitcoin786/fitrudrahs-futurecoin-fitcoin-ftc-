@@ -1,14 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Zap, Flame, Activity, Award, Clock, Check, Star, 
   ArrowRight, Wallet, TrendingUp, Shield, ExternalLink,
-  Volume2, VolumeX, Gift, Crown, Target
+  Volume2, VolumeX, Gift, Crown, Target, Rocket
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+// Fitcoin Logo
+const FTC_LOGO = 'https://customer-assets.emergentagent.com/job_8ab2343f-b785-4283-8178-10a5f0187955/artifacts/m800590q_7715.jpg';
 
 // Subscription Plans
 const SUBSCRIPTION_PLANS = [
@@ -22,6 +25,7 @@ const SUBSCRIPTION_PLANS = [
 
 const FtcMining = () => {
   const navigate = useNavigate();
+  const miningIntervalRef = useRef(null);
   const [showIntroVideo, setShowIntroVideo] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -30,11 +34,14 @@ const FtcMining = () => {
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const [ftcMined, setFtcMined] = useState(0);
   const [isMining, setIsMining] = useState(false);
+  const [isBoosted, setIsBoosted] = useState(false);
+  const [boostTimeLeft, setBoostTimeLeft] = useState(0);
   const [activeSubscription, setActiveSubscription] = useState(null);
   const [subscriptionRequest, setSubscriptionRequest] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('USD');
+  const [transactionHash, setTransactionHash] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Check login and fetch mining data
@@ -84,37 +91,99 @@ const FtcMining = () => {
       return;
     }
     
+    // If already mining, activate 5-second BOOST
+    if (isMining) {
+      activateBoost();
+      return;
+    }
+    
     setIsMining(true);
     toast.success('⚡ Mining Started!', {
-      description: 'Converting your calories to FTC'
+      description: 'Converting your calories to FTC in real-time'
     });
     
-    // Simulate mining (in real app, this would fetch from StepsApp)
-    const miningInterval = setInterval(() => {
+    // Start real-time mining simulation
+    const normalSpeed = 2000; // 2 seconds normal
+    runMiningLoop(normalSpeed);
+  };
+
+  // Activate 5-second boost
+  const activateBoost = () => {
+    if (isBoosted) {
+      toast.info('Boost already active!');
+      return;
+    }
+    
+    setIsBoosted(true);
+    setBoostTimeLeft(5);
+    toast.success('🚀 BOOST ACTIVATED! 5 seconds of 2x speed!');
+    
+    // Clear existing interval and run faster
+    if (miningIntervalRef.current) {
+      clearInterval(miningIntervalRef.current);
+    }
+    runMiningLoop(400); // 5x faster during boost
+    
+    // Boost countdown
+    const boostCountdown = setInterval(() => {
+      setBoostTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(boostCountdown);
+          setIsBoosted(false);
+          // Return to normal speed
+          if (miningIntervalRef.current) {
+            clearInterval(miningIntervalRef.current);
+          }
+          runMiningLoop(2000);
+          toast.info('Boost ended. Tap again for another boost!');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Mining loop function
+  const runMiningLoop = (speed) => {
+    if (miningIntervalRef.current) {
+      clearInterval(miningIntervalRef.current);
+    }
+    
+    miningIntervalRef.current = setInterval(() => {
       setCaloriesBurned(prev => {
-        const newCalories = prev + Math.floor(Math.random() * 10) + 5;
+        const increment = isBoosted ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 10) + 5;
+        const newCalories = prev + increment;
         const maxCalories = activeSubscription?.calories || 500;
         return Math.min(newCalories, maxCalories);
       });
       
       setFtcMined(prev => {
-        const newFtc = prev + Math.floor(Math.random() * 5) + 1;
+        const increment = isBoosted ? Math.floor(Math.random() * 10) + 5 : Math.floor(Math.random() * 5) + 1;
+        const newFtc = prev + increment;
         const maxFtc = activeSubscription?.ftc_limit || 500;
         return Math.min(newFtc, maxFtc);
       });
-    }, 2000);
-    
-    // Store interval ID to clear later
-    localStorage.setItem('miningInterval', miningInterval);
+    }, speed);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (miningIntervalRef.current) {
+        clearInterval(miningIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Stop mining
   const stopMining = () => {
     setIsMining(false);
-    const intervalId = localStorage.getItem('miningInterval');
-    if (intervalId) {
-      clearInterval(parseInt(intervalId));
-      localStorage.removeItem('miningInterval');
+    setIsBoosted(false);
+    setBoostTimeLeft(0);
+    
+    if (miningIntervalRef.current) {
+      clearInterval(miningIntervalRef.current);
+      miningIntervalRef.current = null;
     }
     
     // Save mined FTC to balance
@@ -129,6 +198,11 @@ const FtcMining = () => {
   // Submit subscription request
   const submitSubscriptionRequest = async () => {
     if (!selectedPlan) return;
+    
+    if (!transactionHash.trim()) {
+      toast.error('Please enter transaction hash');
+      return;
+    }
     
     setIsSubmitting(true);
     
@@ -146,7 +220,8 @@ const FtcMining = () => {
           calories: selectedPlan.calories,
           ftc_limit: selectedPlan.ftcLimit,
           payment_method: paymentMethod,
-          price: paymentMethod === 'USD' ? selectedPlan.priceUSD : selectedPlan.priceFTC
+          price: paymentMethod === 'USD' ? selectedPlan.priceUSD : selectedPlan.priceFTC,
+          transaction_hash: transactionHash.trim()
         })
       });
       
@@ -154,8 +229,9 @@ const FtcMining = () => {
         const data = await response.json();
         setSubscriptionRequest(data.request);
         setShowPlanModal(false);
+        setTransactionHash('');
         toast.success('✅ Subscription request submitted!', {
-          description: 'Admin will activate your plan shortly'
+          description: 'Admin will verify payment and activate your plan'
         });
       } else {
         const error = await response.json();
@@ -288,8 +364,20 @@ const FtcMining = () => {
             <div className={`relative w-64 h-64 rounded-full border-4 ${isMining ? 'border-[#00F090] animate-pulse' : 'border-white/20'} flex items-center justify-center`}>
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-[#00F090]/10 to-[#FFD700]/10" />
               
+              {/* Boost indicator */}
+              {isBoosted && (
+                <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-3 py-1 bg-gradient-to-r from-[#FF2E50] to-[#FF9F1C] text-white text-xs font-bold rounded-full animate-bounce">
+                  🚀 BOOST {boostTimeLeft}s
+                </div>
+              )}
+              
               <div className="text-center z-10">
-                <div className="text-5xl mb-2">💰</div>
+                <img 
+                  src={FTC_LOGO} 
+                  alt="Fitcoin" 
+                  className={`w-16 h-16 rounded-full mx-auto mb-2 ${isMining ? 'animate-spin-slow' : ''}`}
+                  style={{ animationDuration: isBoosted ? '0.5s' : '3s' }}
+                />
                 <p className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#00F090] to-[#FFD700]">
                   {ftcMined.toLocaleString()}
                 </p>
@@ -339,16 +427,28 @@ const FtcMining = () => {
             
             {/* Mining Button */}
             <button
-              onClick={isMining ? stopMining : startMining}
+              onClick={isMining ? (isBoosted ? stopMining : startMining) : startMining}
               disabled={!isLoggedIn}
               className={`mt-6 px-8 py-4 rounded-full font-black text-lg transition-all ${
                 isMining 
-                  ? 'bg-gradient-to-r from-[#FF2E50] to-[#FF9F1C] text-white' 
+                  ? isBoosted 
+                    ? 'bg-gradient-to-r from-[#FF2E50] to-[#FF9F1C] text-white animate-pulse' 
+                    : 'bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black'
                   : 'bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black'
               } ${!isLoggedIn ? 'opacity-50 cursor-not-allowed' : 'hover:brightness-110'}`}
+              data-testid="mining-btn"
             >
-              {isMining ? '⏹ STOP MINING' : '⚡ START MINING'}
+              {isMining 
+                ? isBoosted 
+                  ? '⏹ STOP MINING' 
+                  : '🚀 TAP FOR 5s BOOST!'
+                : '⚡ START MINING'
+              }
             </button>
+            
+            {isMining && !isBoosted && (
+              <p className="text-xs text-white/40 mt-2">Tap again for 5-second speed boost!</p>
+            )}
           </div>
 
           {/* Stats & Subscription */}
@@ -502,13 +602,19 @@ const FtcMining = () => {
               initial={{ scale: 0.9 }}
               animate={{ scale: 1 }}
               exit={{ scale: 0.9 }}
-              className="glass-card p-6 max-w-md w-full"
+              className="glass-card p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <selectedPlan.icon className="h-6 w-6" style={{ color: selectedPlan.color }} />
-                {selectedPlan.name}
-              </h3>
+              <div className="flex items-center gap-3 mb-4">
+                <img src={FTC_LOGO} alt="FTC" className="w-10 h-10 rounded-full" />
+                <div>
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <selectedPlan.icon className="h-5 w-5" style={{ color: selectedPlan.color }} />
+                    {selectedPlan.name}
+                  </h3>
+                  <p className="text-xs text-white/60">Subscription Request</p>
+                </div>
+              </div>
               
               <div className="p-4 rounded-lg mb-6" style={{ backgroundColor: `${selectedPlan.color}15` }}>
                 <div className="grid grid-cols-2 gap-4">
@@ -523,7 +629,7 @@ const FtcMining = () => {
                 </div>
               </div>
               
-              <div className="mb-6">
+              <div className="mb-4">
                 <p className="text-sm text-white/60 mb-2">Payment Method</p>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -547,17 +653,46 @@ const FtcMining = () => {
                 </div>
               </div>
               
+              {/* Transaction Hash Input */}
+              <div className="mb-6">
+                <label className="text-sm text-white/60 mb-2 block">
+                  Transaction Hash <span className="text-[#FF2E50]">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={transactionHash}
+                  onChange={(e) => setTransactionHash(e.target.value)}
+                  placeholder="Enter your payment transaction hash"
+                  className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-[#00F090]/50 outline-none font-mono text-sm"
+                  data-testid="transaction-hash-input"
+                />
+                <p className="text-xs text-white/40 mt-2">
+                  After sending {paymentMethod === 'USD' ? `$${selectedPlan.priceUSD}` : `${selectedPlan.priceFTC} FTC`}, paste the transaction hash here
+                </p>
+              </div>
+              
               <button
                 onClick={submitSubscriptionRequest}
-                disabled={isSubmitting || !isLoggedIn}
+                disabled={isSubmitting || !isLoggedIn || !transactionHash.trim()}
                 className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50"
+                data-testid="submit-subscription-btn"
               >
-                {isSubmitting ? 'Submitting...' : isLoggedIn ? 'Request Activation' : 'Login First'}
+                {isSubmitting ? 'Submitting...' : isLoggedIn ? 'Submit Request' : 'Login First'}
               </button>
               
               <p className="text-xs text-white/40 text-center mt-4">
-                Admin will review and activate your subscription within 24 hours
+                Admin will verify payment and activate your subscription immediately
               </p>
+              
+              <button
+                onClick={() => {
+                  setShowPlanModal(false);
+                  setTransactionHash('');
+                }}
+                className="w-full py-2 text-white/60 hover:text-white text-sm mt-2"
+              >
+                Cancel
+              </button>
             </motion.div>
           </motion.div>
         )}
