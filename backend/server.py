@@ -360,6 +360,7 @@ class User(BaseModel):
     email: EmailStr
     full_name: str
     created_at: str
+    ftc_wallet_address: Optional[str] = None
 
 class TokenResponse(BaseModel):
     token: str
@@ -370,6 +371,7 @@ class WalletBalance(BaseModel):
     user_id: str
     usd_balance: float
     ftc_balance: float
+    ftc_wallet_address: Optional[str] = None
     updated_at: str
 
 class TradeOrder(BaseModel):
@@ -729,6 +731,17 @@ async def fetch_coingecko_market_data():
 
 # ============ AUTH ROUTES ============
 
+def generate_ftc_wallet_address(user_id: str) -> str:
+    """Generate a unique FTC wallet address based on user ID"""
+    # Format: FTC + first 8 chars of UUID + random alphanumeric + last 8 chars
+    import hashlib
+    hash_input = f"{user_id}-{datetime.now(timezone.utc).isoformat()}"
+    hash_hex = hashlib.sha256(hash_input.encode()).hexdigest()
+    # Solana-style address (32-44 chars alphanumeric)
+    chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz123456789'
+    wallet = ''.join([chars[int(hash_hex[i:i+2], 16) % len(chars)] for i in range(0, 64, 2)])
+    return wallet[:44]  # Solana addresses are 32-44 chars
+
 @api_router.post("/auth/register", response_model=TokenResponse)
 async def register(input: UserRegister):
     existing = await db.users.find_one({"email": input.email}, {"_id": 0})
@@ -736,11 +749,15 @@ async def register(input: UserRegister):
         raise HTTPException(status_code=400, detail="Email already registered")
     
     user_id = str(uuid.uuid4())
+    # Auto-generate unique FTC wallet address
+    ftc_wallet = generate_ftc_wallet_address(user_id)
+    
     user_doc = {
         "id": user_id,
         "email": input.email,
         "password_hash": hash_password(input.password),
         "full_name": input.full_name,
+        "ftc_wallet_address": ftc_wallet,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     
@@ -751,12 +768,13 @@ async def register(input: UserRegister):
         "user_id": user_id,
         "usd_balance": 10000.0,
         "ftc_balance": 0.0,
+        "ftc_wallet_address": ftc_wallet,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     await db.wallets.insert_one(wallet_doc)
     
     token = create_token(user_id)
-    user_response = User(id=user_id, email=input.email, full_name=input.full_name, created_at=user_doc["created_at"])
+    user_response = User(id=user_id, email=input.email, full_name=input.full_name, created_at=user_doc["created_at"], ftc_wallet_address=ftc_wallet)
     return TokenResponse(token=token, user=user_response)
 
 @api_router.post("/auth/login", response_model=TokenResponse)
@@ -768,8 +786,27 @@ async def login(input: UserLogin):
     if not verify_password(input.password, user_doc["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
+    # Check if user has wallet address, generate if not
+    ftc_wallet = user_doc.get("ftc_wallet_address")
+    if not ftc_wallet:
+        ftc_wallet = generate_ftc_wallet_address(user_doc["id"])
+        await db.users.update_one(
+            {"id": user_doc["id"]},
+            {"$set": {"ftc_wallet_address": ftc_wallet}}
+        )
+        await db.wallets.update_one(
+            {"user_id": user_doc["id"]},
+            {"$set": {"ftc_wallet_address": ftc_wallet}}
+        )
+    
     token = create_token(user_doc["id"])
-    user_response = User(id=user_doc["id"], email=user_doc["email"], full_name=user_doc["full_name"], created_at=user_doc["created_at"])
+    user_response = User(
+        id=user_doc["id"], 
+        email=user_doc["email"], 
+        full_name=user_doc["full_name"], 
+        created_at=user_doc["created_at"],
+        ftc_wallet_address=ftc_wallet
+    )
     return TokenResponse(token=token, user=user_response)
 
 @api_router.get("/auth/me", response_model=User)
@@ -777,6 +814,16 @@ async def get_me(user_id: str = Depends(get_current_user)):
     user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user_doc:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Ensure wallet address exists
+    if not user_doc.get("ftc_wallet_address"):
+        ftc_wallet = generate_ftc_wallet_address(user_id)
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"ftc_wallet_address": ftc_wallet}}
+        )
+        user_doc["ftc_wallet_address"] = ftc_wallet
+    
     return User(**user_doc)
 
 # ============ PASSWORD RESET ROUTES ============
@@ -952,6 +999,62 @@ async def change_password(input: ChangePasswordRequest, user_id: str = Depends(g
     return {"message": "Password changed successfully", "status": "success"}
 
 # ============ WALLET ROUTES ============
+
+class UpdateWalletAddressRequest(BaseModel):
+    new_wallet_address: str
+
+@api_router.get("/wallet/address")
+async def get_ftc_wallet_address(user_id: str = Depends(get_current_user)):
+    """Get user's FTC wallet address"""
+    user_doc = await db.users.find_one({"id": user_id}, {"_id": 0, "ftc_wallet_address": 1, "full_name": 1})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    ftc_wallet = user_doc.get("ftc_wallet_address")
+    if not ftc_wallet:
+        # Generate if doesn't exist
+        ftc_wallet = generate_ftc_wallet_address(user_id)
+        await db.users.update_one({"id": user_id}, {"$set": {"ftc_wallet_address": ftc_wallet}})
+        await db.wallets.update_one({"user_id": user_id}, {"$set": {"ftc_wallet_address": ftc_wallet}})
+    
+    return {
+        "ftc_wallet_address": ftc_wallet,
+        "user_id": user_id,
+        "full_name": user_doc.get("full_name", "")
+    }
+
+@api_router.put("/wallet/address")
+async def update_ftc_wallet_address(input: UpdateWalletAddressRequest, user_id: str = Depends(get_current_user)):
+    """Update user's FTC wallet address with a custom address"""
+    new_address = input.new_wallet_address.strip()
+    
+    # Validate address format (Solana-style: 32-44 alphanumeric chars)
+    if len(new_address) < 32 or len(new_address) > 44:
+        raise HTTPException(status_code=400, detail="Invalid wallet address format. Must be 32-44 characters.")
+    
+    if not new_address.replace('_', '').replace('-', '').isalnum():
+        raise HTTPException(status_code=400, detail="Invalid wallet address. Only alphanumeric characters allowed.")
+    
+    # Check if address is already used by another user
+    existing = await db.users.find_one({"ftc_wallet_address": new_address, "id": {"$ne": user_id}}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="This wallet address is already in use by another user.")
+    
+    # Update in both users and wallets collections
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"ftc_wallet_address": new_address, "wallet_updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    await db.wallets.update_one(
+        {"user_id": user_id},
+        {"$set": {"ftc_wallet_address": new_address}}
+    )
+    
+    return {
+        "message": "Wallet address updated successfully",
+        "ftc_wallet_address": new_address,
+        "status": "success"
+    }
 
 @api_router.get("/wallet", response_model=WalletBalance)
 async def get_wallet(user_id: str = Depends(get_current_user)):

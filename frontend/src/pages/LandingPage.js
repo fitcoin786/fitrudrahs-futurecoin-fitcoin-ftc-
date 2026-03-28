@@ -179,7 +179,7 @@ const LandingPage = () => {
             <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto">
               {/* Trading Buy-Sell Photo */}
               <a
-                href="https://web5-hacker-portal.preview.emergentagent.com/"
+                href="https://ftc-trading-hub.preview.emergentagent.com/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group glass-card p-3 border-2 border-[#FFD700]/50 hover:border-[#FFD700] transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.4)]"

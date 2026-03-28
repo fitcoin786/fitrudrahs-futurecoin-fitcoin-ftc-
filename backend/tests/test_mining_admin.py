@@ -13,7 +13,7 @@ import os
 import uuid
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://web5-hacker-portal.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ftc-trading-hub.preview.emergentagent.com').rstrip('/')
 
 # Admin credentials from test_credentials.md
 ADMIN_USERNAME = "Fitrudrah"

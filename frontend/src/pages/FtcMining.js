@@ -63,6 +63,12 @@ const FtcMining = () => {
   const [transactionHash, setTransactionHash] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // FTC Wallet Address State
+  const [ftcWalletAddress, setFtcWalletAddress] = useState('');
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [newWalletAddress, setNewWalletAddress] = useState('');
+  const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
+  
   // Sports Nutrition Trading States
   const [nutritionPrices, setNutritionPrices] = useState({});
   const [selectedNutrition, setSelectedNutrition] = useState(null);
@@ -359,8 +365,8 @@ const FtcMining = () => {
     // Initial fetch
     fetchGlobalLedger();
     
-    // Fetch global ledger every 5 seconds
-    const ledgerInterval = setInterval(fetchGlobalLedger, 5000);
+    // Fetch global ledger every 3 seconds for real-time updates
+    const ledgerInterval = setInterval(fetchGlobalLedger, 3000);
     
     return () => clearInterval(ledgerInterval);
   }, []);
@@ -468,15 +474,98 @@ const FtcMining = () => {
       
       if (token && userData) {
         setIsLoggedIn(true);
-        setUser(JSON.parse(userData));
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        
+        // Set wallet address from user data if available
+        if (parsedUser.ftc_wallet_address) {
+          setFtcWalletAddress(parsedUser.ftc_wallet_address);
+        }
         
         // Fetch mining data from backend and merge with local
         await fetchMiningData(token);
+        
+        // Fetch wallet address from backend
+        await fetchWalletAddress(token);
       }
     };
     
     checkLogin();
   }, []);
+
+  // Fetch wallet address
+  const fetchWalletAddress = async (token) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/wallet/address`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.ftc_wallet_address) {
+          setFtcWalletAddress(data.ftc_wallet_address);
+          // Also update stored user data
+          const userData = localStorage.getItem('user');
+          if (userData) {
+            const parsedUser = JSON.parse(userData);
+            parsedUser.ftc_wallet_address = data.ftc_wallet_address;
+            localStorage.setItem('user', JSON.stringify(parsedUser));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching wallet address:', error);
+    }
+  };
+
+  // Update wallet address
+  const updateWalletAddress = async () => {
+    if (!newWalletAddress.trim()) {
+      toast.error('Please enter a wallet address');
+      return;
+    }
+    
+    if (newWalletAddress.trim().length < 32 || newWalletAddress.trim().length > 44) {
+      toast.error('Invalid wallet address format. Must be 32-44 characters.');
+      return;
+    }
+    
+    setIsUpdatingWallet(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/wallet/address`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ new_wallet_address: newWalletAddress.trim() })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setFtcWalletAddress(data.ftc_wallet_address);
+        setShowWalletModal(false);
+        setNewWalletAddress('');
+        toast.success('🔑 Wallet address updated successfully!');
+        
+        // Update stored user data
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          parsedUser.ftc_wallet_address = data.ftc_wallet_address;
+          localStorage.setItem('user', JSON.stringify(parsedUser));
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to update wallet address');
+      }
+    } catch (error) {
+      console.error('Error updating wallet:', error);
+      toast.error('Failed to update wallet address');
+    } finally {
+      setIsUpdatingWallet(false);
+    }
+  };
 
   // Save FTC balance to localStorage whenever it changes (only if > 0 or was set before)
   const balanceInitializedRef = useRef(false);
@@ -1323,6 +1412,46 @@ const FtcMining = () => {
                 <p className="text-xs text-white/60">Daily Limit</p>
               </div>
             </div>
+
+            {/* FTC Wallet Address - Auto-generated unique key */}
+            {isLoggedIn && ftcWalletAddress && (
+              <div className="glass-card p-4 border border-[#9945FF]/30">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-bold flex items-center gap-2">
+                    <span className="text-lg">🔑</span>
+                    Your FTC Wallet Address
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setNewWalletAddress(ftcWalletAddress);
+                      setShowWalletModal(true);
+                    }}
+                    className="text-xs px-2 py-1 bg-[#9945FF]/20 hover:bg-[#9945FF]/30 text-[#9945FF] rounded transition-all"
+                    data-testid="edit-wallet-btn"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-black/40 rounded-lg border border-white/10">
+                  <p className="text-xs font-mono text-[#00F090] flex-1 truncate" data-testid="wallet-address">
+                    {ftcWalletAddress}
+                  </p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(ftcWalletAddress);
+                      toast.success('Wallet address copied!');
+                    }}
+                    className="px-2 py-1 text-xs bg-white/10 hover:bg-white/20 rounded transition-all"
+                    data-testid="copy-wallet-btn"
+                  >
+                    📋 Copy
+                  </button>
+                </div>
+                <p className="text-xs text-white/40 mt-2">
+                  💡 This is your unique FTC wallet address. Use it to receive FTC from other users.
+                </p>
+              </div>
+            )}
 
             {/* StepsApp Integration */}
             <div className="glass-card p-6">
@@ -2757,6 +2886,79 @@ const FtcMining = () => {
                   </>
                 );
               })()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Wallet Address Edit Modal */}
+      <AnimatePresence>
+        {showWalletModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowWalletModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="glass-card p-6 max-w-md w-full border border-[#9945FF]/30"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <span className="text-2xl">🔑</span>
+                  Edit FTC Wallet Address
+                </h3>
+                <button
+                  onClick={() => setShowWalletModal(false)}
+                  className="text-white/60 hover:text-white text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm text-white/60 mb-2">Current Address</label>
+                <p className="text-xs font-mono text-[#00F090] p-2 bg-black/40 rounded border border-white/10 truncate">
+                  {ftcWalletAddress}
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm text-white/60 mb-2">New Wallet Address</label>
+                <input
+                  type="text"
+                  value={newWalletAddress}
+                  onChange={(e) => setNewWalletAddress(e.target.value)}
+                  placeholder="Enter new Solana wallet address (32-44 chars)"
+                  className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#9945FF] font-mono text-sm"
+                  data-testid="new-wallet-input"
+                />
+                <p className="text-xs text-white/40 mt-2">
+                  ⚠️ Make sure to enter a valid Solana wallet address. This address will be used for receiving FTC.
+                </p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowWalletModal(false)}
+                  className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={updateWalletAddress}
+                  disabled={isUpdatingWallet}
+                  className="flex-1 py-3 bg-gradient-to-r from-[#9945FF] to-[#FF2E50] text-white font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50"
+                  data-testid="save-wallet-btn"
+                >
+                  {isUpdatingWallet ? 'Saving...' : '💾 Save Address'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
