@@ -65,6 +65,22 @@ const FtcMining = () => {
   // Re-subscription bonus tracking
   const [hasHadPreviousSubscription, setHasHadPreviousSubscription] = useState(false);
   const RESUBSCRIPTION_BONUS_PERCENT = 10; // 10% bonus for returning subscribers
+  
+  // Global real-time sync state
+  const [globalLedger, setGlobalLedger] = useState([]);
+  const [globalVolume24h, setGlobalVolume24h] = useState(0);
+  
+  // Persistent mining state
+  const [miningProgress, setMiningProgress] = useState({
+    isActive: false,
+    startedAt: null,
+    totalMined: 0,
+    lastSyncTime: null
+  });
+  
+  // Double-tap state for details
+  const [lastTap, setLastTap] = useState({ productId: null, time: 0 });
+  const [showProductDetails, setShowProductDetails] = useState(null);
 
   // Generate blockchain-style transaction hash
   const generateTxHash = () => {
@@ -184,18 +200,59 @@ const FtcMining = () => {
 
   // Sports Nutrition Products with base prices
   const NUTRITION_PRODUCTS = [
+    // Proteins
     { id: 'WPC80', name: 'Whey Protein Concentrate 80%', basePrice: 38.50, category: 'Protein' },
     { id: 'WPI90', name: 'Whey Protein Isolate 90%', basePrice: 72.00, category: 'Protein' },
-    { id: 'CREATINE', name: 'Creatine Monohydrate Pure', basePrice: 22.50, category: 'Creatine' },
-    { id: 'GLUTAMINE', name: 'L-Glutamine Powder', basePrice: 44.00, category: 'Amino' },
-    { id: 'BCAA', name: 'BCAA 2:1:1 Instant', basePrice: 58.00, category: 'Amino' },
     { id: 'CASEIN', name: 'Casein Protein Micellar', basePrice: 52.00, category: 'Protein' },
     { id: 'PEA', name: 'Pea Protein Isolate 85%', basePrice: 32.00, category: 'Protein' },
+    { id: 'SOY', name: 'Soy Protein Isolate', basePrice: 28.00, category: 'Protein' },
+    { id: 'EGG', name: 'Egg White Protein', basePrice: 65.00, category: 'Protein' },
+    { id: 'COLLAGEN', name: 'Collagen Peptides', basePrice: 48.00, category: 'Protein' },
+    
+    // Amino Acids
+    { id: 'GLUTAMINE', name: 'L-Glutamine Powder', basePrice: 44.00, category: 'Amino' },
+    { id: 'BCAA', name: 'BCAA 2:1:1 Instant', basePrice: 58.00, category: 'Amino' },
+    { id: 'EAA', name: 'Essential Amino Acids', basePrice: 62.00, category: 'Amino' },
+    { id: 'ARGININE', name: 'L-Arginine HCL', basePrice: 36.00, category: 'Amino' },
+    { id: 'TAURINE', name: 'L-Taurine Pure', basePrice: 24.00, category: 'Amino' },
+    
+    // Creatine & Performance
+    { id: 'CREATINE', name: 'Creatine Monohydrate Pure', basePrice: 22.50, category: 'Creatine' },
+    { id: 'CREATINEHCL', name: 'Creatine HCL', basePrice: 42.00, category: 'Creatine' },
     { id: 'BETA', name: 'Beta-Alanine Pure', basePrice: 35.00, category: 'Pre-Workout' },
     { id: 'CITRULLINE', name: 'L-Citrulline Malate 2:1', basePrice: 46.00, category: 'Pre-Workout' },
     { id: 'CAFFEINE', name: 'Caffeine Anhydrous USP', basePrice: 14.50, category: 'Pre-Workout' },
+    
+    // Vitamins
+    { id: 'VITC', name: 'Vitamin C 1000mg', basePrice: 18.00, category: 'Vitamin' },
+    { id: 'VITD3', name: 'Vitamin D3 5000IU', basePrice: 22.00, category: 'Vitamin' },
+    { id: 'VITB12', name: 'Vitamin B12 Methylcobalamin', basePrice: 28.00, category: 'Vitamin' },
+    { id: 'VITE', name: 'Vitamin E 400IU', basePrice: 26.00, category: 'Vitamin' },
+    { id: 'MULTI', name: 'Multivitamin Complete', basePrice: 34.00, category: 'Vitamin' },
+    { id: 'BCOMPLEX', name: 'B-Complex Super', basePrice: 24.00, category: 'Vitamin' },
+    
+    // Omega & Fatty Acids
+    { id: 'OMEGA3', name: 'Omega-3 Fish Oil 1000mg', basePrice: 32.00, category: 'Omega' },
+    { id: 'OMEGA6', name: 'Omega-6 GLA Complex', basePrice: 38.00, category: 'Omega' },
+    { id: 'OMEGA9', name: 'Omega-9 Olive Oil Extract', basePrice: 28.00, category: 'Omega' },
+    { id: 'OMEGA369', name: 'Omega 3-6-9 Complete', basePrice: 42.00, category: 'Omega' },
+    { id: 'FLAXSEED', name: 'Flaxseed Oil 1000mg', basePrice: 22.00, category: 'Omega' },
+    
+    // Specialty Supplements
+    { id: 'COQ10', name: 'CoQ10 Ubiquinone 100mg', basePrice: 56.00, category: 'Specialty' },
+    { id: 'ASHWAGANDHA', name: 'Ashwagandha KSM-66', basePrice: 38.00, category: 'Specialty' },
+    { id: 'ZINC', name: 'Zinc Picolinate 50mg', basePrice: 16.00, category: 'Mineral' },
+    { id: 'MAGNESIUM', name: 'Magnesium Glycinate', basePrice: 28.00, category: 'Mineral' },
+    { id: 'IRON', name: 'Iron Bisglycinate', basePrice: 18.00, category: 'Mineral' },
+    { id: 'CALCIUM', name: 'Calcium + D3 Complex', basePrice: 24.00, category: 'Mineral' },
+    
+    // Weight Management
     { id: 'MALTO', name: 'Maltodextrin DE 18-20', basePrice: 9.50, category: 'Gainer' },
     { id: 'DEXTROSE', name: 'Dextrose Monohydrate', basePrice: 6.80, category: 'Gainer' },
+    { id: 'MASSGAINER', name: 'Mass Gainer 1250', basePrice: 58.00, category: 'Gainer' },
+    { id: 'CLA', name: 'CLA Softgels 1000mg', basePrice: 32.00, category: 'Fat Burner' },
+    { id: 'LCARNITINE', name: 'L-Carnitine Tartrate', basePrice: 36.00, category: 'Fat Burner' },
+    { id: 'GREENTEAEXT', name: 'Green Tea Extract EGCG', basePrice: 28.00, category: 'Fat Burner' },
   ];
 
   // Initialize and update nutrition prices with fluctuation
@@ -497,6 +554,127 @@ const FtcMining = () => {
     
     checkPreviousSubscription();
   }, []);
+
+  // Persistent Mining - Continues even after logout/refresh until subscription ends
+  useEffect(() => {
+    if (!activeSubscription || activeSubscription.status !== 'active') {
+      setMiningProgress(prev => ({ ...prev, isActive: false }));
+      return;
+    }
+
+    // Load mining progress from localStorage
+    const savedProgress = localStorage.getItem('ftc_mining_progress');
+    if (savedProgress) {
+      try {
+        const progress = JSON.parse(savedProgress);
+        // Calculate FTC mined while away
+        const now = Date.now();
+        const lastSync = progress.lastSyncTime || now;
+        const timeDiff = (now - lastSync) / 1000; // seconds
+        
+        // Mining rate: based on subscription plan (calories per day = FTC per day)
+        const dailyLimit = activeSubscription.ftc_limit || 100;
+        const ftcPerSecond = dailyLimit / (24 * 60 * 60);
+        const minedWhileAway = Math.min(timeDiff * ftcPerSecond, dailyLimit - (progress.totalMined || 0));
+        
+        if (minedWhileAway > 0 && progress.isActive) {
+          const newTotal = (progress.totalMined || 0) + minedWhileAway;
+          setFtcMined(prev => prev + minedWhileAway);
+          setFtcBalance(prev => {
+            const newBalance = prev + minedWhileAway;
+            localStorage.setItem('ftc_mining_balance', newBalance.toString());
+            return newBalance;
+          });
+          toast.success(`⛏️ Mined ${minedWhileAway.toFixed(2)} FTC while away!`, {
+            description: 'Your mining continued in the background'
+          });
+        }
+        
+        setMiningProgress({
+          isActive: progress.isActive,
+          startedAt: progress.startedAt,
+          totalMined: progress.totalMined + (minedWhileAway > 0 ? minedWhileAway : 0),
+          lastSyncTime: now
+        });
+      } catch (e) {
+        console.log('Mining progress parse error:', e);
+      }
+    }
+
+    // Auto-start mining for active subscribers
+    if (activeSubscription.status === 'active') {
+      setMiningProgress(prev => {
+        const updated = {
+          ...prev,
+          isActive: true,
+          startedAt: prev.startedAt || Date.now(),
+          lastSyncTime: Date.now()
+        };
+        localStorage.setItem('ftc_mining_progress', JSON.stringify(updated));
+        return updated;
+      });
+      setIsMining(true);
+    }
+  }, [activeSubscription]);
+
+  // Save mining progress periodically
+  useEffect(() => {
+    if (!miningProgress.isActive) return;
+    
+    const saveInterval = setInterval(() => {
+      const progress = {
+        ...miningProgress,
+        totalMined: ftcMined,
+        lastSyncTime: Date.now()
+      };
+      localStorage.setItem('ftc_mining_progress', JSON.stringify(progress));
+    }, 5000); // Save every 5 seconds
+
+    return () => clearInterval(saveInterval);
+  }, [miningProgress.isActive, ftcMined]);
+
+  // Global Real-time Blockchain Sync - All users see same data
+  useEffect(() => {
+    const fetchGlobalLedger = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/global/trades`);
+        if (response.ok) {
+          const data = await response.json();
+          setGlobalLedger(data.trades || []);
+          setGlobalVolume24h(data.volume_24h || 0);
+        }
+      } catch (error) {
+        // Use local ledger as fallback for global visibility
+        setGlobalLedger(transactionLedger.slice(0, 20));
+      }
+    };
+
+    // Initial fetch
+    fetchGlobalLedger();
+    
+    // Poll every 5 seconds for real-time updates
+    const pollInterval = setInterval(fetchGlobalLedger, 5000);
+    return () => clearInterval(pollInterval);
+  }, [transactionLedger]);
+
+  // Double-tap handler for product details
+  const handleProductTap = (product) => {
+    const now = Date.now();
+    if (lastTap.productId === product.id && (now - lastTap.time) < 300) {
+      // Double tap - show details
+      setShowProductDetails(product);
+    } else {
+      // Single tap - open trade modal
+      setLastTap({ productId: product.id, time: now });
+      setTimeout(() => {
+        if (lastTap.productId === product.id) {
+          setSelectedNutrition(product);
+          setAiPrediction(generateAIPrediction(product.id));
+          setShowNutritionModal(true);
+        }
+      }, 300);
+    }
+  };
 
   // Fetch mining data from backend
   const fetchMiningData = async (token) => {
@@ -1180,7 +1358,7 @@ const FtcMining = () => {
                 <div className="w-px h-10 bg-white/20" />
                 <div className="text-right">
                   <p className="text-xs text-white/50">24H VOLUME</p>
-                  <p className="text-sm font-bold text-white">${(Math.random() * 50000 + 10000).toFixed(2)}</p>
+                  <p className="text-sm font-bold text-[#FFD700]">{(Math.random() * 5000000 + 1000000).toLocaleString()} FTC</p>
                 </div>
               </div>
             </div>
@@ -1327,7 +1505,7 @@ const FtcMining = () => {
                 <motion.div
                   key={product.id}
                   whileHover={{ scale: 1.02 }}
-                  className={`glass-card p-4 cursor-pointer border transition-all ${
+                  className={`glass-card p-4 cursor-pointer border transition-all relative ${
                     hasHolding 
                       ? 'border-[#00F090]/50 ring-1 ring-[#00F090]/20' 
                       : 'border-white/10 hover:border-[#FFD700]/50'
@@ -1337,6 +1515,7 @@ const FtcMining = () => {
                     setAiPrediction(generateAIPrediction(product.id));
                     setShowNutritionModal(true);
                   }}
+                  onDoubleClick={() => setShowProductDetails(product)}
                   data-testid={`nutrition-${product.id}`}
                 >
                   {/* Holding Badge */}
@@ -1412,6 +1591,11 @@ const FtcMining = () => {
             })}
           </div>
         </div>
+
+        {/* Double-tap hint */}
+        <p className="text-center text-xs text-white/40 mt-4 mb-8">
+          💡 Tap to trade • Double-tap for detailed market analysis
+        </p>
 
         {/* Admin Panel Link */}
         <div className="glass-card p-6 text-center border border-[#9945FF]/30">
@@ -1979,6 +2163,165 @@ const FtcMining = () => {
                   <span className="text-xs text-[#00F090]">All transactions blockchain verified</span>
                 </div>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Product Details Modal (Double-Tap) */}
+      <AnimatePresence>
+        {showProductDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowProductDetails(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {(() => {
+                const product = showProductDetails;
+                const priceData = nutritionPrices[product.id];
+                const holding = portfolio[product.id];
+                const pl = holding ? calculateProfitLoss(product.id, priceData?.current) : null;
+                const isUp = priceData?.change >= 0;
+                
+                return (
+                  <>
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <p className="text-xs text-[#FFD700] font-bold uppercase">{product.category}</p>
+                        <h3 className="text-xl font-black text-white">{product.name}</h3>
+                      </div>
+                      <button
+                        onClick={() => setShowProductDetails(null)}
+                        className="p-2 hover:bg-white/10 rounded-lg"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Large Price Chart */}
+                    <div className="h-40 mb-6 p-4 bg-black/50 rounded-lg border border-white/10">
+                      <svg viewBox="0 0 200 80" className="w-full h-full">
+                        <defs>
+                          <linearGradient id={`detail-gradient-${product.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0.4" />
+                            <stop offset="100%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        {priceData?.history && (
+                          <>
+                            <path
+                              d={`M 0 ${80 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70} ${priceData.history.map((p, i) => `L ${i * 10.5} ${80 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70}`).join(' ')} L 200 80 L 0 80 Z`}
+                              fill={`url(#detail-gradient-${product.id})`}
+                            />
+                            <path
+                              d={`M 0 ${80 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70} ${priceData.history.map((p, i) => `L ${i * 10.5} ${80 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70}`).join(' ')}`}
+                              fill="none"
+                              stroke={isUp ? '#00F090' : '#FF2E50'}
+                              strokeWidth="2"
+                            />
+                          </>
+                        )}
+                      </svg>
+                    </div>
+
+                    {/* Price Info */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div className="p-4 bg-black/50 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/50 uppercase">Current Price</p>
+                        <p className={`text-2xl font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                          {(priceData?.current || product.basePrice).toFixed(2)} FTC
+                        </p>
+                        <p className="text-xs text-white/40">
+                          ≈ ${((priceData?.current || product.basePrice) * ftcLivePrice).toFixed(6)} USD
+                        </p>
+                      </div>
+                      <div className="p-4 bg-black/50 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/50 uppercase">24H Change</p>
+                        <p className={`text-2xl font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                          {isUp ? '+' : ''}{(priceData?.change || 0).toFixed(2)}%
+                        </p>
+                        <p className="text-xs text-white/40">Base: {product.basePrice} FTC</p>
+                      </div>
+                    </div>
+
+                    {/* Market Stats */}
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                      <div className="p-3 bg-black/30 rounded-lg text-center">
+                        <p className="text-xs text-white/40">High 24H</p>
+                        <p className="text-sm font-bold text-[#00F090]">
+                          {priceData?.history ? Math.max(...priceData.history).toFixed(2) : product.basePrice} FTC
+                        </p>
+                      </div>
+                      <div className="p-3 bg-black/30 rounded-lg text-center">
+                        <p className="text-xs text-white/40">Low 24H</p>
+                        <p className="text-sm font-bold text-[#FF2E50]">
+                          {priceData?.history ? Math.min(...priceData.history).toFixed(2) : product.basePrice} FTC
+                        </p>
+                      </div>
+                      <div className="p-3 bg-black/30 rounded-lg text-center">
+                        <p className="text-xs text-white/40">Volume</p>
+                        <p className="text-sm font-bold text-[#FFD700]">
+                          {Math.floor(Math.random() * 10000 + 1000)} FTC
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Your Holdings */}
+                    {holding && (
+                      <div className="p-4 bg-[#00F090]/10 border border-[#00F090]/30 rounded-lg mb-6">
+                        <p className="text-sm font-bold text-[#00F090] mb-3">📦 Your Holdings</p>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div>
+                            <p className="text-white/40">Quantity</p>
+                            <p className="font-bold text-white">{holding.quantity} units</p>
+                          </div>
+                          <div>
+                            <p className="text-white/40">Avg Buy Price</p>
+                            <p className="font-bold text-white">{holding.avgBuyPrice.toFixed(2)} FTC</p>
+                          </div>
+                          <div>
+                            <p className="text-white/40">Total Invested</p>
+                            <p className="font-bold text-[#FFD700]">{holding.totalInvested.toFixed(2)} FTC</p>
+                          </div>
+                          <div>
+                            <p className="text-white/40">P/L</p>
+                            <p className={`font-bold ${pl?.profitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                              {pl ? `${pl.profitLoss >= 0 ? '+' : ''}${pl.profitLoss.toFixed(2)} FTC (${pl.profitLossPercent.toFixed(1)}%)` : '-'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Trade Button */}
+                    <button
+                      onClick={() => {
+                        setShowProductDetails(null);
+                        setSelectedNutrition(product);
+                        setAiPrediction(generateAIPrediction(product.id));
+                        setShowNutritionModal(true);
+                      }}
+                      className="w-full py-4 bg-gradient-to-r from-[#FFD700] to-[#FF9F1C] text-black font-black rounded-lg hover:brightness-110 transition-all"
+                    >
+                      Trade {product.name}
+                    </button>
+
+                    <p className="text-center text-xs text-white/30 mt-4">
+                      💡 Single tap to trade • Double tap for details
+                    </p>
+                  </>
+                );
+              })()}
             </motion.div>
           </motion.div>
         )}
