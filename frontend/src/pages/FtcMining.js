@@ -342,26 +342,26 @@ const FtcMining = () => {
   }, []);
 
   // Fetch GLOBAL transaction ledger from backend - ALL trades from ALL users
-  useEffect(() => {
-    const fetchGlobalLedger = async () => {
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/nutrition/global-ledger`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.transactions) {
-            setGlobalLedger(data.transactions);
-            // Update volume and sentiment from stats
-            if (data.stats) {
-              setGlobalVolume24h(data.stats.volume_24h || 0);
-              setMarketSentiment(data.stats.market_sentiment || 'neutral');
-            }
+  const fetchGlobalLedger = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/nutrition/global-ledger`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.transactions) {
+          setGlobalLedger(data.transactions);
+          // Update volume and sentiment from stats
+          if (data.stats) {
+            setGlobalVolume24h(data.stats.volume_24h || 0);
+            setMarketSentiment(data.stats.market_sentiment || 'neutral');
           }
         }
-      } catch (error) {
-        console.error('Error fetching global ledger:', error);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching global ledger:', error);
+    }
+  };
 
+  useEffect(() => {
     // Initial fetch
     fetchGlobalLedger();
     
@@ -370,6 +370,13 @@ const FtcMining = () => {
     
     return () => clearInterval(ledgerInterval);
   }, []);
+
+  // Also fetch when ledger modal opens
+  useEffect(() => {
+    if (showLedgerModal) {
+      fetchGlobalLedger();
+    }
+  }, [showLedgerModal]);
 
   // Buy/Sell nutrition product with blockchain ledger tracking
   const executeNutritionTrade = () => {
@@ -2535,10 +2542,17 @@ const FtcMining = () => {
                   Global Blockchain Ledger 
                   <span className="text-xs text-[#00F090] font-normal ml-auto">LIVE • All Users Worldwide</span>
                 </h4>
-                <div className="overflow-y-auto max-h-[200px] space-y-2">
+                <div className="overflow-y-auto max-h-[300px] space-y-2">
                   {globalLedger.length === 0 ? (
-                    <div className="text-center py-4 text-white/40">
-                      <p className="text-xs">Loading global transactions...</p>
+                    <div className="text-center py-6 text-white/40">
+                      <div className="animate-spin w-6 h-6 border-2 border-[#00F090] border-t-transparent rounded-full mx-auto mb-2"></div>
+                      <p className="text-xs mb-2">Loading global transactions...</p>
+                      <button 
+                        onClick={fetchGlobalLedger}
+                        className="text-xs px-3 py-1 bg-[#00F090]/20 text-[#00F090] rounded hover:bg-[#00F090]/30 transition-colors"
+                      >
+                        ↻ Refresh
+                      </button>
                     </div>
                   ) : (
                     globalLedger.map((tx, index) => (
@@ -2567,6 +2581,9 @@ const FtcMining = () => {
                         <div className="mt-1 flex items-center justify-between text-xs text-white/30">
                           <span className="font-mono truncate max-w-[150px]">TX: {tx.tx_hash}</span>
                           <span>Block #{tx.block_number} • {tx.confirmations} conf</span>
+                        </div>
+                        <div className="mt-1 text-xs text-white/20">
+                          {new Date(tx.timestamp).toLocaleString()}
                         </div>
                       </div>
                     ))
