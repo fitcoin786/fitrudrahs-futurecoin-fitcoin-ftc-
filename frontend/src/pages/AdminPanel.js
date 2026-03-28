@@ -37,6 +37,16 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('requests');
   const [totalFtcReceived, setTotalFtcReceived] = useState(0);
   const [totalUsdReceived, setTotalUsdReceived] = useState(0);
+  
+  // Admin Wallet State
+  const [adminWallet, setAdminWallet] = useState({
+    wallet_address: '',
+    total_fees_collected: 0,
+    total_transactions: 0
+  });
+  const [showEditWallet, setShowEditWallet] = useState(false);
+  const [newWalletAddress, setNewWalletAddress] = useState('');
+  const [feeHistory, setFeeHistory] = useState([]);
 
   // Check if admin is already logged in
   useEffect(() => {
@@ -44,8 +54,63 @@ const AdminPanel = () => {
     if (adminToken === 'authenticated') {
       setIsAuthenticated(true);
       fetchData();
+      fetchAdminWallet();
     }
   }, []);
+
+  // Fetch admin wallet
+  const fetchAdminWallet = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/wallet`);
+      if (response.ok) {
+        const data = await response.json();
+        setAdminWallet(data);
+      }
+    } catch (error) {
+      console.log('Wallet fetch error:', error);
+    }
+  };
+
+  // Update admin wallet address
+  const updateWalletAddress = async () => {
+    if (!newWalletAddress.trim() || newWalletAddress.length < 20) {
+      toast.error('Please enter a valid wallet address');
+      return;
+    }
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/wallet`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ new_wallet_address: newWalletAddress.trim() })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setAdminWallet(prev => ({ ...prev, wallet_address: data.wallet_address }));
+        setShowEditWallet(false);
+        setNewWalletAddress('');
+        toast.success('Admin wallet updated!');
+      } else {
+        toast.error('Failed to update wallet');
+      }
+    } catch (error) {
+      toast.error('Error updating wallet');
+    }
+  };
+
+  // Fetch fee history
+  const fetchFeeHistory = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/fee-history`);
+      if (response.ok) {
+        const data = await response.json();
+        setFeeHistory(data.fees || []);
+      }
+    } catch (error) {
+      console.log('Fee history error:', error);
+    }
+  };
 
   // Fetch admin data
   const fetchData = async () => {
@@ -405,7 +470,7 @@ const AdminPanel = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-4 mb-6 flex-wrap">
           <button
             onClick={() => setActiveTab('requests')}
             className={`px-6 py-3 rounded-lg font-bold transition-all ${
@@ -422,7 +487,195 @@ const AdminPanel = () => {
           >
             All Users
           </button>
+          <button
+            onClick={() => { setActiveTab('wallet'); fetchAdminWallet(); fetchFeeHistory(); }}
+            className={`px-6 py-3 rounded-lg font-bold transition-all flex items-center gap-2 ${
+              activeTab === 'wallet' ? 'bg-[#FFD700] text-black' : 'bg-white/10 text-white'
+            }`}
+          >
+            <Wallet className="h-4 w-4" />
+            Admin Wallet
+          </button>
         </div>
+
+        {/* Admin Wallet Section */}
+        {activeTab === 'wallet' && (
+          <div className="space-y-6">
+            {/* Wallet Overview */}
+            <div className="glass-card p-6 border border-[#FFD700]/30">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <Wallet className="h-6 w-6 text-[#FFD700]" />
+                  Admin Fee Collection Wallet
+                </h3>
+                <button
+                  onClick={() => { setShowEditWallet(true); setNewWalletAddress(adminWallet.wallet_address); }}
+                  className="px-4 py-2 bg-[#9945FF] text-white rounded-lg hover:bg-[#9945FF]/80 transition-all"
+                  data-testid="edit-admin-wallet-btn"
+                >
+                  Edit Wallet
+                </button>
+              </div>
+              
+              {/* Wallet Address */}
+              <div className="bg-black/40 p-4 rounded-lg border border-white/10 mb-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-white/60 mb-1">Wallet Address</p>
+                    <p className="font-mono text-[#00F090] text-lg" data-testid="admin-wallet-address">
+                      {adminWallet.wallet_address}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(adminWallet.wallet_address);
+                      toast.success('Wallet address copied!');
+                    }}
+                    className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-all"
+                  >
+                    <Copy className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-gradient-to-br from-[#FFD700]/20 to-transparent p-4 rounded-lg border border-[#FFD700]/30">
+                  <p className="text-sm text-white/60 mb-1">Total Fees Collected</p>
+                  <p className="text-2xl font-bold text-[#FFD700]" data-testid="total-fees-collected">
+                    {adminWallet.total_fees_collected?.toFixed(4)} FTC
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-[#00F090]/20 to-transparent p-4 rounded-lg border border-[#00F090]/30">
+                  <p className="text-sm text-white/60 mb-1">Total Transactions</p>
+                  <p className="text-2xl font-bold text-[#00F090]">
+                    {adminWallet.total_transactions}
+                  </p>
+                </div>
+                <div className="bg-gradient-to-br from-[#9945FF]/20 to-transparent p-4 rounded-lg border border-[#9945FF]/30">
+                  <p className="text-sm text-white/60 mb-1">Average Fee</p>
+                  <p className="text-2xl font-bold text-[#9945FF]">
+                    {adminWallet.total_transactions > 0 
+                      ? (adminWallet.total_fees_collected / adminWallet.total_transactions).toFixed(4) 
+                      : 0} FTC
+                  </p>
+                </div>
+              </div>
+
+              {/* Fee Structure */}
+              <div className="bg-black/30 p-4 rounded-lg border border-white/10">
+                <h4 className="font-bold mb-3 flex items-center gap-2">
+                  <Zap className="h-4 w-4 text-[#FFD700]" />
+                  Fee Structure (Price Bands)
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">1-100 FTC</span>
+                    <span className="text-[#00F090]">0.01%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">101-1K FTC</span>
+                    <span className="text-[#00F090]">0.05%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">1K-10K FTC</span>
+                    <span className="text-yellow-400">0.1%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">10K-100K FTC</span>
+                    <span className="text-yellow-400">0.5%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">100K-1M FTC</span>
+                    <span className="text-orange-400">1%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">1M-10M FTC</span>
+                    <span className="text-orange-400">2%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">10M-100M FTC</span>
+                    <span className="text-red-400">5%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">100M-1B FTC</span>
+                    <span className="text-red-400">10%</span>
+                  </div>
+                  <div className="flex justify-between p-2 bg-white/5 rounded">
+                    <span className="text-white/60">1B+ FTC</span>
+                    <span className="text-red-500 font-bold">15%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Fee History */}
+            <div className="glass-card p-6">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <Clock className="h-5 w-5 text-white/60" />
+                Recent Fee Collections
+              </h3>
+              {feeHistory.length === 0 ? (
+                <p className="text-white/40 text-center py-8">No fees collected yet</p>
+              ) : (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {feeHistory.map((fee, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-black/30 rounded-lg border border-white/5">
+                      <div>
+                        <p className="text-sm text-white font-medium">{fee.transaction_type}</p>
+                        <p className="text-xs text-white/40">{new Date(fee.collected_at).toLocaleString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[#FFD700] font-bold">+{fee.fee_amount?.toFixed(4)} FTC</p>
+                        <p className="text-xs text-white/40 font-mono truncate max-w-[100px]">
+                          {fee.transaction_id?.slice(0, 8)}...
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Edit Wallet Modal */}
+            {showEditWallet && (
+              <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                <div className="glass-card p-6 max-w-md w-full border border-[#FFD700]/30">
+                  <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-[#FFD700]" />
+                    Update Admin Wallet
+                  </h3>
+                  <div className="mb-4">
+                    <label className="block text-sm text-white/60 mb-2">New Wallet Address</label>
+                    <input
+                      type="text"
+                      value={newWalletAddress}
+                      onChange={(e) => setNewWalletAddress(e.target.value)}
+                      placeholder="Enter new admin wallet address"
+                      className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white font-mono"
+                      data-testid="new-admin-wallet-input"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowEditWallet(false)}
+                      className="flex-1 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={updateWalletAddress}
+                      className="flex-1 py-3 bg-gradient-to-r from-[#FFD700] to-[#FF8C00] text-black font-bold rounded-lg hover:brightness-110"
+                      data-testid="save-admin-wallet-btn"
+                    >
+                      Save Wallet
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Content */}
         {activeTab === 'requests' && (

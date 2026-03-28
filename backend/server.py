@@ -56,6 +56,85 @@ API_CACHE = {
 CACHE_DURATION = 60  # Cache for 60 seconds
 SEARCH_CACHE_DURATION = 120  # Search cache for 2 minutes
 
+# ========== ADMIN WALLET FOR FEE COLLECTION ==========
+ADMIN_WALLET = {
+    'wallet_address': 'ADMIN_FTC_8x7K9mNpQ2rT5wYz3aB6cD4eF1gH0iJ',  # Default admin wallet
+    'total_fees_collected': 0.0,
+    'total_transactions': 0,
+    'created_at': datetime.now(timezone.utc).isoformat()
+}
+
+def calculate_transaction_fee(amount_ftc: float) -> tuple:
+    """
+    Calculate transaction fee based on price bands.
+    Returns (fee_percentage, fee_amount)
+    
+    Fee Structure:
+    - 1-100 FTC: 0.01%
+    - 101-1,000 FTC: 0.05%
+    - 1,001-10,000 FTC: 0.1%
+    - 10,001-100,000 FTC: 0.5%
+    - 100,001-1,000,000 FTC: 1%
+    - 1,000,001-10,000,000 FTC: 2%
+    - 10,000,001-100,000,000 FTC: 5%
+    - 100,000,001-1,000,000,000 FTC: 10%
+    - 1,000,000,001+ FTC: 15%
+    """
+    if amount_ftc <= 0:
+        return 0.0, 0.0
+    
+    if amount_ftc <= 100:
+        fee_percent = 0.01
+    elif amount_ftc <= 1000:
+        fee_percent = 0.05
+    elif amount_ftc <= 10000:
+        fee_percent = 0.1
+    elif amount_ftc <= 100000:
+        fee_percent = 0.5
+    elif amount_ftc <= 1000000:
+        fee_percent = 1.0
+    elif amount_ftc <= 10000000:
+        fee_percent = 2.0
+    elif amount_ftc <= 100000000:
+        fee_percent = 5.0
+    elif amount_ftc <= 1000000000:
+        fee_percent = 10.0
+    else:
+        fee_percent = 15.0
+    
+    fee_amount = (amount_ftc * fee_percent) / 100
+    return fee_percent, fee_amount
+
+async def collect_admin_fee(fee_amount: float, transaction_type: str, transaction_id: str):
+    """Collect fee into admin wallet"""
+    global ADMIN_WALLET
+    
+    # Update global cache
+    ADMIN_WALLET['total_fees_collected'] += fee_amount
+    ADMIN_WALLET['total_transactions'] += 1
+    
+    # Also save to database for persistence
+    await db.admin_fees.insert_one({
+        'id': str(uuid.uuid4()),
+        'transaction_id': transaction_id,
+        'transaction_type': transaction_type,
+        'fee_amount': fee_amount,
+        'collected_at': datetime.now(timezone.utc).isoformat(),
+        'admin_wallet': ADMIN_WALLET['wallet_address']
+    })
+    
+    # Update admin wallet total in DB
+    await db.admin_wallet.update_one(
+        {'wallet_address': ADMIN_WALLET['wallet_address']},
+        {
+            '$inc': {'total_fees_collected': fee_amount, 'total_transactions': 1},
+            '$set': {'last_updated': datetime.now(timezone.utc).isoformat()}
+        },
+        upsert=True
+    )
+    
+    return fee_amount
+
 # ========== GLOBAL FTC STATE - Same for ALL users worldwide ==========
 GLOBAL_FTC_STATE = {
     'price': 0.00000472145,  # Base price
@@ -1967,6 +2046,9 @@ async def record_global_transaction(
     quantity = trade_data.get('quantity', 0)
     ftc_amount = trade_data.get('total_ftc', 0)
     
+    # CALCULATE TRANSACTION FEE
+    fee_percent, fee_amount = calculate_transaction_fee(ftc_amount)
+    
     # APPLY PRICE IMPACT - This trade affects GLOBAL price for ALL users
     apply_trade_price_impact(product_id, trade_type, quantity, ftc_amount)
     
@@ -1974,12 +2056,13 @@ async def record_global_transaction(
     current_price = GLOBAL_NUTRITION_PRICES.get(product_id, {}).get('current', trade_data.get('price_per_unit', 0))
     
     # Generate blockchain-style data
+    tx_id = str(uuid.uuid4())
     tx_hash = f"0x{uuid.uuid4().hex[:16]}...{uuid.uuid4().hex[:8]}"
     block_number = random.randint(18000000, 19000000)
     confirmations = random.randint(12, 100)
     
     transaction = {
-        "id": str(uuid.uuid4()),
+        "id": tx_id,
         "user_id": user_id,
         "username": username[:10] + "..." if len(username) > 10 else username,  # Anonymized
         "trade_type": trade_type,
@@ -1988,6 +2071,8 @@ async def record_global_transaction(
         "quantity": quantity,
         "price_per_unit": trade_data.get('price_per_unit', 0),
         "total_ftc": ftc_amount,
+        "fee_percent": fee_percent,
+        "fee_amount": round(fee_amount, 4),
         "price_after_impact": current_price,  # New price after this trade
         "tx_hash": tx_hash,
         "block_number": block_number,
@@ -1997,6 +2082,10 @@ async def record_global_transaction(
     }
     
     await db.global_nutrition_ledger.insert_one(transaction)
+    
+    # COLLECT FEE INTO ADMIN WALLET
+    if fee_amount > 0:
+        await collect_admin_fee(fee_amount, f'NUTRITION_{trade_type}', tx_id)
     
     # Return without _id
     if '_id' in transaction:
@@ -2725,6 +2814,265 @@ async def admin_reject_subscription(request: AdminActivateRequest):
         raise HTTPException(status_code=404, detail="Subscription request not found")
     
     return {"success": True, "message": "Subscription rejected"}
+
+# ========== ADMIN WALLET ENDPOINTS ==========
+
+@api_router.get("/admin/wallet")
+async def get_admin_wallet():
+    """Get admin wallet info and total fees collected"""
+    global ADMIN_WALLET
+    
+    # Get from database for latest data
+    wallet_data = await db.admin_wallet.find_one(
+        {'wallet_address': ADMIN_WALLET['wallet_address']},
+        {'_id': 0}
+    )
+    
+    if wallet_data:
+        ADMIN_WALLET['total_fees_collected'] = wallet_data.get('total_fees_collected', 0)
+        ADMIN_WALLET['total_transactions'] = wallet_data.get('total_transactions', 0)
+    
+    return {
+        'wallet_address': ADMIN_WALLET['wallet_address'],
+        'total_fees_collected': ADMIN_WALLET['total_fees_collected'],
+        'total_transactions': ADMIN_WALLET['total_transactions'],
+        'fee_structure': {
+            '1-100 FTC': '0.01%',
+            '101-1,000 FTC': '0.05%',
+            '1,001-10,000 FTC': '0.1%',
+            '10,001-100,000 FTC': '0.5%',
+            '100,001-1,000,000 FTC': '1%',
+            '1,000,001-10,000,000 FTC': '2%',
+            '10,000,001-100,000,000 FTC': '5%',
+            '100,000,001-1,000,000,000 FTC': '10%',
+            '1,000,000,001+ FTC': '15%'
+        }
+    }
+
+class UpdateAdminWalletRequest(BaseModel):
+    new_wallet_address: str
+
+@api_router.put("/admin/wallet")
+async def update_admin_wallet(request: UpdateAdminWalletRequest):
+    """Update admin wallet address"""
+    global ADMIN_WALLET
+    
+    new_address = request.new_wallet_address.strip()
+    if len(new_address) < 20:
+        raise HTTPException(status_code=400, detail="Invalid wallet address")
+    
+    old_address = ADMIN_WALLET['wallet_address']
+    ADMIN_WALLET['wallet_address'] = new_address
+    
+    # Update in database
+    await db.admin_wallet.update_one(
+        {'wallet_address': old_address},
+        {'$set': {'wallet_address': new_address, 'updated_at': datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    
+    return {
+        'success': True,
+        'wallet_address': new_address,
+        'message': 'Admin wallet updated successfully'
+    }
+
+@api_router.get("/admin/fee-history")
+async def get_admin_fee_history():
+    """Get history of all collected fees"""
+    fees = await db.admin_fees.find(
+        {},
+        {'_id': 0}
+    ).sort('collected_at', -1).limit(100).to_list(100)
+    
+    total_fees = sum(f.get('fee_amount', 0) for f in fees)
+    
+    return {
+        'fees': fees,
+        'total_collected': total_fees,
+        'total_transactions': len(fees)
+    }
+
+# ========== USER-TO-USER SEND FTC ==========
+
+class SendFTCRequest(BaseModel):
+    recipient_wallet_address: str
+    amount: float
+    note: Optional[str] = None
+
+@api_router.post("/wallet/send-ftc")
+async def send_ftc_to_user(request: SendFTCRequest, user_id: str = Depends(get_current_user)):
+    """Send FTC to another user by wallet address"""
+    
+    # Validate amount
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+    
+    # Get sender info
+    sender = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not sender:
+        raise HTTPException(status_code=404, detail="Sender not found")
+    
+    sender_wallet = await db.wallets.find_one({"user_id": user_id}, {"_id": 0})
+    if not sender_wallet:
+        raise HTTPException(status_code=404, detail="Sender wallet not found")
+    
+    # Check sender balance
+    if sender_wallet.get('ftc_balance', 0) < request.amount:
+        raise HTTPException(status_code=400, detail="Insufficient FTC balance")
+    
+    # Find recipient by wallet address
+    recipient = await db.users.find_one(
+        {"ftc_wallet_address": request.recipient_wallet_address},
+        {"_id": 0}
+    )
+    
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient wallet address not found")
+    
+    if recipient['id'] == user_id:
+        raise HTTPException(status_code=400, detail="Cannot send FTC to yourself")
+    
+    # Calculate transaction fee
+    fee_percent, fee_amount = calculate_transaction_fee(request.amount)
+    amount_after_fee = request.amount - fee_amount
+    
+    # Create transaction record
+    tx_id = str(uuid.uuid4())
+    tx_hash = f"0x{''.join(random.choices('0123456789abcdef', k=64))}"
+    
+    transaction = {
+        'id': tx_id,
+        'tx_hash': tx_hash,
+        'sender_id': user_id,
+        'sender_name': sender.get('full_name', 'Anonymous')[:15],
+        'sender_wallet': sender.get('ftc_wallet_address', ''),
+        'recipient_id': recipient['id'],
+        'recipient_name': recipient.get('full_name', 'Anonymous')[:15],
+        'recipient_wallet': request.recipient_wallet_address,
+        'amount': request.amount,
+        'fee_percent': fee_percent,
+        'fee_amount': fee_amount,
+        'amount_received': amount_after_fee,
+        'note': request.note or '',
+        'status': 'CONFIRMED',
+        'block_number': 19000000 + random.randint(0, 1000000),
+        'confirmations': random.randint(6, 30),
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Update sender wallet (deduct full amount)
+    await db.wallets.update_one(
+        {"user_id": user_id},
+        {"$inc": {"ftc_balance": -request.amount}}
+    )
+    
+    # Update recipient wallet (add amount after fee)
+    await db.wallets.update_one(
+        {"user_id": recipient['id']},
+        {"$inc": {"ftc_balance": amount_after_fee}}
+    )
+    
+    # Collect fee into admin wallet
+    await collect_admin_fee(fee_amount, 'SEND_FTC', tx_id)
+    
+    # Save transaction
+    await db.ftc_transfers.insert_one(transaction)
+    
+    # Also record in global ledger for visibility
+    global_record = {
+        'id': tx_id,
+        'user_id': user_id,
+        'username': sender.get('full_name', 'Anonymous')[:15],
+        'trade_type': 'SEND',
+        'product_id': 'FTC_TRANSFER',
+        'product_name': f'Send to {recipient.get("full_name", "User")[:10]}',
+        'quantity': 1,
+        'price_per_unit': request.amount,
+        'total_ftc': request.amount,
+        'fee_amount': fee_amount,
+        'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
+        'block_number': transaction['block_number'],
+        'confirmations': transaction['confirmations'],
+        'status': 'CONFIRMED',
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }
+    await db.global_nutrition_ledger.insert_one(global_record)
+    
+    return {
+        'success': True,
+        'transaction': {
+            'id': tx_id,
+            'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
+            'amount_sent': request.amount,
+            'fee_percent': f"{fee_percent}%",
+            'fee_amount': round(fee_amount, 4),
+            'amount_received': round(amount_after_fee, 4),
+            'recipient': recipient.get('full_name', 'User')[:15],
+            'recipient_wallet': request.recipient_wallet_address[:10] + '...' + request.recipient_wallet_address[-6:],
+            'status': 'CONFIRMED'
+        },
+        'message': f"Successfully sent {amount_after_fee:.4f} FTC (Fee: {fee_amount:.4f} FTC)"
+    }
+
+@api_router.get("/wallet/transfers")
+async def get_ftc_transfers(user_id: str = Depends(get_current_user)):
+    """Get user's FTC transfer history (sent and received)"""
+    
+    # Get sent transfers
+    sent = await db.ftc_transfers.find(
+        {"sender_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    
+    # Get received transfers
+    received = await db.ftc_transfers.find(
+        {"recipient_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    
+    # Mark type for each
+    for t in sent:
+        t['type'] = 'SENT'
+    for t in received:
+        t['type'] = 'RECEIVED'
+    
+    # Combine and sort
+    all_transfers = sent + received
+    all_transfers.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+    
+    return {
+        'transfers': all_transfers[:50],
+        'total_sent': sum(t.get('amount', 0) for t in sent),
+        'total_received': sum(t.get('amount_received', 0) for t in received),
+        'total_fees_paid': sum(t.get('fee_amount', 0) for t in sent)
+    }
+
+@api_router.get("/fee-calculator")
+async def calculate_fee(amount: float):
+    """Calculate fee for a given amount"""
+    if amount <= 0:
+        return {"amount": 0, "fee_percent": 0, "fee_amount": 0, "amount_after_fee": 0}
+    
+    fee_percent, fee_amount = calculate_transaction_fee(amount)
+    
+    return {
+        "amount": amount,
+        "fee_percent": fee_percent,
+        "fee_amount": round(fee_amount, 4),
+        "amount_after_fee": round(amount - fee_amount, 4),
+        "fee_structure": {
+            "1-100 FTC": "0.01%",
+            "101-1,000 FTC": "0.05%",
+            "1,001-10,000 FTC": "0.1%",
+            "10,001-100,000 FTC": "0.5%",
+            "100,001-1,000,000 FTC": "1%",
+            "1,000,001-10,000,000 FTC": "2%",
+            "10,000,001-100,000,000 FTC": "5%",
+            "100,000,001-1,000,000,000 FTC": "10%",
+            "1,000,000,001+ FTC": "15%"
+        }
+    }
 
 # ========== GLOBAL API ENDPOINTS - Same data for ALL users ==========
 

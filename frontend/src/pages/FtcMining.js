@@ -69,6 +69,15 @@ const FtcMining = () => {
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [isUpdatingWallet, setIsUpdatingWallet] = useState(false);
   
+  // Send FTC State
+  const [showSendFtcModal, setShowSendFtcModal] = useState(false);
+  const [sendRecipientWallet, setSendRecipientWallet] = useState('');
+  const [sendAmount, setSendAmount] = useState('');
+  const [sendNote, setSendNote] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendFeeInfo, setSendFeeInfo] = useState({ fee_percent: 0, fee_amount: 0 });
+  const [transferHistory, setTransferHistory] = useState([]);
+  
   // Sports Nutrition Trading States
   const [nutritionPrices, setNutritionPrices] = useState({});
   const [selectedNutrition, setSelectedNutrition] = useState(null);
@@ -571,6 +580,105 @@ const FtcMining = () => {
       toast.error('Failed to update wallet address');
     } finally {
       setIsUpdatingWallet(false);
+    }
+  };
+
+  // Calculate fee for sending FTC
+  const calculateSendFee = async (amount) => {
+    if (!amount || parseFloat(amount) <= 0) {
+      setSendFeeInfo({ fee_percent: 0, fee_amount: 0, amount_after_fee: 0 });
+      return;
+    }
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/fee-calculator?amount=${parseFloat(amount)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSendFeeInfo(data);
+      }
+    } catch (error) {
+      console.error('Fee calculation error:', error);
+    }
+  };
+
+  // Send FTC to another user
+  const sendFTC = async () => {
+    if (!sendRecipientWallet.trim()) {
+      toast.error('Please enter recipient wallet address');
+      return;
+    }
+    
+    const amount = parseFloat(sendAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    
+    if (amount > ftcBalance) {
+      toast.error('Insufficient FTC balance');
+      return;
+    }
+    
+    setIsSending(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/wallet/send-ftc`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          recipient_wallet_address: sendRecipientWallet.trim(),
+          amount: amount,
+          note: sendNote || ''
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`✅ Sent ${data.transaction.amount_received} FTC (Fee: ${data.transaction.fee_amount} FTC)`);
+        setShowSendFtcModal(false);
+        setSendRecipientWallet('');
+        setSendAmount('');
+        setSendNote('');
+        setSendFeeInfo({ fee_percent: 0, fee_amount: 0 });
+        
+        // Refresh balance
+        const walletRes = await fetch(`${BACKEND_URL}/api/wallet`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (walletRes.ok) {
+          const walletData = await walletRes.json();
+          setFtcBalance(walletData.ftc_balance || 0);
+        }
+        
+        // Fetch transfer history
+        fetchTransferHistory();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to send FTC');
+      }
+    } catch (error) {
+      console.error('Send FTC error:', error);
+      toast.error('Failed to send FTC');
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Fetch transfer history
+  const fetchTransferHistory = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/wallet/transfers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTransferHistory(data.transfers || []);
+      }
+    } catch (error) {
+      console.error('Transfer history error:', error);
     }
   };
 
@@ -1428,16 +1536,18 @@ const FtcMining = () => {
                     <span className="text-lg">🔑</span>
                     Your FTC Wallet Address
                   </h3>
-                  <button
-                    onClick={() => {
-                      setNewWalletAddress(ftcWalletAddress);
-                      setShowWalletModal(true);
-                    }}
-                    className="text-xs px-2 py-1 bg-[#9945FF]/20 hover:bg-[#9945FF]/30 text-[#9945FF] rounded transition-all"
-                    data-testid="edit-wallet-btn"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        setNewWalletAddress(ftcWalletAddress);
+                        setShowWalletModal(true);
+                      }}
+                      className="text-xs px-2 py-1 bg-[#9945FF]/20 hover:bg-[#9945FF]/30 text-[#9945FF] rounded transition-all"
+                      data-testid="edit-wallet-btn"
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-black/40 rounded-lg border border-white/10">
                   <p className="text-xs font-mono text-[#00F090] flex-1 truncate" data-testid="wallet-address">
@@ -1457,6 +1567,21 @@ const FtcMining = () => {
                 <p className="text-xs text-white/40 mt-2">
                   💡 This is your unique FTC wallet address. Use it to receive FTC from other users.
                 </p>
+                
+                {/* Send FTC Section */}
+                <div className="mt-4 pt-4 border-t border-white/10">
+                  <button
+                    onClick={() => { setShowSendFtcModal(true); fetchTransferHistory(); }}
+                    className="w-full py-3 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                    data-testid="send-ftc-btn"
+                  >
+                    <span>💸</span>
+                    Send FTC to Another User
+                  </button>
+                  <p className="text-xs text-white/30 text-center mt-2">
+                    Transaction fee: 0.01% - 15% based on amount
+                  </p>
+                </div>
               </div>
             )}
 
@@ -2976,6 +3101,158 @@ const FtcMining = () => {
                   {isUpdatingWallet ? 'Saving...' : '💾 Save Address'}
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Send FTC Modal */}
+      <AnimatePresence>
+        {showSendFtcModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSendFtcModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="glass-card p-6 max-w-lg w-full border border-[#00F090]/30 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <span className="text-2xl">💸</span>
+                  Send FTC
+                </h3>
+                <button
+                  onClick={() => setShowSendFtcModal(false)}
+                  className="text-white/60 hover:text-white text-xl"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {/* Your Balance */}
+              <div className="bg-black/40 p-3 rounded-lg mb-4 border border-white/10">
+                <p className="text-sm text-white/60">Your FTC Balance</p>
+                <p className="text-2xl font-bold text-[#FFD700]">{ftcBalance.toFixed(4)} FTC</p>
+              </div>
+              
+              {/* Recipient Wallet */}
+              <div className="mb-4">
+                <label className="block text-sm text-white/60 mb-2">Recipient Wallet Address</label>
+                <input
+                  type="text"
+                  value={sendRecipientWallet}
+                  onChange={(e) => setSendRecipientWallet(e.target.value)}
+                  placeholder="Enter recipient's FTC wallet address"
+                  className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#00F090] font-mono text-sm"
+                  data-testid="send-recipient-input"
+                />
+              </div>
+              
+              {/* Amount */}
+              <div className="mb-4">
+                <label className="block text-sm text-white/60 mb-2">Amount (FTC)</label>
+                <input
+                  type="number"
+                  value={sendAmount}
+                  onChange={(e) => {
+                    setSendAmount(e.target.value);
+                    calculateSendFee(e.target.value);
+                  }}
+                  placeholder="Enter amount to send"
+                  min="0"
+                  step="0.0001"
+                  className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#00F090]"
+                  data-testid="send-amount-input"
+                />
+                <div className="flex gap-2 mt-2">
+                  {[25, 50, 75, 100].map((pct) => (
+                    <button
+                      key={pct}
+                      onClick={() => {
+                        const amt = (ftcBalance * pct / 100).toFixed(4);
+                        setSendAmount(amt);
+                        calculateSendFee(amt);
+                      }}
+                      className="flex-1 py-1 text-xs bg-white/10 hover:bg-white/20 rounded transition-all"
+                    >
+                      {pct}%
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Fee Info */}
+              {sendFeeInfo.fee_amount > 0 && (
+                <div className="bg-[#FFD700]/10 p-3 rounded-lg mb-4 border border-[#FFD700]/30">
+                  <div className="flex justify-between text-sm mb-1">
+                    <span className="text-white/60">Transaction Fee ({sendFeeInfo.fee_percent}%)</span>
+                    <span className="text-[#FFD700]">{sendFeeInfo.fee_amount?.toFixed(4)} FTC</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-white/60">Recipient Receives</span>
+                    <span className="text-[#00F090] font-bold">{sendFeeInfo.amount_after_fee?.toFixed(4)} FTC</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* Note */}
+              <div className="mb-6">
+                <label className="block text-sm text-white/60 mb-2">Note (Optional)</label>
+                <input
+                  type="text"
+                  value={sendNote}
+                  onChange={(e) => setSendNote(e.target.value)}
+                  placeholder="Add a note for this transfer"
+                  maxLength={100}
+                  className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#00F090]"
+                />
+              </div>
+              
+              {/* Send Button */}
+              <button
+                onClick={sendFTC}
+                disabled={isSending || !sendRecipientWallet || !sendAmount || parseFloat(sendAmount) <= 0}
+                className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 text-lg"
+                data-testid="confirm-send-btn"
+              >
+                {isSending ? 'Sending...' : `Send ${sendAmount || 0} FTC`}
+              </button>
+              
+              {/* Transfer History */}
+              {transferHistory.length > 0 && (
+                <div className="mt-6 pt-4 border-t border-white/10">
+                  <h4 className="text-sm font-bold text-white/60 mb-3">Recent Transfers</h4>
+                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                    {transferHistory.slice(0, 5).map((tx, idx) => (
+                      <div key={idx} className="p-2 bg-black/30 rounded-lg border border-white/5 flex items-center justify-between">
+                        <div>
+                          <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                            tx.type === 'SENT' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {tx.type}
+                          </span>
+                          <p className="text-xs text-white/40 mt-1">
+                            {tx.type === 'SENT' ? `To: ${tx.recipient_wallet?.slice(0,10)}...` : `From: ${tx.sender_wallet?.slice(0,10)}...`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold ${tx.type === 'SENT' ? 'text-red-400' : 'text-green-400'}`}>
+                            {tx.type === 'SENT' ? '-' : '+'}{tx.type === 'SENT' ? tx.amount : tx.amount_received}
+                          </p>
+                          <p className="text-xs text-white/30">{new Date(tx.created_at).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}
