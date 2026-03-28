@@ -19,81 +19,52 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - **UPGRADE FUNCTIONALITY** - Users can submit upgrade requests
 - **REAL-TIME ACTIVATION** - Subscription activates immediately after admin approval
 - **SUBSCRIPTION-BASED TOOLS** - Different features unlock based on plan tier ✅
-- **AUTO-GENERATED FTC WALLET ADDRESS** ✅ (NEW - March 28, 2026)
+- **AUTO-GENERATED FTC WALLET ADDRESS** ✅
   - Unique 44-char Solana-style address generated on registration
   - Users can view, copy, and edit their wallet address
-  - Addresses stored in user profile and wallet collections
 
 ### 3. Admin Control Panel ✅
 **Credentials**: FITRUDRAH / 786786 / 0000
 - Approve/Reject subscriptions and upgrades
 - View TX hashes for verification
+- **ADMIN FEE COLLECTION WALLET** ✅ (NEW - March 28, 2026)
+  - Wallet Address: `ADMIN_FTC_8x7K9mNpQ2rT5wYz3aB6cD4eF1gH0iJ`
+  - Shows total fees collected and transaction count
+  - Edit wallet address functionality
+  - Fee history display
 
-### 4. Sports Nutrition Trading ✅ (MAJOR UPDATE - March 28, 2026)
+### 4. Transaction Fee System ✅ (NEW - March 28, 2026)
+**Price Band Based Fees:**
+- 1-100 FTC: 0.01%
+- 101-1,000 FTC: 0.05%
+- 1,001-10,000 FTC: 0.1%
+- 10,001-100,000 FTC: 0.5%
+- 100,001-1,000,000 FTC: 1%
+- 1,000,001-10,000,000 FTC: 2%
+- 10,000,001-100,000,000 FTC: 5%
+- 100,000,001-1,000,000,000 FTC: 10%
+- 1,000,000,001+ FTC: 15%
+
+### 5. User-to-User Send FTC ✅ (NEW - March 28, 2026)
+- Send FTC to another user by wallet address
+- Real-time fee calculation
+- Transaction history (sent/received)
+- Fee automatically collected in admin wallet
+
+### 6. Sports Nutrition Trading ✅
 - 40 products with **GLOBAL REAL-TIME PRICES** ✅
-- **PRICE IMPACT MODEL** ✅ - When users BUY/SELL, it affects GLOBAL price for ALL users
-  - BUY increases price +0.2% per unit and increases buy_pressure
-  - SELL decreases price -0.2% per unit and increases sell_pressure
-- **AI-POWERED TRADING SIGNALS** ✅ - Real-time BUY/HOLD/SELL recommendations with:
-  - Confidence percentage (0-100%)
-  - Reason explaining the signal
-  - Trend analysis (bullish/bearish)
-  - Momentum calculation
-- **GLOBAL BLOCKCHAIN LEDGER** ✅ - ALL transactions from ALL users visible globally
-  - Each trade records price_after_impact
-  - Real-time 24H volume stats (polling every 3 seconds)
-  - Market sentiment (bullish/bearish/neutral)
-- **AI Market Analysis Panel** ✅ - Shows BUY/HOLD/SELL signal counts
-- Double-tap detailed view modal
-
-### 5. AI-ML Trading Analysis ✅
-- Trading signals, confidence %, risk level
-- "+X more coins" UI for suggestions ✅
-- **Real-time AI recommendations** based on buy/sell pressure and price trends
-
-### 6. Subscription-Based Tools ✅ (NEW - March 28, 2026)
-Tools unlock based on plan tier:
-- **Free Trial (Tier 0)**: Basic Mining, Price Alerts
-- **Starter (Tier 1)**: + AI Trading Signals, Portfolio Tracker
-- **Basic (Tier 2)**: + Market Sentiment, Trade History Export
-- **Standard (Tier 3)**: + Advanced Charts, Whale Alerts
-- **Pro (Tier 4)**: + Auto Trading Bot, Priority Mining (2x)
-- **Elite (Tier 5)**: + VIP Support, Early Access
-- **Ultra (Tier 6)**: + Custom Alert Rules, API Access
-- **Mega (Tier 7)**: + Leverage Trading (5x), Staking Rewards
-- **Supreme (Tier 8)**: + Market Maker Mode, Copy Trading
-- **Titan (Tier 9)**: + Institutional Data, Dark Pool Access
-- **Legend (Tier 10)**: + AI Portfolio Manager, Unlimited Mining
-- **Immortal (Tier 11)**: + Governance Voting, Revenue Share
-- **GOD MODE (Tier 12)**: ALL Features + Founder Badge NFT
-
-## What's Complete (March 2026)
-1. ✅ 2026 Exclusive Subscription Plans (12 tiers, $50-$5000)
-2. ✅ Payment modal with wallet addresses (USDT/SOL/FTC)
-3. ✅ Place Order functionality (real balance updates)
-4. ✅ AI Suggestions UI with "+X more coins"
-5. ✅ Subscription submission with TX hash
-6. ✅ Admin approval process
-7. ✅ Real-time activation (immediate status update)
-8. ✅ Auto-polling for pending subscriptions
-9. ✅ Blockchain Trade Ledger
-10. ✅ Upgrade flow with TX hash
-11. ✅ Global FTC price/volume sync
-12. ✅ **GLOBAL Nutrition Prices** - ALL users see same prices
-13. ✅ **PRICE IMPACT MODEL** - Trades affect global prices
-14. ✅ **AI TRADING SIGNALS** - Real-time BUY/HOLD/SELL recommendations
-15. ✅ **GLOBAL BLOCKCHAIN LEDGER** - ALL transactions visible to ALL users (3-second polling)
-16. ✅ **SUBSCRIPTION-BASED TOOLS** - Auto-unlock based on plan tier
-17. ✅ **AUTO-GENERATED FTC WALLET ADDRESS** - Unique wallet for each user (NEW)
-18. ✅ **WALLET ADDRESS EDIT/UPDATE** - Users can customize their wallet address (NEW)
+- **PRICE IMPACT MODEL** ✅ - BUY/SELL affects global price
+- **AI-POWERED TRADING SIGNALS** ✅ - BUY/HOLD/SELL recommendations
+- **GLOBAL BLOCKCHAIN LEDGER** ✅ - ALL transactions visible worldwide (3-second polling)
+- **FEE COLLECTION** on all trades ✅
 
 ## New APIs Added (March 28, 2026)
-- `GET /api/nutrition/global-prices` - Returns prices, ai_signals, trade_volume
-- `GET /api/nutrition/ai-recommendations` - Returns categorized BUY/HOLD/SELL signals
-- `GET /api/nutrition/global-ledger` - Returns ALL transactions with stats
-- `POST /api/nutrition/global-ledger/record` - Records trade with price_after_impact
-- `GET /api/wallet/address` - Returns user's FTC wallet address (NEW)
-- `PUT /api/wallet/address` - Update user's FTC wallet address (NEW)
+- `GET /api/admin/wallet` - Returns admin wallet info and total fees
+- `PUT /api/admin/wallet` - Update admin wallet address
+- `GET /api/admin/fee-history` - Returns fee collection history
+- `GET /api/fee-calculator?amount=X` - Calculate fee for amount
+- `POST /api/wallet/send-ftc` - Send FTC to another user
+- `GET /api/wallet/transfers` - Get user's transfer history
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, Framer Motion, Recharts
@@ -101,8 +72,7 @@ Tools unlock based on plan tier:
 - External APIs: CoinGecko, Resend (Email OTPs)
 
 ## Upcoming Tasks (P1-P3)
-- **P1: WebSockets** - Replace polling with real-time WebSockets
-- **P2: Send/Receive FTC** - User-to-user FTC transfers
-- **P3: Backend Refactoring** - Split server.py (2700+ lines) into modular routers
+- **P1: WebSockets** - Replace polling with real-time push
+- **P3: Backend Refactoring** - Split server.py (2700+ lines)
 - **P3: Frontend Refactoring** - Extract FtcMining.js subcomponents
 - **P3: Leaderboard UI** - Display top FTC traders globally
