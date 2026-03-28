@@ -1821,6 +1821,8 @@ class MiningSubscriptionRequest(BaseModel):
     price: float
     transaction_hash: Optional[str] = None
     is_free_trial: Optional[bool] = False
+    is_resubscription: Optional[bool] = False
+    bonus_percent: Optional[int] = 0
 
 class AdminActivateRequest(BaseModel):
     request_id: str
@@ -1913,6 +1915,7 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
         # Create new upgrade request
         user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1})
         upgrade_id = str(uuid.uuid4())
+        bonus_ftc = int(request.ftc_limit * (request.bonus_percent / 100)) if request.bonus_percent > 0 else 0
         upgrade_doc = {
             "id": upgrade_id,
             "user_id": user_id,
@@ -1925,6 +1928,9 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
             "price": request.price,
             "transaction_hash": request.transaction_hash,
             "is_free_trial": request.is_free_trial,
+            "is_resubscription": request.is_resubscription,
+            "bonus_percent": request.bonus_percent,
+            "bonus_ftc": bonus_ftc,
             "status": "pending_upgrade",
             "current_plan": existing.get("plan_name"),
             "created_at": datetime.now(timezone.utc).isoformat(),
@@ -1934,10 +1940,12 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
         await db.mining_subscriptions.insert_one(upgrade_doc)
         upgrade_doc.pop("_id", None)
         
+        bonus_msg = f" 🎁 BONUS: +{bonus_ftc} FTC for returning subscriber!" if bonus_ftc > 0 else ""
+        
         return {
             "success": True,
             "request": upgrade_doc,
-            "message": f"Upgrade request submitted! Admin will verify payment and upgrade from {existing.get('plan_name')} to {request.plan_name}."
+            "message": f"Upgrade request submitted! Admin will verify payment and upgrade from {existing.get('plan_name')} to {request.plan_name}.{bonus_msg}"
         }
     
     if existing and existing.get("status") == "pending":
@@ -1986,6 +1994,9 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
         "price": request.price,
         "transaction_hash": request.transaction_hash,
         "is_free_trial": request.is_free_trial,
+        "is_resubscription": request.is_resubscription,
+        "bonus_percent": request.bonus_percent,
+        "bonus_ftc": int(request.ftc_limit * (request.bonus_percent / 100)) if request.bonus_percent > 0 else 0,
         "status": "pending",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "activated_at": None
@@ -1996,10 +2007,12 @@ async def subscribe_mining_plan(request: MiningSubscriptionRequest, user_id: str
     # Remove _id before returning (MongoDB adds it during insert)
     subscription_doc.pop("_id", None)
     
+    bonus_msg = f" BONUS: +{subscription_doc['bonus_ftc']} FTC for returning subscriber!" if subscription_doc['bonus_ftc'] > 0 else ""
+    
     return {
         "success": True,
         "request": subscription_doc,
-        "message": "Subscription request submitted. Admin will verify and activate."
+        "message": f"Subscription request submitted. Admin will verify and activate.{bonus_msg}"
     }
 
 @api_router.post("/mining/save-progress")
@@ -2091,6 +2104,16 @@ async def admin_activate_subscription(request: AdminActivateRequest):
             }
         }
     )
+    
+    # Apply bonus FTC if user is a returning subscriber
+    bonus_ftc = sub.get("bonus_ftc", 0)
+    if bonus_ftc > 0:
+        await db.mining_wallets.update_one(
+            {"user_id": sub["user_id"]},
+            {"$inc": {"ftc_balance": bonus_ftc}},
+            upsert=True
+        )
+        return {"success": True, "message": f"Subscription activated successfully! +{bonus_ftc} FTC bonus applied for returning subscriber."}
     
     return {"success": True, "message": "Subscription activated successfully"}
 

@@ -59,6 +59,12 @@ const FtcMining = () => {
   const [totalProfitLoss, setTotalProfitLoss] = useState(0);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const [aiPrediction, setAiPrediction] = useState(null);
+  const [ftcLivePrice, setFtcLivePrice] = useState(0.00000519);
+  const [ftcPriceChange, setFtcPriceChange] = useState(0);
+  
+  // Re-subscription bonus tracking
+  const [hasHadPreviousSubscription, setHasHadPreviousSubscription] = useState(false);
+  const RESUBSCRIPTION_BONUS_PERCENT = 10; // 10% bonus for returning subscribers
 
   // Generate blockchain-style transaction hash
   const generateTxHash = () => {
@@ -445,6 +451,53 @@ const FtcMining = () => {
     }
   }, [caloriesBurned]);
 
+  // FTC Live Price Feed - Real-time fluctuation
+  useEffect(() => {
+    const updateFtcPrice = () => {
+      setFtcLivePrice(prev => {
+        const volatility = 0.02 + Math.random() * 0.03;
+        const direction = Math.random() > 0.48 ? 1 : -1;
+        const newPrice = prev * (1 + (direction * volatility * Math.random()));
+        const change = ((newPrice - 0.00000519) / 0.00000519) * 100;
+        setFtcPriceChange(change);
+        return newPrice;
+      });
+    };
+
+    // Initial price with slight variation
+    setFtcLivePrice(0.00000519 * (0.98 + Math.random() * 0.04));
+    
+    // Update every 3 seconds
+    const priceInterval = setInterval(updateFtcPrice, 3000);
+    return () => clearInterval(priceInterval);
+  }, []);
+
+  // Check if user had previous subscription (for bonus)
+  useEffect(() => {
+    const checkPreviousSubscription = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/mining/status`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          // If user has had any subscription before (active or expired)
+          if (data.active_subscription || localStorage.getItem('ftc_had_subscription') === 'true') {
+            setHasHadPreviousSubscription(true);
+            localStorage.setItem('ftc_had_subscription', 'true');
+          }
+        }
+      } catch (error) {
+        console.log('Error checking subscription history:', error);
+      }
+    };
+    
+    checkPreviousSubscription();
+  }, []);
+
   // Fetch mining data from backend
   const fetchMiningData = async (token) => {
     try {
@@ -641,7 +694,9 @@ const FtcMining = () => {
           payment_method: selectedPlan.isFree ? 'FREE' : paymentMethod,
           price: selectedPlan.isFree ? 0 : (paymentMethod === 'USD' ? selectedPlan.priceUSD : selectedPlan.priceFTC),
           transaction_hash: selectedPlan.isFree ? 'FREE_TRIAL_7_DAYS' : transactionHash.trim(),
-          is_free_trial: selectedPlan.isFree || false
+          is_free_trial: selectedPlan.isFree || false,
+          is_resubscription: hasHadPreviousSubscription,
+          bonus_percent: hasHadPreviousSubscription ? RESUBSCRIPTION_BONUS_PERCENT : 0
         })
       });
       
@@ -650,10 +705,19 @@ const FtcMining = () => {
         setSubscriptionRequest(data.request);
         setShowPlanModal(false);
         setTransactionHash('');
+        
+        // Mark that user has had subscription for future bonus
+        localStorage.setItem('ftc_had_subscription', 'true');
+        setHasHadPreviousSubscription(true);
+        
+        const bonusMessage = hasHadPreviousSubscription 
+          ? ` 🎁 +${RESUBSCRIPTION_BONUS_PERCENT}% BONUS applied for returning subscriber!` 
+          : '';
+        
         toast.success(selectedPlan.isFree ? '✅ Free Trial request submitted!' : '✅ Subscription request submitted!', {
           description: selectedPlan.isFree 
             ? 'Admin will approve your 7-day free trial. Status will update automatically!' 
-            : 'Admin will verify payment and activate your plan. Status will update automatically!'
+            : `Admin will verify payment and activate your plan.${bonusMessage} Status will update automatically!`
         });
         // Refresh mining data to get updated status
         const token = localStorage.getItem('token');
@@ -1083,7 +1147,47 @@ const FtcMining = () => {
 
         {/* Sports Nutrition Trading Section */}
         <div className="mt-12 mb-8">
-          <div className="text-center mb-8">
+          {/* FTC Price Header */}
+          <div className="glass-card p-4 mb-6 border border-[#FFD700]/30">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="https://customer-assets.emergentagent.com/job_94cff406-9a2c-4c0b-a835-403a040364ee/artifacts/1nhfkox8_1000174676.jpg" 
+                  alt="FTC" 
+                  className="h-12 w-12 rounded-full border-2 border-[#FFD700] shadow-lg shadow-[#FFD700]/20"
+                />
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black text-white">FTC</span>
+                    <span className={`text-sm font-bold px-2 py-0.5 rounded ${
+                      ftcPriceChange >= 0 ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-[#FF2E50]/20 text-[#FF2E50]'
+                    }`}>
+                      {ftcPriceChange >= 0 ? '+' : ''}{ftcPriceChange.toFixed(2)}%
+                    </span>
+                  </div>
+                  <p className={`text-2xl font-black font-mono ${ftcPriceChange >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                    ${ftcLivePrice.toFixed(11)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <div className="text-right">
+                  <p className="text-xs text-white/50">YOUR BALANCE</p>
+                  <p className="text-lg font-black text-[#FFD700]">{ftcBalance.toLocaleString()} FTC</p>
+                  <p className="text-xs text-white/50">≈ ${(ftcBalance * ftcLivePrice).toFixed(4)} USD</p>
+                </div>
+                <div className="w-px h-10 bg-white/20" />
+                <div className="text-right">
+                  <p className="text-xs text-white/50">24H VOLUME</p>
+                  <p className="text-sm font-bold text-white">${(Math.random() * 50000 + 10000).toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Section Title */}
+          <div className="text-center mb-6">
             <div className="flex items-center justify-center gap-3 mb-2">
               <span className="text-3xl">🏋️</span>
               <h2 className="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#FF9F1C] to-[#FFD700]">
@@ -1091,31 +1195,62 @@ const FtcMining = () => {
               </h2>
               <span className="text-3xl">💪</span>
             </div>
-            <p className="text-white/60 text-sm mb-4">Trade with your mined FTC • Real-time prices • Global Market</p>
+            <p className="text-white/60 text-sm">Trade with your mined FTC • Real-time prices • Global Market</p>
+          </div>
+          
+          {/* Enhanced Portfolio Summary */}
+          <div className="glass-card p-4 mb-6 border border-white/10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* Total Holdings */}
+              <div className="text-center p-3 bg-black/30 rounded-lg">
+                <p className="text-xs text-white/50 uppercase mb-1">Total Holdings</p>
+                <p className="text-xl font-black text-white">{Object.keys(portfolio).length}</p>
+                <p className="text-xs text-white/40">Assets</p>
+              </div>
+              
+              {/* Total Value */}
+              <div className="text-center p-3 bg-black/30 rounded-lg">
+                <p className="text-xs text-white/50 uppercase mb-1">Total Value</p>
+                <p className="text-xl font-black text-[#FFD700]">
+                  {Object.values(portfolio).reduce((sum, h) => sum + (h.totalInvested || 0), 0).toFixed(2)} FTC
+                </p>
+                <p className="text-xs text-white/40">
+                  ≈ ${(Object.values(portfolio).reduce((sum, h) => sum + (h.totalInvested || 0), 0) * ftcLivePrice).toFixed(4)}
+                </p>
+              </div>
+              
+              {/* P/L */}
+              <div className="text-center p-3 bg-black/30 rounded-lg">
+                <p className="text-xs text-white/50 uppercase mb-1">Profit / Loss</p>
+                <p className={`text-xl font-black ${totalProfitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                  {totalProfitLoss >= 0 ? '+' : ''}{totalProfitLoss.toFixed(2)} FTC
+                </p>
+                <p className={`text-xs ${totalProfitLoss >= 0 ? 'text-[#00F090]/70' : 'text-[#FF2E50]/70'}`}>
+                  ({Object.values(portfolio).reduce((sum, h) => sum + (h.totalInvested || 0), 0) > 0 
+                    ? ((totalProfitLoss / Object.values(portfolio).reduce((sum, h) => sum + (h.totalInvested || 0), 1)) * 100).toFixed(2) 
+                    : '0.00'}%) ≈ ${(totalProfitLoss * ftcLivePrice).toFixed(4)}
+                </p>
+              </div>
+              
+              {/* Transactions */}
+              <div className="text-center p-3 bg-black/30 rounded-lg">
+                <p className="text-xs text-white/50 uppercase mb-1">Transactions</p>
+                <p className="text-xl font-black text-[#9945FF]">{transactionLedger.length}</p>
+                <p className="text-xs text-white/40">Blockchain Verified</p>
+              </div>
+            </div>
             
-            {/* Portfolio Summary Bar & Ledger Button */}
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              {Object.keys(portfolio).length > 0 && (
-                <div className="flex items-center gap-4 px-4 py-2 bg-black/50 rounded-lg border border-white/10">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-[#FFD700]" />
-                    <span className="text-sm text-white/80">{Object.keys(portfolio).length} Holdings</span>
-                  </div>
-                  <div className="w-px h-4 bg-white/20" />
-                  <div className={`text-sm font-bold ${totalProfitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                    P/L: {totalProfitLoss >= 0 ? '+' : ''}{totalProfitLoss.toFixed(2)} FTC
-                  </div>
-                </div>
-              )}
+            {/* View Ledger Button */}
+            <div className="flex justify-center mt-4">
               <button
                 onClick={() => setShowLedgerModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#9945FF]/20 to-[#00F090]/20 border border-[#9945FF]/50 rounded-lg hover:brightness-110 transition-all"
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#9945FF] to-[#00F090] text-white font-bold rounded-lg hover:brightness-110 transition-all shadow-lg shadow-[#9945FF]/20"
                 data-testid="view-ledger-btn"
               >
-                <FileText className="h-4 w-4 text-[#9945FF]" />
-                <span className="text-sm font-bold text-white">View Blockchain Ledger</span>
+                <FileText className="h-5 w-5" />
+                <span>📜 View Blockchain Ledger</span>
                 {transactionLedger.length > 0 && (
-                  <span className="px-1.5 py-0.5 bg-[#9945FF] text-white text-xs font-bold rounded">
+                  <span className="px-2 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full">
                     {transactionLedger.length}
                   </span>
                 )}
@@ -1123,6 +1258,64 @@ const FtcMining = () => {
             </div>
           </div>
           
+          {/* Holdings Module */}
+          {Object.keys(portfolio).length > 0 && (
+            <div className="glass-card p-4 mb-6 border border-[#00F090]/30">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-[#00F090]" />
+                📦 Your Holdings
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {Object.entries(portfolio).map(([productId, holding]) => {
+                  const product = NUTRITION_PRODUCTS.find(p => p.id === productId);
+                  const currentPrice = nutritionPrices[productId]?.current || product?.basePrice || 0;
+                  const pl = calculateProfitLoss(productId, currentPrice);
+                  
+                  return (
+                    <div key={productId} className="p-3 bg-black/30 rounded-lg border border-white/10 hover:border-[#00F090]/30 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-sm font-bold text-white">{product?.name || productId}</p>
+                          <p className="text-xs text-[#FFD700]">{product?.category}</p>
+                        </div>
+                        {pl && (
+                          <span className={`px-2 py-0.5 text-xs font-bold rounded ${
+                            pl.profitLoss >= 0 ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-[#FF2E50]/20 text-[#FF2E50]'
+                          }`}>
+                            {pl.profitLoss >= 0 ? '+' : ''}{pl.profitLossPercent.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <p className="text-white/40">Quantity</p>
+                          <p className="text-white font-mono">{holding.quantity}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40">Buy Price</p>
+                          <p className="text-white font-mono">{holding.avgBuyPrice.toFixed(2)} FTC</p>
+                        </div>
+                        <div>
+                          <p className="text-white/40">Current Price</p>
+                          <p className={`font-mono ${currentPrice >= holding.avgBuyPrice ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                            {currentPrice.toFixed(2)} FTC
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-white/40">P/L</p>
+                          <p className={`font-mono font-bold ${pl?.profitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                            {pl ? `${pl.profitLoss >= 0 ? '+' : ''}${pl.profitLoss.toFixed(2)} FTC` : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          {/* Product Grid */}
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
             {NUTRITION_PRODUCTS.map((product) => {
               const priceData = nutritionPrices[product.id];

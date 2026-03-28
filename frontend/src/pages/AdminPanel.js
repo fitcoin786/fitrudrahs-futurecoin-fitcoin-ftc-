@@ -493,6 +493,12 @@ const AdminPanel = () => {
                           <p className="text-sm text-[#9945FF]">⬆️ Upgrading from: <span className="font-bold">{request.current_plan}</span></p>
                         </div>
                       )}
+                      {/* Show bonus for returning subscriber */}
+                      {request.is_resubscription && request.bonus_ftc > 0 && (
+                        <div className="mb-3 p-2 bg-[#FFD700]/10 rounded-lg border border-[#FFD700]/30">
+                          <p className="text-sm text-[#FFD700]">🎁 Returning Subscriber Bonus: <span className="font-bold">+{request.bonus_ftc} FTC</span></p>
+                        </div>
+                      )}
                       {/* Transaction Hash - Hide for Free Trial */}
                       {request.transaction_hash && !request.is_free_trial && request.payment_method !== 'FREE' && (
                         <div className="p-2 bg-black/50 rounded-lg border border-white/10">
