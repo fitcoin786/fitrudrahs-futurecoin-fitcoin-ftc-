@@ -145,23 +145,119 @@ NUTRITION_PRODUCTS_LIST = [
 # Global state for nutrition prices - same for ALL users
 GLOBAL_NUTRITION_PRICES = {}
 GLOBAL_NUTRITION_LAST_UPDATE = 0
+GLOBAL_TRADE_VOLUME = {}  # Track buy/sell volume per product
+GLOBAL_AI_SIGNALS = {}  # AI recommendations for each product
 
 def initialize_global_nutrition_prices():
     """Initialize nutrition prices"""
-    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE
+    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE, GLOBAL_TRADE_VOLUME, GLOBAL_AI_SIGNALS
     now = time.time()
     
     for product in NUTRITION_PRODUCTS_LIST:
-        GLOBAL_NUTRITION_PRICES[product['id']] = {
+        pid = product['id']
+        GLOBAL_NUTRITION_PRICES[pid] = {
             'current': product['basePrice'],
             'change': 0.0,
-            'history': [product['basePrice'] * (0.95 + random.random() * 0.1) for _ in range(20)]
+            'history': [product['basePrice'] * (0.95 + random.random() * 0.1) for _ in range(20)],
+            'volume_24h': random.randint(100, 1000),
+            'buy_pressure': 50,  # 0-100 scale
+            'sell_pressure': 50
         }
+        GLOBAL_TRADE_VOLUME[pid] = {'buy': 0, 'sell': 0, 'net': 0}
+        GLOBAL_AI_SIGNALS[pid] = generate_ai_signal(pid, GLOBAL_NUTRITION_PRICES[pid])
     GLOBAL_NUTRITION_LAST_UPDATE = now
+
+def generate_ai_signal(product_id, price_data):
+    """Generate AI trading signal for a product"""
+    history = price_data.get('history', [])
+    current = price_data.get('current', 0)
+    change = price_data.get('change', 0)
+    buy_pressure = price_data.get('buy_pressure', 50)
+    
+    # Simple AI logic based on price trends and pressure
+    if len(history) >= 5:
+        avg_5 = sum(history[-5:]) / 5
+        avg_10 = sum(history[-10:]) / 10 if len(history) >= 10 else avg_5
+        
+        trend = "bullish" if avg_5 > avg_10 else "bearish"
+        momentum = ((current - avg_5) / avg_5) * 100 if avg_5 > 0 else 0
+        
+        # Determine signal
+        if buy_pressure > 60 and trend == "bullish" and momentum > 0:
+            signal = "BUY"
+            confidence = min(95, 60 + buy_pressure * 0.3)
+            reason = f"Strong buy pressure ({buy_pressure}%), bullish trend, +{momentum:.2f}% momentum"
+        elif buy_pressure < 40 and trend == "bearish" and momentum < 0:
+            signal = "SELL"
+            confidence = min(95, 60 + (100 - buy_pressure) * 0.3)
+            reason = f"High sell pressure, bearish trend, {momentum:.2f}% momentum"
+        else:
+            signal = "HOLD"
+            confidence = 50 + abs(50 - buy_pressure) * 0.5
+            reason = f"Market consolidating, pressure: {buy_pressure}%, awaiting breakout"
+    else:
+        signal = "HOLD"
+        confidence = 50
+        reason = "Insufficient data for analysis"
+    
+    return {
+        'signal': signal,
+        'confidence': round(confidence, 1),
+        'reason': reason,
+        'trend': trend if len(history) >= 5 else 'neutral',
+        'momentum': round(momentum, 2) if len(history) >= 5 else 0,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+
+def apply_trade_price_impact(product_id: str, trade_type: str, quantity: int, ftc_amount: float):
+    """Apply price impact from a trade - affects GLOBAL price for all users"""
+    global GLOBAL_NUTRITION_PRICES, GLOBAL_TRADE_VOLUME, GLOBAL_AI_SIGNALS
+    
+    if product_id not in GLOBAL_NUTRITION_PRICES:
+        return
+    
+    price_data = GLOBAL_NUTRITION_PRICES[product_id]
+    current_price = price_data['current']
+    
+    # Calculate price impact based on trade size (larger trades = more impact)
+    # Impact formula: 0.1% to 0.5% per unit traded
+    impact_factor = 0.002 * quantity  # 0.2% per unit
+    
+    if trade_type == 'BUY':
+        # Buying increases price (demand)
+        new_price = current_price * (1 + impact_factor)
+        GLOBAL_TRADE_VOLUME[product_id]['buy'] += quantity
+        price_data['buy_pressure'] = min(100, price_data.get('buy_pressure', 50) + 5)
+        price_data['sell_pressure'] = max(0, price_data.get('sell_pressure', 50) - 3)
+    else:
+        # Selling decreases price (supply)
+        new_price = current_price * (1 - impact_factor)
+        GLOBAL_TRADE_VOLUME[product_id]['sell'] += quantity
+        price_data['sell_pressure'] = min(100, price_data.get('sell_pressure', 50) + 5)
+        price_data['buy_pressure'] = max(0, price_data.get('buy_pressure', 50) - 3)
+    
+    # Get base price for clamping
+    base_price = next((p['basePrice'] for p in NUTRITION_PRODUCTS_LIST if p['id'] == product_id), current_price)
+    new_price = max(base_price * 0.5, min(base_price * 2.0, new_price))  # Allow 50% to 200% range
+    
+    # Calculate change
+    price_change = ((new_price - current_price) / current_price) * 100 if current_price > 0 else 0
+    
+    # Update volume
+    price_data['volume_24h'] = price_data.get('volume_24h', 0) + quantity
+    GLOBAL_TRADE_VOLUME[product_id]['net'] = GLOBAL_TRADE_VOLUME[product_id]['buy'] - GLOBAL_TRADE_VOLUME[product_id]['sell']
+    
+    # Update price and history
+    price_data['current'] = round(new_price, 2)
+    price_data['change'] = round(price_change, 2)
+    price_data['history'] = price_data['history'][1:] + [round(new_price, 2)]
+    
+    # Update AI signal
+    GLOBAL_AI_SIGNALS[product_id] = generate_ai_signal(product_id, price_data)
 
 def update_global_nutrition_prices():
     """Update nutrition prices globally - same fluctuation for ALL users"""
-    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE
+    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE, GLOBAL_AI_SIGNALS
     now = time.time()
     
     # Initialize if empty
@@ -175,26 +271,39 @@ def update_global_nutrition_prices():
             pid = product['id']
             if pid in GLOBAL_NUTRITION_PRICES:
                 base_price = product['basePrice']
-                current = GLOBAL_NUTRITION_PRICES[pid]['current']
+                price_data = GLOBAL_NUTRITION_PRICES[pid]
+                current = price_data['current']
                 
                 # Price fluctuation (slight upward bias)
                 change_pct = (random.random() - 0.48) * 2  # -0.96% to +1.04%
                 new_price = current * (1 + change_pct / 100)
                 
-                # Clamp within 70% to 150% of base price
-                new_price = max(base_price * 0.7, min(base_price * 1.5, new_price))
+                # Clamp within 50% to 200% of base price
+                new_price = max(base_price * 0.5, min(base_price * 2.0, new_price))
                 
                 # Calculate change percentage
                 price_change = ((new_price - current) / current) * 100 if current > 0 else 0
                 
                 # Update history (keep last 20 points)
-                new_history = GLOBAL_NUTRITION_PRICES[pid]['history'][1:] + [new_price]
+                new_history = price_data.get('history', [])[-19:] + [new_price]
+                
+                # Gradually normalize pressure towards 50
+                buy_pressure = price_data.get('buy_pressure', 50)
+                sell_pressure = price_data.get('sell_pressure', 50)
+                buy_pressure = buy_pressure * 0.98 + 50 * 0.02  # Decay towards 50
+                sell_pressure = sell_pressure * 0.98 + 50 * 0.02
                 
                 GLOBAL_NUTRITION_PRICES[pid] = {
                     'current': round(new_price, 2),
                     'change': round(price_change, 2),
-                    'history': [round(h, 2) for h in new_history]
+                    'history': [round(h, 2) for h in new_history],
+                    'volume_24h': price_data.get('volume_24h', 0),
+                    'buy_pressure': round(buy_pressure, 1),
+                    'sell_pressure': round(sell_pressure, 1)
                 }
+                
+                # Update AI signal
+                GLOBAL_AI_SIGNALS[pid] = generate_ai_signal(pid, GLOBAL_NUTRITION_PRICES[pid])
         
         GLOBAL_NUTRITION_LAST_UPDATE = now
     
@@ -1659,8 +1768,59 @@ async def get_global_nutrition_prices():
     prices = update_global_nutrition_prices()
     return {
         "prices": prices,
+        "ai_signals": GLOBAL_AI_SIGNALS,
+        "trade_volume": GLOBAL_TRADE_VOLUME,
         "last_update": datetime.now(timezone.utc).isoformat(),
         "products": NUTRITION_PRODUCTS_LIST
+    }
+
+@api_router.get("/nutrition/ai-recommendations")
+async def get_ai_recommendations():
+    """Get AI trading recommendations for all products"""
+    update_global_nutrition_prices()  # Ensure prices and signals are fresh
+    
+    # Categorize products by signal
+    buy_signals = []
+    hold_signals = []
+    sell_signals = []
+    
+    for pid, signal_data in GLOBAL_AI_SIGNALS.items():
+        product = next((p for p in NUTRITION_PRODUCTS_LIST if p['id'] == pid), None)
+        if product:
+            price_data = GLOBAL_NUTRITION_PRICES.get(pid, {})
+            recommendation = {
+                'product_id': pid,
+                'name': product['name'],
+                'category': product['category'],
+                'current_price': price_data.get('current', 0),
+                'change_24h': price_data.get('change', 0),
+                'volume_24h': price_data.get('volume_24h', 0),
+                'signal': signal_data['signal'],
+                'confidence': signal_data['confidence'],
+                'reason': signal_data['reason'],
+                'trend': signal_data['trend'],
+                'momentum': signal_data['momentum']
+            }
+            
+            if signal_data['signal'] == 'BUY':
+                buy_signals.append(recommendation)
+            elif signal_data['signal'] == 'SELL':
+                sell_signals.append(recommendation)
+            else:
+                hold_signals.append(recommendation)
+    
+    # Sort by confidence
+    buy_signals.sort(key=lambda x: x['confidence'], reverse=True)
+    sell_signals.sort(key=lambda x: x['confidence'], reverse=True)
+    hold_signals.sort(key=lambda x: x['confidence'], reverse=True)
+    
+    return {
+        "buy": buy_signals[:10],  # Top 10 buys
+        "hold": hold_signals[:10],
+        "sell": sell_signals[:10],
+        "market_sentiment": "bullish" if len(buy_signals) > len(sell_signals) else "bearish" if len(sell_signals) > len(buy_signals) else "neutral",
+        "total_products": len(NUTRITION_PRODUCTS_LIST),
+        "last_update": datetime.now(timezone.utc).isoformat()
     }
 
 @api_router.get("/nutrition/global-ledger")
@@ -1672,9 +1832,20 @@ async def get_global_nutrition_ledger():
         {"_id": 0}
     ).sort("timestamp", -1).limit(100).to_list(100)
     
+    # Calculate 24h stats
+    total_volume = sum(tx.get('total_ftc', 0) for tx in transactions)
+    buy_count = sum(1 for tx in transactions if tx.get('trade_type') == 'BUY')
+    sell_count = sum(1 for tx in transactions if tx.get('trade_type') == 'SELL')
+    
     return {
         "transactions": transactions,
         "total": len(transactions),
+        "stats": {
+            "volume_24h": round(total_volume, 2),
+            "buy_count": buy_count,
+            "sell_count": sell_count,
+            "market_sentiment": "bullish" if buy_count > sell_count else "bearish" if sell_count > buy_count else "neutral"
+        },
         "last_update": datetime.now(timezone.utc).isoformat()
     }
 
@@ -1683,10 +1854,21 @@ async def record_global_transaction(
     trade_data: dict,
     user_id: str = Depends(get_current_user)
 ):
-    """Record a trade to the global blockchain ledger visible to ALL users"""
+    """Record a trade to the global blockchain ledger visible to ALL users and apply price impact"""
     # Get user info
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "full_name": 1, "email": 1})
     username = user.get('full_name', 'Anonymous') if user else 'Anonymous'
+    
+    product_id = trade_data.get('product_id')
+    trade_type = trade_data.get('trade_type', 'BUY')
+    quantity = trade_data.get('quantity', 0)
+    ftc_amount = trade_data.get('total_ftc', 0)
+    
+    # APPLY PRICE IMPACT - This trade affects GLOBAL price for ALL users
+    apply_trade_price_impact(product_id, trade_type, quantity, ftc_amount)
+    
+    # Get updated price after impact
+    current_price = GLOBAL_NUTRITION_PRICES.get(product_id, {}).get('current', trade_data.get('price_per_unit', 0))
     
     # Generate blockchain-style data
     tx_hash = f"0x{uuid.uuid4().hex[:16]}...{uuid.uuid4().hex[:8]}"
@@ -1697,12 +1879,13 @@ async def record_global_transaction(
         "id": str(uuid.uuid4()),
         "user_id": user_id,
         "username": username[:10] + "..." if len(username) > 10 else username,  # Anonymized
-        "trade_type": trade_data.get('trade_type', 'BUY'),
-        "product_id": trade_data.get('product_id'),
+        "trade_type": trade_type,
+        "product_id": product_id,
         "product_name": trade_data.get('product_name'),
-        "quantity": trade_data.get('quantity', 0),
+        "quantity": quantity,
         "price_per_unit": trade_data.get('price_per_unit', 0),
-        "total_ftc": trade_data.get('total_ftc', 0),
+        "total_ftc": ftc_amount,
+        "price_after_impact": current_price,  # New price after this trade
         "tx_hash": tx_hash,
         "block_number": block_number,
         "confirmations": confirmations,
@@ -2076,7 +2259,101 @@ async def get_mining_status(user_id: str = Depends(get_current_user)):
         "ftc_mined_today": mining_wallet.get("ftc_mined_today", 0),
         "is_mining": mining_wallet.get("is_mining", False),
         "active_subscription": active_sub,
-        "pending_request": pending_request
+        "pending_request": pending_request,
+        "subscription_tools": get_subscription_tools(active_sub.get("plan_id") if active_sub else None)
+    }
+
+def get_subscription_tools(plan_id: str):
+    """Get tools available for a subscription tier"""
+    # Define tools for each tier level
+    PLAN_TIERS = {
+        'free_trial': 0,
+        'starter_2026': 1,
+        'basic_2026': 2,
+        'standard_2026': 3,
+        'pro_2026': 4,
+        'elite_2026': 5,
+        'ultra_2026': 6,
+        'mega_2026': 7,
+        'supreme_2026': 8,
+        'titan_2026': 9,
+        'legend_2026': 10,
+        'immortal_2026': 11,
+        'godmode_2026': 12
+    }
+    
+    user_tier = PLAN_TIERS.get(plan_id, 0)
+    
+    # Define all tools with their minimum tier
+    ALL_TOOLS = [
+        # Free tier (0)
+        {"id": "basic_mining", "name": "Basic Mining", "tier": 0, "icon": "Zap", "description": "Standard mining speed", "active": True},
+        {"id": "price_alerts", "name": "Price Alerts", "tier": 0, "icon": "Bell", "description": "Basic price notifications", "active": True},
+        
+        # Starter tier (1)
+        {"id": "ai_signals", "name": "AI Trading Signals", "tier": 1, "icon": "Brain", "description": "AI-powered BUY/HOLD/SELL recommendations", "active": False},
+        {"id": "portfolio_tracker", "name": "Portfolio Tracker", "tier": 1, "icon": "PieChart", "description": "Track all your holdings", "active": False},
+        
+        # Basic tier (2)
+        {"id": "market_sentiment", "name": "Market Sentiment", "tier": 2, "icon": "TrendingUp", "description": "Real-time market sentiment analysis", "active": False},
+        {"id": "trade_history", "name": "Trade History Export", "tier": 2, "icon": "Download", "description": "Export your trading history", "active": False},
+        
+        # Standard tier (3)
+        {"id": "advanced_charts", "name": "Advanced Charts", "tier": 3, "icon": "BarChart", "description": "Candlestick and technical indicators", "active": False},
+        {"id": "whale_alerts", "name": "Whale Alerts", "tier": 3, "icon": "Fish", "description": "Large trade notifications", "active": False},
+        
+        # Pro tier (4)
+        {"id": "auto_trading", "name": "Auto Trading Bot", "tier": 4, "icon": "Bot", "description": "Automated trading based on AI signals", "active": False},
+        {"id": "priority_mining", "name": "Priority Mining", "tier": 4, "icon": "Rocket", "description": "2x mining speed boost", "active": False},
+        
+        # Elite tier (5)
+        {"id": "vip_support", "name": "VIP Support", "tier": 5, "icon": "HeadphonesIcon", "description": "24/7 priority support", "active": False},
+        {"id": "early_access", "name": "Early Access", "tier": 5, "icon": "Star", "description": "Early access to new products", "active": False},
+        
+        # Ultra tier (6)
+        {"id": "custom_alerts", "name": "Custom Alert Rules", "tier": 6, "icon": "Settings", "description": "Create custom trading rules", "active": False},
+        {"id": "api_access", "name": "API Access", "tier": 6, "icon": "Code", "description": "Programmatic trading access", "active": False},
+        
+        # Mega tier (7)
+        {"id": "leverage_trading", "name": "Leverage Trading", "tier": 7, "icon": "Layers", "description": "Up to 5x leverage on trades", "active": False},
+        {"id": "staking_rewards", "name": "Staking Rewards", "tier": 7, "icon": "Gift", "description": "Earn extra FTC by staking", "active": False},
+        
+        # Supreme tier (8)
+        {"id": "market_maker", "name": "Market Maker Mode", "tier": 8, "icon": "Activity", "description": "Earn fees by providing liquidity", "active": False},
+        {"id": "copy_trading", "name": "Copy Trading", "tier": 8, "icon": "Users", "description": "Copy top traders automatically", "active": False},
+        
+        # Titan tier (9)
+        {"id": "institutional_data", "name": "Institutional Data", "tier": 9, "icon": "Database", "description": "Access to institutional flow data", "active": False},
+        {"id": "dark_pool", "name": "Dark Pool Access", "tier": 9, "icon": "EyeOff", "description": "Trade without market impact", "active": False},
+        
+        # Legend tier (10)
+        {"id": "ai_portfolio", "name": "AI Portfolio Manager", "tier": 10, "icon": "Cpu", "description": "AI manages your entire portfolio", "active": False},
+        {"id": "unlimited_mining", "name": "Unlimited Mining", "tier": 10, "icon": "Infinity", "description": "No daily mining limits", "active": False},
+        
+        # Immortal tier (11)
+        {"id": "governance_voting", "name": "Governance Voting", "tier": 11, "icon": "Vote", "description": "Vote on platform decisions", "active": False},
+        {"id": "revenue_share", "name": "Revenue Share", "tier": 11, "icon": "DollarSign", "description": "Share in platform revenue", "active": False},
+        
+        # GOD MODE tier (12)
+        {"id": "godmode_all", "name": "GOD MODE - All Features", "tier": 12, "icon": "Crown", "description": "Unlimited access to everything", "active": False},
+        {"id": "founder_badge", "name": "Founder Badge NFT", "tier": 12, "icon": "Award", "description": "Exclusive founder status", "active": False},
+    ]
+    
+    # Activate tools based on user tier
+    tools = []
+    for tool in ALL_TOOLS:
+        tool_copy = tool.copy()
+        tool_copy['active'] = user_tier >= tool['tier']
+        tool_copy['locked'] = user_tier < tool['tier']
+        tool_copy['unlock_tier'] = tool['tier']
+        tools.append(tool_copy)
+    
+    return {
+        "current_tier": user_tier,
+        "plan_id": plan_id,
+        "tools": tools,
+        "active_count": sum(1 for t in tools if t['active']),
+        "total_count": len(tools)
     }
 
 @api_router.post("/mining/subscribe")

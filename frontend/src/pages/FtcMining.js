@@ -86,6 +86,9 @@ const FtcMining = () => {
   // Global real-time sync state
   const [globalLedger, setGlobalLedger] = useState([]);
   const [globalVolume24h, setGlobalVolume24h] = useState(0);
+  const [aiSignals, setAiSignals] = useState({});
+  const [marketSentiment, setMarketSentiment] = useState('neutral');
+  const [subscriptionTools, setSubscriptionTools] = useState(null);
   
   // Persistent mining state
   const [miningProgress, setMiningProgress] = useState({
@@ -304,6 +307,9 @@ const FtcMining = () => {
           if (data.prices) {
             setNutritionPrices(data.prices);
           }
+          if (data.ai_signals) {
+            setAiSignals(data.ai_signals);
+          }
         }
       } catch (error) {
         console.error('Error fetching global prices:', error);
@@ -338,9 +344,11 @@ const FtcMining = () => {
           const data = await response.json();
           if (data.transactions) {
             setGlobalLedger(data.transactions);
-            // Calculate 24h volume from recent transactions
-            const volume = data.transactions.reduce((sum, tx) => sum + (tx.total_ftc || 0), 0);
-            setGlobalVolume24h(volume);
+            // Update volume and sentiment from stats
+            if (data.stats) {
+              setGlobalVolume24h(data.stats.volume_24h || 0);
+              setMarketSentiment(data.stats.market_sentiment || 'neutral');
+            }
           }
         }
       } catch (error) {
@@ -1564,10 +1572,58 @@ const FtcMining = () => {
             </div>
           )}
           
+          {/* AI Market Analysis Panel */}
+          <div className="glass-card p-4 mb-6 border border-[#9945FF]/30">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#9945FF]/20 rounded-lg">
+                  <Activity className="h-6 w-6 text-[#9945FF]" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white">AI Market Analysis</h3>
+                  <p className="text-xs text-white/50">Real-time trading recommendations</p>
+                </div>
+              </div>
+              <div className={`px-4 py-2 rounded-lg font-bold text-sm ${
+                marketSentiment === 'bullish' ? 'bg-[#00F090]/20 text-[#00F090]' :
+                marketSentiment === 'bearish' ? 'bg-[#FF2E50]/20 text-[#FF2E50]' :
+                'bg-[#FFD700]/20 text-[#FFD700]'
+              }`}>
+                {marketSentiment === 'bullish' ? '📈 BULLISH' : marketSentiment === 'bearish' ? '📉 BEARISH' : '➡️ NEUTRAL'}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="p-3 bg-[#00F090]/10 rounded-lg border border-[#00F090]/20">
+                <p className="text-[#00F090] text-2xl font-black">
+                  {Object.values(aiSignals).filter(s => s?.signal === 'BUY').length}
+                </p>
+                <p className="text-xs text-white/50">BUY Signals</p>
+              </div>
+              <div className="p-3 bg-[#FFD700]/10 rounded-lg border border-[#FFD700]/20">
+                <p className="text-[#FFD700] text-2xl font-black">
+                  {Object.values(aiSignals).filter(s => s?.signal === 'HOLD').length}
+                </p>
+                <p className="text-xs text-white/50">HOLD Signals</p>
+              </div>
+              <div className="p-3 bg-[#FF2E50]/10 rounded-lg border border-[#FF2E50]/20">
+                <p className="text-[#FF2E50] text-2xl font-black">
+                  {Object.values(aiSignals).filter(s => s?.signal === 'SELL').length}
+                </p>
+                <p className="text-xs text-white/50">SELL Signals</p>
+              </div>
+            </div>
+            
+            <p className="text-center text-xs text-white/40 mt-3">
+              AI analyzes price trends, buy/sell pressure, and market momentum in real-time
+            </p>
+          </div>
+          
           {/* Product Grid */}
           <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
             {NUTRITION_PRODUCTS.map((product) => {
               const priceData = nutritionPrices[product.id];
+              const signal = aiSignals[product.id];
               const isUp = priceData?.change >= 0;
               const holding = portfolio[product.id];
               const hasHolding = holding && holding.quantity > 0;
@@ -1589,6 +1645,17 @@ const FtcMining = () => {
                   onDoubleClick={() => setShowProductDetails(product)}
                   data-testid={`nutrition-${product.id}`}
                 >
+                  {/* AI Signal Badge */}
+                  {signal && (
+                    <div className={`absolute -top-2 -left-2 px-2 py-0.5 text-xs font-bold rounded-full flex items-center gap-1 ${
+                      signal.signal === 'BUY' ? 'bg-[#00F090] text-black' :
+                      signal.signal === 'SELL' ? 'bg-[#FF2E50] text-white' :
+                      'bg-[#FFD700] text-black'
+                    }`}>
+                      {signal.signal === 'BUY' ? '⬆️' : signal.signal === 'SELL' ? '⬇️' : '➡️'} {signal.signal}
+                    </div>
+                  )}
+                  
                   {/* Holding Badge */}
                   {hasHolding && (
                     <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-[#00F090] text-black text-xs font-bold rounded-full">
@@ -1638,6 +1705,13 @@ const FtcMining = () => {
                     </div>
                     <TrendingUp className={`h-4 w-4 ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50] rotate-180'}`} />
                   </div>
+                  
+                  {/* AI Recommendation Reason */}
+                  {signal && (
+                    <div className="mt-2 p-2 bg-black/30 rounded text-xs text-white/70 border-l-2 border-[#FFD700]">
+                      <span className="text-[#FFD700] font-bold">AI:</span> {signal.reason?.substring(0, 60)}...
+                    </div>
+                  )}
                   
                   {/* Show P/L if user has holdings */}
                   {hasHolding && (
