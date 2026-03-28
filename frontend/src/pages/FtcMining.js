@@ -2168,21 +2168,21 @@ const FtcMining = () => {
         )}
       </AnimatePresence>
 
-      {/* Product Details Modal (Double-Tap) */}
+      {/* Product Details Modal (Double-Tap) - Enhanced */}
       <AnimatePresence>
         {showProductDetails && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-2 sm:p-4"
             onClick={() => setShowProductDetails(null)}
           >
             <motion.div
               initial={{ scale: 0.9, y: 50 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.9, y: 50 }}
-              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+              className="glass-card p-4 sm:p-6 max-w-2xl w-full max-h-[95vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               {(() => {
@@ -2191,133 +2191,276 @@ const FtcMining = () => {
                 const holding = portfolio[product.id];
                 const pl = holding ? calculateProfitLoss(product.id, priceData?.current) : null;
                 const isUp = priceData?.change >= 0;
+                const currentPrice = priceData?.current || product.basePrice;
+                const tradingFee = 0.001; // 0.1% fee
+                
+                // Get product-specific transactions from ledger
+                const productTxs = transactionLedger.filter(tx => tx.productId === product.id).slice(0, 5);
                 
                 return (
                   <>
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <p className="text-xs text-[#FFD700] font-bold uppercase">{product.category}</p>
+                    {/* 1. BASIC INFO - Header */}
+                    <div className="flex items-start justify-between mb-4 border-b border-white/10 pb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="px-2 py-0.5 text-xs font-bold bg-[#FFD700]/20 text-[#FFD700] rounded">{product.category}</span>
+                          {isUp ? (
+                            <span className="px-2 py-0.5 text-xs font-bold bg-[#00F090]/20 text-[#00F090] rounded flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" /> BULLISH
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 text-xs font-bold bg-[#FF2E50]/20 text-[#FF2E50] rounded flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3 rotate-180" /> BEARISH
+                            </span>
+                          )}
+                        </div>
                         <h3 className="text-xl font-black text-white">{product.name}</h3>
+                        <div className="flex items-center gap-4 mt-2">
+                          <div>
+                            <p className={`text-2xl font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                              {currentPrice.toFixed(2)} FTC
+                            </p>
+                            <p className="text-xs text-white/50">≈ ${(currentPrice * ftcLivePrice).toFixed(6)} USD</p>
+                          </div>
+                          <div className={`px-3 py-1 rounded-lg ${isUp ? 'bg-[#00F090]/20' : 'bg-[#FF2E50]/20'}`}>
+                            <p className={`text-lg font-bold ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                              {isUp ? '+' : ''}{(priceData?.change || 0).toFixed(2)}%
+                            </p>
+                            <p className="text-xs text-white/40">24H</p>
+                          </div>
+                        </div>
                       </div>
                       <button
                         onClick={() => setShowProductDetails(null)}
-                        className="p-2 hover:bg-white/10 rounded-lg"
+                        className="p-2 hover:bg-white/10 rounded-lg text-white/60 hover:text-white"
                       >
                         ✕
                       </button>
                     </div>
 
-                    {/* Large Price Chart */}
-                    <div className="h-40 mb-6 p-4 bg-black/50 rounded-lg border border-white/10">
-                      <svg viewBox="0 0 200 80" className="w-full h-full">
-                        <defs>
-                          <linearGradient id={`detail-gradient-${product.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0.4" />
-                            <stop offset="100%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {priceData?.history && (
-                          <>
-                            <path
-                              d={`M 0 ${80 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70} ${priceData.history.map((p, i) => `L ${i * 10.5} ${80 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70}`).join(' ')} L 200 80 L 0 80 Z`}
-                              fill={`url(#detail-gradient-${product.id})`}
-                            />
-                            <path
-                              d={`M 0 ${80 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70} ${priceData.history.map((p, i) => `L ${i * 10.5} ${80 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 70}`).join(' ')}`}
-                              fill="none"
-                              stroke={isUp ? '#00F090' : '#FF2E50'}
-                              strokeWidth="2"
-                            />
-                          </>
-                        )}
-                      </svg>
-                    </div>
-
-                    {/* Price Info */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="p-4 bg-black/50 rounded-lg border border-white/10">
-                        <p className="text-xs text-white/50 uppercase">Current Price</p>
-                        <p className={`text-2xl font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                          {(priceData?.current || product.basePrice).toFixed(2)} FTC
-                        </p>
-                        <p className="text-xs text-white/40">
-                          ≈ ${((priceData?.current || product.basePrice) * ftcLivePrice).toFixed(6)} USD
-                        </p>
-                      </div>
-                      <div className="p-4 bg-black/50 rounded-lg border border-white/10">
-                        <p className="text-xs text-white/50 uppercase">24H Change</p>
-                        <p className={`text-2xl font-black ${isUp ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                          {isUp ? '+' : ''}{(priceData?.change || 0).toFixed(2)}%
-                        </p>
-                        <p className="text-xs text-white/40">Base: {product.basePrice} FTC</p>
-                      </div>
-                    </div>
-
-                    {/* Market Stats */}
-                    <div className="grid grid-cols-3 gap-3 mb-6">
-                      <div className="p-3 bg-black/30 rounded-lg text-center">
-                        <p className="text-xs text-white/40">High 24H</p>
-                        <p className="text-sm font-bold text-[#00F090]">
-                          {priceData?.history ? Math.max(...priceData.history).toFixed(2) : product.basePrice} FTC
-                        </p>
-                      </div>
-                      <div className="p-3 bg-black/30 rounded-lg text-center">
-                        <p className="text-xs text-white/40">Low 24H</p>
-                        <p className="text-sm font-bold text-[#FF2E50]">
-                          {priceData?.history ? Math.min(...priceData.history).toFixed(2) : product.basePrice} FTC
-                        </p>
-                      </div>
-                      <div className="p-3 bg-black/30 rounded-lg text-center">
-                        <p className="text-xs text-white/40">Volume</p>
-                        <p className="text-sm font-bold text-[#FFD700]">
-                          {Math.floor(Math.random() * 10000 + 1000)} FTC
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Your Holdings */}
-                    {holding && (
-                      <div className="p-4 bg-[#00F090]/10 border border-[#00F090]/30 rounded-lg mb-6">
-                        <p className="text-sm font-bold text-[#00F090] mb-3">📦 Your Holdings</p>
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <p className="text-white/40">Quantity</p>
-                            <p className="font-bold text-white">{holding.quantity} units</p>
+                    {/* 2. USER DATA - Holdings & P/L */}
+                    <div className="mb-4 p-4 bg-gradient-to-br from-[#9945FF]/10 to-[#00F090]/10 rounded-lg border border-white/10">
+                      <h4 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                        📊 Your Position
+                      </h4>
+                      {holding ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="p-2 bg-black/30 rounded">
+                            <p className="text-xs text-white/50">Holdings</p>
+                            <p className="text-lg font-bold text-white">{holding.quantity} units</p>
                           </div>
-                          <div>
-                            <p className="text-white/40">Avg Buy Price</p>
-                            <p className="font-bold text-white">{holding.avgBuyPrice.toFixed(2)} FTC</p>
+                          <div className="p-2 bg-black/30 rounded">
+                            <p className="text-xs text-white/50">Avg Buy Price</p>
+                            <p className="text-lg font-bold text-[#FFD700]">{holding.avgBuyPrice.toFixed(2)} FTC</p>
                           </div>
-                          <div>
-                            <p className="text-white/40">Total Invested</p>
-                            <p className="font-bold text-[#FFD700]">{holding.totalInvested.toFixed(2)} FTC</p>
+                          <div className="p-2 bg-black/30 rounded">
+                            <p className="text-xs text-white/50">Current Value</p>
+                            <p className="text-lg font-bold text-white">{(holding.quantity * currentPrice).toFixed(2)} FTC</p>
                           </div>
-                          <div>
-                            <p className="text-white/40">P/L</p>
-                            <p className={`font-bold ${pl?.profitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
-                              {pl ? `${pl.profitLoss >= 0 ? '+' : ''}${pl.profitLoss.toFixed(2)} FTC (${pl.profitLossPercent.toFixed(1)}%)` : '-'}
+                          <div className="p-2 bg-black/30 rounded">
+                            <p className="text-xs text-white/50">P/L</p>
+                            <p className={`text-lg font-bold ${pl?.profitLoss >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                              {pl ? `${pl.profitLoss >= 0 ? '+' : ''}${pl.profitLoss.toFixed(2)}` : '0.00'} FTC
+                            </p>
+                            <p className={`text-xs ${pl?.profitLossPercent >= 0 ? 'text-[#00F090]' : 'text-[#FF2E50]'}`}>
+                              ({pl?.profitLossPercent >= 0 ? '+' : ''}{pl?.profitLossPercent?.toFixed(1) || '0.0'}%)
                             </p>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <p className="text-white/40 text-sm text-center py-4">No holdings yet. Start trading!</p>
+                      )}
+                    </div>
 
-                    {/* Trade Button */}
+                    {/* 3. CHART - Mini price chart with time tabs */}
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-bold text-white">📈 Price Chart</h4>
+                        <div className="flex gap-1">
+                          {['1H', '24H', '7D'].map((period) => (
+                            <button
+                              key={period}
+                              className="px-3 py-1 text-xs font-bold rounded bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all"
+                            >
+                              {period}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="h-32 p-3 bg-black/50 rounded-lg border border-white/10">
+                        <svg viewBox="0 0 200 60" className="w-full h-full">
+                          <defs>
+                            <linearGradient id={`chart-gradient-${product.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0.3" />
+                              <stop offset="100%" stopColor={isUp ? '#00F090' : '#FF2E50'} stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          {priceData?.history && (
+                            <>
+                              <path
+                                d={`M 0 ${60 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 50} ${priceData.history.map((p, i) => `L ${i * 10.5} ${60 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 50}`).join(' ')} L 200 60 L 0 60 Z`}
+                                fill={`url(#chart-gradient-${product.id})`}
+                              />
+                              <path
+                                d={`M 0 ${60 - (priceData.history[0] - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 50} ${priceData.history.map((p, i) => `L ${i * 10.5} ${60 - (p - Math.min(...priceData.history)) / (Math.max(...priceData.history) - Math.min(...priceData.history) + 0.01) * 50}`).join(' ')}`}
+                                fill="none"
+                                stroke={isUp ? '#00F090' : '#FF2E50'}
+                                strokeWidth="2"
+                              />
+                            </>
+                          )}
+                        </svg>
+                        <div className="flex justify-between text-xs text-white/30 mt-1">
+                          <span>Low: {priceData?.history ? Math.min(...priceData.history).toFixed(2) : product.basePrice}</span>
+                          <span>High: {priceData?.history ? Math.max(...priceData.history).toFixed(2) : product.basePrice}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. TRADING - Buy/Sell with fees */}
+                    <div className="mb-4 p-4 bg-black/50 rounded-lg border border-white/10">
+                      <h4 className="text-sm font-bold text-white mb-3">🔄 Quick Trade</h4>
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <button
+                          onClick={() => {
+                            setShowProductDetails(null);
+                            setSelectedNutrition(product);
+                            setTradeType('buy');
+                            setAiPrediction(generateAIPrediction(product.id));
+                            setShowNutritionModal(true);
+                          }}
+                          className="py-3 bg-[#00F090] text-black font-bold rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2"
+                        >
+                          <TrendingUp className="h-4 w-4" /> BUY (FTC)
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowProductDetails(null);
+                            setSelectedNutrition(product);
+                            setTradeType('sell');
+                            setAiPrediction(generateAIPrediction(product.id));
+                            setShowNutritionModal(true);
+                          }}
+                          disabled={!holding || holding.quantity === 0}
+                          className="py-3 bg-[#FF2E50] text-white font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          <TrendingUp className="h-4 w-4 rotate-180" /> SELL (FTC)
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                        <div className="p-2 bg-white/5 rounded">
+                          <p className="text-white/40">Trading Fee</p>
+                          <p className="text-white font-mono">0.1%</p>
+                        </div>
+                        <div className="p-2 bg-white/5 rounded">
+                          <p className="text-white/40">Price (1 unit)</p>
+                          <p className="text-[#FFD700] font-mono">{currentPrice.toFixed(2)} FTC</p>
+                        </div>
+                        <div className="p-2 bg-white/5 rounded">
+                          <p className="text-white/40">Your Balance</p>
+                          <p className="text-[#00F090] font-mono">{ftcBalance.toFixed(2)} FTC</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 5. BLOCKCHAIN - TX History */}
+                    <div className="mb-4 p-4 bg-black/50 rounded-lg border border-[#9945FF]/30">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                          🔗 Blockchain Transactions
+                        </h4>
+                        <button
+                          onClick={() => {
+                            setShowProductDetails(null);
+                            setShowLedgerModal(true);
+                          }}
+                          className="px-3 py-1 text-xs font-bold bg-[#9945FF]/20 text-[#9945FF] rounded hover:bg-[#9945FF]/30 transition-all"
+                        >
+                          View Full Ledger
+                        </button>
+                      </div>
+                      {productTxs.length > 0 ? (
+                        <div className="space-y-2 max-h-32 overflow-y-auto">
+                          {productTxs.map((tx, i) => (
+                            <div key={i} className="flex items-center justify-between p-2 bg-black/30 rounded text-xs">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                  tx.type === 'BUY' ? 'bg-[#00F090]/20 text-[#00F090]' : 'bg-[#FF2E50]/20 text-[#FF2E50]'
+                                }`}>
+                                  {tx.type}
+                                </span>
+                                <span className="text-white/60 font-mono truncate max-w-[120px]">
+                                  {tx.id?.substring(0, 16)}...
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[#FFD700]">{tx.quantity} units</span>
+                                <Check className="h-3 w-3 text-[#00F090]" />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-white/40 text-sm text-center py-4">No transactions for this product yet</p>
+                      )}
+                    </div>
+
+                    {/* 6. FEATURES LIST */}
+                    <div className="mb-4">
+                      <h4 className="text-sm font-bold text-white mb-3">✨ Features</h4>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {[
+                          { icon: '💰', text: 'Tradable with FTC' },
+                          { icon: '📡', text: 'Real-time price' },
+                          { icon: '🔗', text: 'Blockchain verified' },
+                          { icon: '⚡', text: 'Instant buy/sell' },
+                          { icon: '📈', text: 'P/L tracking' },
+                          { icon: '🔐', text: 'Secure wallet' },
+                        ].map((feature, i) => (
+                          <div key={i} className="flex items-center gap-2 p-2 bg-white/5 rounded text-xs">
+                            <span>{feature.icon}</span>
+                            <span className="text-white/70">{feature.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Market Stats Bar */}
+                    <div className="grid grid-cols-4 gap-2 p-3 bg-gradient-to-r from-[#FFD700]/10 to-[#FF9F1C]/10 rounded-lg border border-[#FFD700]/20 mb-4">
+                      <div className="text-center">
+                        <p className="text-xs text-white/40">High 24H</p>
+                        <p className="text-sm font-bold text-[#00F090]">
+                          {priceData?.history ? Math.max(...priceData.history).toFixed(2) : product.basePrice}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-white/40">Low 24H</p>
+                        <p className="text-sm font-bold text-[#FF2E50]">
+                          {priceData?.history ? Math.min(...priceData.history).toFixed(2) : product.basePrice}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-white/40">Volume</p>
+                        <p className="text-sm font-bold text-[#FFD700]">
+                          {Math.floor(Math.random() * 10000 + 1000)}
+                        </p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-white/40">Trades</p>
+                        <p className="text-sm font-bold text-[#9945FF]">{productTxs.length}</p>
+                      </div>
+                    </div>
+
+                    {/* Close Button */}
                     <button
-                      onClick={() => {
-                        setShowProductDetails(null);
-                        setSelectedNutrition(product);
-                        setAiPrediction(generateAIPrediction(product.id));
-                        setShowNutritionModal(true);
-                      }}
-                      className="w-full py-4 bg-gradient-to-r from-[#FFD700] to-[#FF9F1C] text-black font-black rounded-lg hover:brightness-110 transition-all"
+                      onClick={() => setShowProductDetails(null)}
+                      className="w-full py-3 bg-white/10 text-white/70 font-bold rounded-lg hover:bg-white/20 transition-all"
                     >
-                      Trade {product.name}
+                      Close Details
                     </button>
 
-                    <p className="text-center text-xs text-white/30 mt-4">
-                      💡 Single tap to trade • Double tap for details
+                    <p className="text-center text-xs text-white/30 mt-3">
+                      💡 Every trade generates TX Hash • Verified on FTC Blockchain
                     </p>
                   </>
                 );
