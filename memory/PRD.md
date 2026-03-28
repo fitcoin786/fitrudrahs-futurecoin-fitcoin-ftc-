@@ -28,10 +28,14 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - Approve/Reject subscriptions and upgrades
 - View TX hashes for verification
 
-### 4. Sports Nutrition Trading ✅
-- 30+ products with real-time prices
+### 4. Sports Nutrition Trading ✅ (GLOBAL SYNC UPDATE - March 28, 2026)
+- 40 products with **GLOBAL REAL-TIME PRICES** ✅
+- **ALL users see SAME prices** - No more different data per user ✅
+- **Global % Fluctuations** - Same for all users worldwide ✅
+- **Global Chart Data** - Same history for all users ✅
+- **Global Blockchain Ledger** - ALL transactions from ALL users visible ✅
 - Double-tap detailed view modal
-- Blockchain-verified transaction ledger
+- Backend updates prices every 3 seconds, frontend polls every 3 seconds
 
 ### 5. AI-ML Trading Analysis ✅
 - Trading signals, confidence %, risk level
@@ -63,14 +67,21 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 9. ✅ Blockchain Trade Ledger
 10. ✅ Upgrade flow with TX hash
 11. ✅ Global FTC price/volume sync
+12. ✅ **GLOBAL Nutrition Prices** - ALL users see same prices (March 28, 2026)
+13. ✅ **GLOBAL Blockchain Ledger** - ALL transactions visible to ALL users
+
+## New APIs Added (March 28, 2026)
+- `GET /api/nutrition/global-prices` - Returns same prices for ALL users
+- `GET /api/nutrition/global-ledger` - Returns ALL transactions from ALL users
+- `POST /api/nutrition/global-ledger/record` - Records trade to global ledger
 
 ## Upcoming Tasks
-- P1: WebSockets for true real-time updates (replacing 10s polling)
+- P1: WebSockets for true real-time updates (replacing polling)
 - P2: Send/Receive/Exchange feature implementation
 - P2: Smart Alerts system (price alerts, profit targets)
 
 ## Future/Backlog
-- P3: Refactor Backend Monolith `server.py` (>2200 lines - split into routers)
+- P3: Refactor Backend Monolith `server.py` (>2400 lines - split into routers)
 - P3: Extract subcomponents from `FtcMining.js` (>2600 lines)
 - P3: Leaderboard UI for top FTC traders
 
@@ -85,3 +96,5 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - `/api/market/ftc-price` - Global FTC price sync
 - `/api/trade` - Place orders (BUY/SELL)
 - `/api/ai/suggestions` - AI trading recommendations
+- `/api/nutrition/global-prices` - Global nutrition product prices
+- `/api/nutrition/global-ledger` - Global blockchain transaction ledger
