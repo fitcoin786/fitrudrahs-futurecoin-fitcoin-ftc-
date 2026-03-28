@@ -15,14 +15,31 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const FTC_LOGO = 'https://customer-assets.emergentagent.com/job_8ab2343f-b785-4283-8178-10a5f0187955/artifacts/aghohvl9_998.jpg';
 
 // Subscription Plans - Free Trial first, then paid plans
+// Admin Wallet Addresses for Payment
+const ADMIN_WALLETS = {
+  USDT_SOL: 'A324Xq5WFkcq7Baa4poo42szFyutZCqq6MWvLHvbHVNG',
+  FTC_SOL: 'A324Xq5WFkcq7Baa4poo42szFyutZCqq6MWvLHvbHVNG',
+  SOL: 'A324Xq5WFkcq7Baa4poo42szFyutZCqq6MWvLHvbHVNG'
+};
+
+// 2026 EXCLUSIVE SUBSCRIPTION PLANS
 const SUBSCRIPTION_PLANS = [
-  { id: 'free_trial', name: 'Free Trial', calories: 100, ftcLimit: 100, priceUSD: 0, priceFTC: 0, color: '#00BFFF', icon: Gift, isFree: true, duration: '7 Days' },
-  { id: 'basic', name: 'Basic Miner', calories: 500, ftcLimit: 500, priceUSD: 5, priceFTC: 1500, color: '#00F090', icon: Zap },
-  { id: 'standard', name: 'Standard Miner', calories: 1000, ftcLimit: 1000, priceUSD: 9, priceFTC: 2500, color: '#FFD700', icon: Flame },
-  { id: 'pro', name: 'Pro Miner', calories: 2000, ftcLimit: 2000, priceUSD: 15, priceFTC: 4000, color: '#FF9F1C', icon: Activity },
-  { id: 'elite', name: 'Elite Miner', calories: 3000, ftcLimit: 3000, priceUSD: 20, priceFTC: 5500, color: '#9945FF', icon: Award },
-  { id: 'ultra', name: 'Ultra Miner', calories: 5000, ftcLimit: 5000, priceUSD: 30, priceFTC: 8000, color: '#FF2E50', icon: Star },
-  { id: 'max', name: 'Max Miner', calories: 10000, ftcLimit: 10000, priceUSD: 50, priceFTC: 12000, color: '#00F090', icon: Crown }
+  // Free Trial
+  { id: 'free_trial', name: '🎁 Free Trial', calories: 100, ftcLimit: 100, hashRate: 1000, priceUSD: 0, priceFTC: 0, priceSol: 0, color: '#00BFFF', icon: Gift, isFree: true, duration: '7 Days', approxFTC: 700 },
+  
+  // 2026 Exclusive Plans (12 Plans from $50 to $5000)
+  { id: 'starter_2026', name: '⛏️ Starter 2026', calories: 5000, ftcLimit: 5000, hashRate: 10000, priceUSD: 50, priceFTC: 15000, priceSol: 0.25, color: '#00F090', icon: Zap, duration: '30 Days', approxFTC: 150000, exclusive: true },
+  { id: 'basic_2026', name: '⚡ Basic 2026', calories: 10000, ftcLimit: 10000, hashRate: 50000, priceUSD: 100, priceFTC: 30000, priceSol: 0.5, color: '#FFD700', icon: Flame, duration: '30 Days', approxFTC: 300000, exclusive: true },
+  { id: 'standard_2026', name: '🔥 Standard 2026', calories: 25000, ftcLimit: 25000, hashRate: 100000, priceUSD: 200, priceFTC: 60000, priceSol: 1, color: '#FF9F1C', icon: Activity, duration: '60 Days', approxFTC: 750000, exclusive: true },
+  { id: 'pro_2026', name: '💎 Pro 2026', calories: 50000, ftcLimit: 50000, hashRate: 500000, priceUSD: 350, priceFTC: 100000, priceSol: 1.75, color: '#9945FF', icon: Award, duration: '90 Days', approxFTC: 1500000, exclusive: true },
+  { id: 'elite_2026', name: '👑 Elite 2026', calories: 100000, ftcLimit: 100000, hashRate: 1000000, priceUSD: 500, priceFTC: 150000, priceSol: 2.5, color: '#FF2E50', icon: Star, duration: '90 Days', approxFTC: 3000000, exclusive: true },
+  { id: 'ultra_2026', name: '🚀 Ultra 2026', calories: 250000, ftcLimit: 250000, hashRate: 5000000, priceUSD: 750, priceFTC: 225000, priceSol: 3.75, color: '#00F090', icon: Crown, duration: '120 Days', approxFTC: 7500000, exclusive: true },
+  { id: 'mega_2026', name: '⚡ Mega 2026', calories: 500000, ftcLimit: 500000, hashRate: 10000000, priceUSD: 1000, priceFTC: 300000, priceSol: 5, color: '#FFD700', icon: Rocket, duration: '180 Days', approxFTC: 15000000, exclusive: true },
+  { id: 'supreme_2026', name: '💫 Supreme 2026', calories: 1000000, ftcLimit: 1000000, hashRate: 50000000, priceUSD: 1500, priceFTC: 450000, priceSol: 7.5, color: '#9945FF', icon: Target, duration: '180 Days', approxFTC: 30000000, exclusive: true },
+  { id: 'titan_2026', name: '🔱 Titan 2026', calories: 2500000, ftcLimit: 2500000, hashRate: 100000000, priceUSD: 2000, priceFTC: 600000, priceSol: 10, color: '#FF2E50', icon: Shield, duration: '270 Days', approxFTC: 75000000, exclusive: true },
+  { id: 'legend_2026', name: '🏆 Legend 2026', calories: 5000000, ftcLimit: 5000000, hashRate: 500000000, priceUSD: 3000, priceFTC: 900000, priceSol: 15, color: '#FF9F1C', icon: Award, duration: '365 Days', approxFTC: 150000000, exclusive: true },
+  { id: 'immortal_2026', name: '⭐ Immortal 2026', calories: 10000000, ftcLimit: 10000000, hashRate: 1000000000, priceUSD: 4000, priceFTC: 1200000, priceSol: 20, color: '#00F090', icon: Crown, duration: '365 Days', approxFTC: 300000000, exclusive: true },
+  { id: 'godmode_2026', name: '👾 GOD MODE 2026', calories: 100000000, ftcLimit: 100000000, hashRate: 10000000000, priceUSD: 5000, priceFTC: 1500000, priceSol: 25, color: '#FFD700', icon: Star, duration: '365 Days', approxFTC: 1000000000, exclusive: true },
 ];
 
 const FtcMining = () => {
@@ -508,24 +525,27 @@ const FtcMining = () => {
     }
   }, [caloriesBurned]);
 
-  // FTC Live Price Feed - Real-time fluctuation
+  // FTC Live Price Feed - GLOBAL Real-time fluctuation (same for all users)
   useEffect(() => {
-    const updateFtcPrice = () => {
-      setFtcLivePrice(prev => {
-        const volatility = 0.02 + Math.random() * 0.03;
-        const direction = Math.random() > 0.48 ? 1 : -1;
-        const newPrice = prev * (1 + (direction * volatility * Math.random()));
-        const change = ((newPrice - 0.00000519) / 0.00000519) * 100;
-        setFtcPriceChange(change);
-        return newPrice;
-      });
+    const fetchGlobalPrice = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/global/ftc-price`);
+        if (response.ok) {
+          const data = await response.json();
+          setFtcLivePrice(data.price);
+          setFtcPriceChange(data.change_24h);
+          setGlobalVolume24h(data.volume_24h);
+        }
+      } catch (error) {
+        console.log('Global price fetch error:', error);
+      }
     };
 
-    // Initial price with slight variation
-    setFtcLivePrice(0.00000519 * (0.98 + Math.random() * 0.04));
+    // Initial fetch
+    fetchGlobalPrice();
     
-    // Update every 3 seconds
-    const priceInterval = setInterval(updateFtcPrice, 3000);
+    // Poll every 3 seconds for real-time global updates
+    const priceInterval = setInterval(fetchGlobalPrice, 3000);
     return () => clearInterval(priceInterval);
   }, []);
 
@@ -1358,7 +1378,8 @@ const FtcMining = () => {
                 <div className="w-px h-10 bg-white/20" />
                 <div className="text-right">
                   <p className="text-xs text-white/50">24H VOLUME</p>
-                  <p className="text-sm font-bold text-[#FFD700]">{(Math.random() * 5000000 + 1000000).toLocaleString()} FTC</p>
+                  <p className="text-sm font-bold text-[#FFD700]">{globalVolume24h.toLocaleString(undefined, {maximumFractionDigits: 2})} FTC</p>
+                  <p className="text-xs text-white/30">Global</p>
                 </div>
               </div>
             </div>
@@ -1678,9 +1699,37 @@ const FtcMining = () => {
                 </div>
               ) : (
                 <>
+                  {/* 2026 Exclusive Plan Details */}
+                  {selectedPlan.exclusive && (
+                    <div className="p-4 bg-gradient-to-br from-[#FFD700]/10 to-[#FF9F1C]/10 border border-[#FFD700]/30 rounded-lg mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-lg">⭐</span>
+                        <p className="font-bold text-[#FFD700]">2026 EXCLUSIVE PLAN</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <p className="text-white/50">Duration</p>
+                          <p className="font-bold text-white">{selectedPlan.duration}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50">Mining Speed</p>
+                          <p className="font-bold text-[#00F090]">{selectedPlan.hashRate?.toLocaleString()} H/s</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50">Calories/Day</p>
+                          <p className="font-bold text-white">{selectedPlan.calories?.toLocaleString()}</p>
+                        </div>
+                        <div>
+                          <p className="text-white/50">Approx. FTC</p>
+                          <p className="font-bold text-[#FFD700]">~{selectedPlan.approxFTC?.toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="mb-4">
-                    <p className="text-sm text-white/60 mb-2">Payment Method</p>
-                    <div className="grid grid-cols-2 gap-2">
+                    <p className="text-sm text-white/60 mb-2">Choose Payment Method</p>
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => setPaymentMethod('USD')}
                         className={`p-3 rounded-lg border transition-all ${
@@ -1688,7 +1737,7 @@ const FtcMining = () => {
                         }`}
                       >
                         <p className="font-bold text-white">${selectedPlan.priceUSD}</p>
-                        <p className="text-xs text-white/60">USD</p>
+                        <p className="text-xs text-white/60">USDT</p>
                       </button>
                       <button
                         onClick={() => setPaymentMethod('FTC')}
@@ -1696,27 +1745,100 @@ const FtcMining = () => {
                           paymentMethod === 'FTC' ? 'border-[#FFD700] bg-[#FFD700]/10' : 'border-white/10'
                         }`}
                       >
-                        <p className="font-bold text-[#FFD700]">{selectedPlan.priceFTC}</p>
+                        <p className="font-bold text-[#FFD700]">{selectedPlan.priceFTC?.toLocaleString()}</p>
                         <p className="text-xs text-white/60">FTC</p>
+                      </button>
+                      <button
+                        onClick={() => setPaymentMethod('SOL')}
+                        className={`p-3 rounded-lg border transition-all ${
+                          paymentMethod === 'SOL' ? 'border-[#9945FF] bg-[#9945FF]/10' : 'border-white/10'
+                        }`}
+                      >
+                        <p className="font-bold text-[#9945FF]">{selectedPlan.priceSol || (selectedPlan.priceUSD / 200).toFixed(2)}</p>
+                        <p className="text-xs text-white/60">SOL</p>
                       </button>
                     </div>
                   </div>
+
+                  {/* Admin Wallet Addresses */}
+                  <div className="p-4 bg-black/50 border border-white/10 rounded-lg mb-4">
+                    <p className="text-sm font-bold text-white mb-3">📋 Admin Wallet Address</p>
+                    <div className="space-y-2">
+                      {paymentMethod === 'USD' && (
+                        <div>
+                          <p className="text-xs text-white/40">USDT (Solana)</p>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs text-[#00F090] bg-black/50 p-2 rounded flex-1 overflow-x-auto">
+                              {ADMIN_WALLETS.USDT_SOL}
+                            </code>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(ADMIN_WALLETS.USDT_SOL);
+                                toast.success('Address copied!');
+                              }}
+                              className="p-2 bg-white/10 rounded hover:bg-white/20"
+                            >
+                              📋
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {paymentMethod === 'FTC' && (
+                        <div>
+                          <p className="text-xs text-white/40">FTC (Solana)</p>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs text-[#FFD700] bg-black/50 p-2 rounded flex-1 overflow-x-auto">
+                              {ADMIN_WALLETS.FTC_SOL}
+                            </code>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(ADMIN_WALLETS.FTC_SOL);
+                                toast.success('Address copied!');
+                              }}
+                              className="p-2 bg-white/10 rounded hover:bg-white/20"
+                            >
+                              📋
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {paymentMethod === 'SOL' && (
+                        <div>
+                          <p className="text-xs text-white/40">SOL (Solana)</p>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs text-[#9945FF] bg-black/50 p-2 rounded flex-1 overflow-x-auto">
+                              {ADMIN_WALLETS.SOL}
+                            </code>
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(ADMIN_WALLETS.SOL);
+                                toast.success('Address copied!');
+                              }}
+                              className="p-2 bg-white/10 rounded hover:bg-white/20"
+                            >
+                              📋
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-xs text-white/30 mt-2">
+                      Send exact amount to above address
+                    </p>
+                  </div>
                   
-                  {/* Transaction Hash Input */}
                   <div className="mb-6">
-                    <label className="text-sm text-white/60 mb-2 block">
-                      Transaction Hash <span className="text-[#FF2E50]">*</span>
-                    </label>
+                    <p className="text-sm text-white/60 mb-2">Payment Transaction Hash *</p>
                     <input
                       type="text"
                       value={transactionHash}
                       onChange={(e) => setTransactionHash(e.target.value)}
-                      placeholder="Enter your payment transaction hash"
-                      className="w-full px-4 py-3 bg-black/50 border border-white/10 rounded-lg text-white placeholder:text-white/40 focus:border-[#00F090]/50 outline-none font-mono text-sm"
+                      placeholder="Enter USDT/FTC/SOL transaction hash"
+                      className="w-full p-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:border-[#00F090] focus:outline-none"
                       data-testid="transaction-hash-input"
                     />
-                    <p className="text-xs text-white/40 mt-2">
-                      After sending {paymentMethod === 'USD' ? `$${selectedPlan.priceUSD}` : `${selectedPlan.priceFTC} FTC`}, paste the transaction hash here
+                    <p className="text-xs text-white/40 mt-1">
+                      Paste your {paymentMethod} transaction hash after sending payment
                     </p>
                   </div>
                 </>
@@ -1732,13 +1854,13 @@ const FtcMining = () => {
                 }`}
                 data-testid="submit-subscription-btn"
               >
-                {isSubmitting ? 'Submitting...' : !isLoggedIn ? 'Login First' : selectedPlan.isFree ? 'Request Free Trial' : 'Submit Request'}
+                {isSubmitting ? 'Submitting...' : !isLoggedIn ? 'Login First' : selectedPlan.isFree ? 'Request Free Trial' : 'Submit Request to Admin'}
               </button>
               
               <p className="text-xs text-white/40 text-center mt-4">
                 {selectedPlan.isFree 
                   ? 'Admin will approve your free trial request' 
-                  : 'Admin will verify payment and activate your subscription immediately'
+                  : `Admin will verify ${paymentMethod} payment and activate your subscription immediately`
                 }
               </p>
               

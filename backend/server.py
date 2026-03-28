@@ -56,6 +56,48 @@ API_CACHE = {
 CACHE_DURATION = 60  # Cache for 60 seconds
 SEARCH_CACHE_DURATION = 120  # Search cache for 2 minutes
 
+# ========== GLOBAL FTC STATE - Same for ALL users worldwide ==========
+GLOBAL_FTC_STATE = {
+    'price': 0.00000472145,  # Base price
+    'change_24h': -9.03,
+    'volume_24h': 1519228.41,  # In FTC
+    'last_update': time.time(),
+    'high_24h': 0.00000520,
+    'low_24h': 0.00000450
+}
+
+def update_global_ftc_price():
+    """Update FTC price globally - same fluctuation for all users"""
+    global GLOBAL_FTC_STATE
+    now = time.time()
+    
+    # Update every 3 seconds
+    if now - GLOBAL_FTC_STATE['last_update'] >= 3:
+        base_price = 0.00000472145
+        volatility = 0.02 + random.random() * 0.03
+        direction = 1 if random.random() > 0.48 else -1
+        
+        new_price = GLOBAL_FTC_STATE['price'] * (1 + (direction * volatility * random.random()))
+        # Keep price within realistic bounds
+        new_price = max(base_price * 0.85, min(base_price * 1.15, new_price))
+        
+        change = ((new_price - base_price) / base_price) * 100
+        
+        # Update volume
+        volume_change = random.uniform(-0.01, 0.01)
+        new_volume = GLOBAL_FTC_STATE['volume_24h'] * (1 + volume_change)
+        
+        GLOBAL_FTC_STATE = {
+            'price': new_price,
+            'change_24h': change,
+            'volume_24h': new_volume,
+            'last_update': now,
+            'high_24h': max(GLOBAL_FTC_STATE['high_24h'], new_price),
+            'low_24h': min(GLOBAL_FTC_STATE['low_24h'], new_price)
+        }
+    
+    return GLOBAL_FTC_STATE
+
 def get_cached_data(cache_key, sub_key=None):
     """Get data from cache if not expired"""
     now = time.time()
@@ -2135,39 +2177,86 @@ async def admin_reject_subscription(request: AdminActivateRequest):
     
     return {"success": True, "message": "Subscription rejected"}
 
-# Global trades API for real-time blockchain visibility
+# ========== GLOBAL API ENDPOINTS - Same data for ALL users ==========
+
+# Global FTC Price - Same for all users worldwide
+@api_router.get("/global/ftc-price")
+async def get_global_ftc_price():
+    """Get global FTC price - same fluctuation for all users worldwide"""
+    ftc_state = update_global_ftc_price()
+    return {
+        "price": ftc_state['price'],
+        "change_24h": ftc_state['change_24h'],
+        "volume_24h": ftc_state['volume_24h'],
+        "high_24h": ftc_state['high_24h'],
+        "low_24h": ftc_state['low_24h'],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+
+# Global trades API for real-time blockchain visibility - All users see ALL transactions
 @api_router.get("/global/trades")
 async def get_global_trades():
     """Get global trades for real-time blockchain visibility - all users see same data"""
+    ftc_state = update_global_ftc_price()
+    
     try:
-        # Get recent trades from all users
-        trades = await db.trades.find(
+        # Get ALL recent trades from ALL users (global visibility)
+        trades = await db.nutrition_trades.find(
             {},
             {"_id": 0}
-        ).sort("created_at", -1).limit(50).to_list(50)
+        ).sort("created_at", -1).limit(100).to_list(100)
         
-        # Calculate 24h volume
-        from datetime import timedelta
-        yesterday = datetime.now(timezone.utc) - timedelta(hours=24)
-        volume_data = await db.trades.aggregate([
-            {"$match": {"created_at": {"$gte": yesterday.isoformat()}}},
-            {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-        ]).to_list(1)
-        
-        volume_24h = volume_data[0]["total"] if volume_data else 0
+        # If no nutrition trades, check regular trades
+        if not trades:
+            trades = await db.trades.find(
+                {},
+                {"_id": 0}
+            ).sort("created_at", -1).limit(100).to_list(100)
         
         return {
             "trades": trades,
-            "volume_24h": volume_24h,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "volume_24h": ftc_state['volume_24h'],
+            "ftc_price": ftc_state['price'],
+            "change_24h": ftc_state['change_24h'],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_traders": await db.users.count_documents({})
         }
     except Exception as e:
-        # Return simulated global data if database query fails
         return {
             "trades": [],
-            "volume_24h": 2500000,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "volume_24h": ftc_state['volume_24h'],
+            "ftc_price": ftc_state['price'],
+            "change_24h": ftc_state['change_24h'],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "total_traders": 0
         }
+
+# Store nutrition trade in global ledger
+@api_router.post("/global/record-trade")
+async def record_global_trade(trade_data: dict, user_id: str = Depends(get_current_user)):
+    """Record a trade in the global blockchain ledger for all users to see"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "email": 1, "full_name": 1})
+    
+    trade_record = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "user_name": user.get("full_name", "Anonymous")[:10] + "..." if user else "Anonymous",
+        "type": trade_data.get("type", "TRADE"),
+        "product_name": trade_data.get("product_name", "FTC"),
+        "quantity": trade_data.get("quantity", 0),
+        "price": trade_data.get("price", 0),
+        "total_ftc": trade_data.get("total_ftc", 0),
+        "tx_hash": f"0x{''.join(random.choices('0123456789abcdef', k=64))}",
+        "block_number": 19000000 + random.randint(0, 1000000),
+        "confirmations": random.randint(1, 12),
+        "status": "CONFIRMED",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.nutrition_trades.insert_one(trade_record)
+    trade_record.pop("_id", None)
+    
+    return {"success": True, "trade": trade_record}
 
 # Include router
 app.include_router(api_router)
