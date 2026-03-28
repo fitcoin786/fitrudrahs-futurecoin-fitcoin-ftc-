@@ -98,6 +98,111 @@ def update_global_ftc_price():
     
     return GLOBAL_FTC_STATE
 
+# ========== GLOBAL NUTRITION PRICES - Same for ALL users worldwide ==========
+NUTRITION_PRODUCTS_LIST = [
+    {"id": "WPC80", "name": "Whey Protein Concentrate 80%", "basePrice": 38.50, "category": "Protein"},
+    {"id": "WPI90", "name": "Whey Protein Isolate 90%", "basePrice": 72.00, "category": "Protein"},
+    {"id": "CASEIN", "name": "Casein Protein Micellar", "basePrice": 52.00, "category": "Protein"},
+    {"id": "PEA", "name": "Pea Protein Isolate 85%", "basePrice": 32.00, "category": "Protein"},
+    {"id": "SOY", "name": "Soy Protein Isolate", "basePrice": 28.00, "category": "Protein"},
+    {"id": "EGG", "name": "Egg White Protein", "basePrice": 65.00, "category": "Protein"},
+    {"id": "COLLAGEN", "name": "Collagen Peptides", "basePrice": 48.00, "category": "Protein"},
+    {"id": "GLUTAMINE", "name": "L-Glutamine Powder", "basePrice": 44.00, "category": "Amino"},
+    {"id": "BCAA", "name": "BCAA 2:1:1 Instant", "basePrice": 58.00, "category": "Amino"},
+    {"id": "EAA", "name": "Essential Amino Acids", "basePrice": 62.00, "category": "Amino"},
+    {"id": "ARGININE", "name": "L-Arginine HCL", "basePrice": 36.00, "category": "Amino"},
+    {"id": "TAURINE", "name": "L-Taurine Pure", "basePrice": 24.00, "category": "Amino"},
+    {"id": "CREATINE", "name": "Creatine Monohydrate Pure", "basePrice": 22.50, "category": "Creatine"},
+    {"id": "CREATINEHCL", "name": "Creatine HCL", "basePrice": 42.00, "category": "Creatine"},
+    {"id": "BETA", "name": "Beta-Alanine Pure", "basePrice": 35.00, "category": "Pre-Workout"},
+    {"id": "CITRULLINE", "name": "L-Citrulline Malate 2:1", "basePrice": 46.00, "category": "Pre-Workout"},
+    {"id": "CAFFEINE", "name": "Caffeine Anhydrous USP", "basePrice": 14.50, "category": "Pre-Workout"},
+    {"id": "VITC", "name": "Vitamin C 1000mg", "basePrice": 18.00, "category": "Vitamin"},
+    {"id": "VITD3", "name": "Vitamin D3 5000IU", "basePrice": 22.00, "category": "Vitamin"},
+    {"id": "VITB12", "name": "Vitamin B12 Methylcobalamin", "basePrice": 28.00, "category": "Vitamin"},
+    {"id": "VITE", "name": "Vitamin E 400IU", "basePrice": 26.00, "category": "Vitamin"},
+    {"id": "MULTI", "name": "Multivitamin Complete", "basePrice": 34.00, "category": "Vitamin"},
+    {"id": "BCOMPLEX", "name": "B-Complex Super", "basePrice": 24.00, "category": "Vitamin"},
+    {"id": "OMEGA3", "name": "Omega-3 Fish Oil 1000mg", "basePrice": 32.00, "category": "Omega"},
+    {"id": "OMEGA6", "name": "Omega-6 GLA Complex", "basePrice": 38.00, "category": "Omega"},
+    {"id": "OMEGA9", "name": "Omega-9 Olive Oil Extract", "basePrice": 28.00, "category": "Omega"},
+    {"id": "OMEGA369", "name": "Omega 3-6-9 Complete", "basePrice": 42.00, "category": "Omega"},
+    {"id": "FLAXSEED", "name": "Flaxseed Oil 1000mg", "basePrice": 22.00, "category": "Omega"},
+    {"id": "COQ10", "name": "CoQ10 Ubiquinone 100mg", "basePrice": 56.00, "category": "Specialty"},
+    {"id": "ASHWAGANDHA", "name": "Ashwagandha KSM-66", "basePrice": 38.00, "category": "Specialty"},
+    {"id": "ZINC", "name": "Zinc Picolinate 50mg", "basePrice": 16.00, "category": "Mineral"},
+    {"id": "MAGNESIUM", "name": "Magnesium Glycinate", "basePrice": 28.00, "category": "Mineral"},
+    {"id": "IRON", "name": "Iron Bisglycinate", "basePrice": 18.00, "category": "Mineral"},
+    {"id": "CALCIUM", "name": "Calcium + D3 Complex", "basePrice": 24.00, "category": "Mineral"},
+    {"id": "MALTO", "name": "Maltodextrin DE 18-20", "basePrice": 9.50, "category": "Gainer"},
+    {"id": "DEXTROSE", "name": "Dextrose Monohydrate", "basePrice": 6.80, "category": "Gainer"},
+    {"id": "MASSGAINER", "name": "Mass Gainer 1250", "basePrice": 58.00, "category": "Gainer"},
+    {"id": "CLA", "name": "CLA Softgels 1000mg", "basePrice": 32.00, "category": "Fat Burner"},
+    {"id": "LCARNITINE", "name": "L-Carnitine Tartrate", "basePrice": 36.00, "category": "Fat Burner"},
+    {"id": "GREENTEAEXT", "name": "Green Tea Extract EGCG", "basePrice": 28.00, "category": "Fat Burner"},
+]
+
+# Global state for nutrition prices - same for ALL users
+GLOBAL_NUTRITION_PRICES = {}
+GLOBAL_NUTRITION_LAST_UPDATE = 0
+
+def initialize_global_nutrition_prices():
+    """Initialize nutrition prices"""
+    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE
+    now = time.time()
+    
+    for product in NUTRITION_PRODUCTS_LIST:
+        GLOBAL_NUTRITION_PRICES[product['id']] = {
+            'current': product['basePrice'],
+            'change': 0.0,
+            'history': [product['basePrice'] * (0.95 + random.random() * 0.1) for _ in range(20)]
+        }
+    GLOBAL_NUTRITION_LAST_UPDATE = now
+
+def update_global_nutrition_prices():
+    """Update nutrition prices globally - same fluctuation for ALL users"""
+    global GLOBAL_NUTRITION_PRICES, GLOBAL_NUTRITION_LAST_UPDATE
+    now = time.time()
+    
+    # Initialize if empty
+    if not GLOBAL_NUTRITION_PRICES:
+        initialize_global_nutrition_prices()
+        return GLOBAL_NUTRITION_PRICES
+    
+    # Update every 3 seconds
+    if now - GLOBAL_NUTRITION_LAST_UPDATE >= 3:
+        for product in NUTRITION_PRODUCTS_LIST:
+            pid = product['id']
+            if pid in GLOBAL_NUTRITION_PRICES:
+                base_price = product['basePrice']
+                current = GLOBAL_NUTRITION_PRICES[pid]['current']
+                
+                # Price fluctuation (slight upward bias)
+                change_pct = (random.random() - 0.48) * 2  # -0.96% to +1.04%
+                new_price = current * (1 + change_pct / 100)
+                
+                # Clamp within 70% to 150% of base price
+                new_price = max(base_price * 0.7, min(base_price * 1.5, new_price))
+                
+                # Calculate change percentage
+                price_change = ((new_price - current) / current) * 100 if current > 0 else 0
+                
+                # Update history (keep last 20 points)
+                new_history = GLOBAL_NUTRITION_PRICES[pid]['history'][1:] + [new_price]
+                
+                GLOBAL_NUTRITION_PRICES[pid] = {
+                    'current': round(new_price, 2),
+                    'change': round(price_change, 2),
+                    'history': [round(h, 2) for h in new_history]
+                }
+        
+        GLOBAL_NUTRITION_LAST_UPDATE = now
+    
+    return GLOBAL_NUTRITION_PRICES
+
+# Initialize on startup
+initialize_global_nutrition_prices()
+
 def get_cached_data(cache_key, sub_key=None):
     """Get data from cache if not expired"""
     now = time.time()
@@ -1547,6 +1652,70 @@ NUTRITION_PRODUCTS_SEED = [
 ]
 
 # ============ NUTRITION TRADING ENDPOINTS ============
+
+@api_router.get("/nutrition/global-prices")
+async def get_global_nutrition_prices():
+    """Get global nutrition prices - SAME for ALL users worldwide"""
+    prices = update_global_nutrition_prices()
+    return {
+        "prices": prices,
+        "last_update": datetime.now(timezone.utc).isoformat(),
+        "products": NUTRITION_PRODUCTS_LIST
+    }
+
+@api_router.get("/nutrition/global-ledger")
+async def get_global_nutrition_ledger():
+    """Get global blockchain ledger - ALL transactions from ALL users"""
+    # Fetch last 100 transactions from all users, sorted by most recent
+    transactions = await db.global_nutrition_ledger.find(
+        {}, 
+        {"_id": 0}
+    ).sort("timestamp", -1).limit(100).to_list(100)
+    
+    return {
+        "transactions": transactions,
+        "total": len(transactions),
+        "last_update": datetime.now(timezone.utc).isoformat()
+    }
+
+@api_router.post("/nutrition/global-ledger/record")
+async def record_global_transaction(
+    trade_data: dict,
+    user_id: str = Depends(get_current_user)
+):
+    """Record a trade to the global blockchain ledger visible to ALL users"""
+    # Get user info
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "full_name": 1, "email": 1})
+    username = user.get('full_name', 'Anonymous') if user else 'Anonymous'
+    
+    # Generate blockchain-style data
+    tx_hash = f"0x{uuid.uuid4().hex[:16]}...{uuid.uuid4().hex[:8]}"
+    block_number = random.randint(18000000, 19000000)
+    confirmations = random.randint(12, 100)
+    
+    transaction = {
+        "id": str(uuid.uuid4()),
+        "user_id": user_id,
+        "username": username[:10] + "..." if len(username) > 10 else username,  # Anonymized
+        "trade_type": trade_data.get('trade_type', 'BUY'),
+        "product_id": trade_data.get('product_id'),
+        "product_name": trade_data.get('product_name'),
+        "quantity": trade_data.get('quantity', 0),
+        "price_per_unit": trade_data.get('price_per_unit', 0),
+        "total_ftc": trade_data.get('total_ftc', 0),
+        "tx_hash": tx_hash,
+        "block_number": block_number,
+        "confirmations": confirmations,
+        "status": "CONFIRMED",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.global_nutrition_ledger.insert_one(transaction)
+    
+    # Return without _id
+    if '_id' in transaction:
+        del transaction['_id']
+    return transaction
 
 @api_router.get("/nutrition/products")
 async def get_nutrition_products():

@@ -161,6 +161,28 @@ const FtcMining = () => {
       return updated;
     });
     
+    // POST to GLOBAL blockchain ledger - visible to ALL users
+    if (type === 'BUY' || type === 'SELL') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        fetch(`${BACKEND_URL}/api/nutrition/global-ledger/record`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            trade_type: type,
+            product_id: details.productId,
+            product_name: details.productName,
+            quantity: details.quantity,
+            price_per_unit: details.pricePerUnit,
+            total_ftc: details.totalFTC
+          })
+        }).catch(err => console.error('Error recording to global ledger:', err));
+      }
+    }
+    
     return newTx;
   };
 
@@ -272,39 +294,67 @@ const FtcMining = () => {
     { id: 'GREENTEAEXT', name: 'Green Tea Extract EGCG', basePrice: 28.00, category: 'Fat Burner' },
   ];
 
-  // Initialize and update nutrition prices with fluctuation
+  // Fetch GLOBAL nutrition prices from backend - SAME for ALL users
   useEffect(() => {
-    const initPrices = {};
-    NUTRITION_PRODUCTS.forEach(p => {
-      initPrices[p.id] = {
-        current: p.basePrice,
-        change: 0,
-        history: Array(20).fill(p.basePrice).map((v, i) => v * (0.95 + Math.random() * 0.1))
-      };
-    });
-    setNutritionPrices(initPrices);
-    
-    // Update prices every 3 seconds
-    const priceInterval = setInterval(() => {
-      setNutritionPrices(prev => {
-        const updated = { ...prev };
-        NUTRITION_PRODUCTS.forEach(p => {
-          if (updated[p.id]) {
-            const change = (Math.random() - 0.48) * 2; // Slight upward bias
-            const newPrice = updated[p.id].current * (1 + change / 100);
-            const clampedPrice = Math.max(p.basePrice * 0.7, Math.min(p.basePrice * 1.5, newPrice));
-            updated[p.id] = {
-              current: clampedPrice,
-              change: ((clampedPrice - updated[p.id].current) / updated[p.id].current) * 100,
-              history: [...updated[p.id].history.slice(1), clampedPrice]
-            };
+    const fetchGlobalPrices = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/nutrition/global-prices`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.prices) {
+            setNutritionPrices(data.prices);
           }
+        }
+      } catch (error) {
+        console.error('Error fetching global prices:', error);
+        // Fallback to local prices if API fails
+        const initPrices = {};
+        NUTRITION_PRODUCTS.forEach(p => {
+          initPrices[p.id] = {
+            current: p.basePrice,
+            change: 0,
+            history: Array(20).fill(p.basePrice).map((v, i) => v * (0.95 + Math.random() * 0.1))
+          };
         });
-        return updated;
-      });
-    }, 3000);
+        setNutritionPrices(initPrices);
+      }
+    };
+
+    // Initial fetch
+    fetchGlobalPrices();
+    
+    // Fetch global prices every 3 seconds - all users get same data
+    const priceInterval = setInterval(fetchGlobalPrices, 3000);
     
     return () => clearInterval(priceInterval);
+  }, []);
+
+  // Fetch GLOBAL transaction ledger from backend - ALL trades from ALL users
+  useEffect(() => {
+    const fetchGlobalLedger = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/nutrition/global-ledger`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.transactions) {
+            setGlobalLedger(data.transactions);
+            // Calculate 24h volume from recent transactions
+            const volume = data.transactions.reduce((sum, tx) => sum + (tx.total_ftc || 0), 0);
+            setGlobalVolume24h(volume);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching global ledger:', error);
+      }
+    };
+
+    // Initial fetch
+    fetchGlobalLedger();
+    
+    // Fetch global ledger every 5 seconds
+    const ledgerInterval = setInterval(fetchGlobalLedger, 5000);
+    
+    return () => clearInterval(ledgerInterval);
   }, []);
 
   // Buy/Sell nutrition product with blockchain ledger tracking
@@ -2268,6 +2318,52 @@ const FtcMining = () => {
                           <span className="text-white/30">
                             Block #{tx.blockNumber} • {tx.confirmations} confirmations
                           </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* GLOBAL Blockchain Ledger - ALL Users Worldwide */}
+              <div className="mt-6 pt-4 border-t border-white/10">
+                <h4 className="text-sm font-bold text-white/80 mb-3 flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-[#00F090]" />
+                  Global Blockchain Ledger 
+                  <span className="text-xs text-[#00F090] font-normal ml-auto">LIVE • All Users Worldwide</span>
+                </h4>
+                <div className="overflow-y-auto max-h-[200px] space-y-2">
+                  {globalLedger.length === 0 ? (
+                    <div className="text-center py-4 text-white/40">
+                      <p className="text-xs">Loading global transactions...</p>
+                    </div>
+                  ) : (
+                    globalLedger.map((tx, index) => (
+                      <div 
+                        key={tx.id || index} 
+                        className="p-2 bg-gradient-to-r from-black/40 to-black/20 rounded-lg border border-[#00F090]/20 hover:border-[#00F090]/40 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                              tx.trade_type === 'BUY' ? 'bg-[#00F090]/20 text-[#00F090]' :
+                              'bg-[#FF2E50]/20 text-[#FF2E50]'
+                            }`}>
+                              {tx.trade_type}
+                            </span>
+                            <span className="text-sm text-white font-medium">{tx.product_name}</span>
+                            <span className="text-xs text-white/40">by {tx.username || 'Anon'}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-[#FFD700] font-bold">{tx.total_ftc?.toFixed(2)} FTC</span>
+                            <span className="text-xs text-[#00F090] flex items-center gap-1">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-xs text-white/30">
+                          <span className="font-mono truncate max-w-[150px]">TX: {tx.tx_hash}</span>
+                          <span>Block #{tx.block_number} • {tx.confirmations} conf</span>
                         </div>
                       </div>
                     ))
