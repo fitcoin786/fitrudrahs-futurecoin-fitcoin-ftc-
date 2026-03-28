@@ -19,6 +19,10 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - **UPGRADE FUNCTIONALITY** - Users can submit upgrade requests
 - **REAL-TIME ACTIVATION** - Subscription activates immediately after admin approval
 - **SUBSCRIPTION-BASED TOOLS** - Different features unlock based on plan tier ✅
+- **AUTO-GENERATED FTC WALLET ADDRESS** ✅ (NEW - March 28, 2026)
+  - Unique 44-char Solana-style address generated on registration
+  - Users can view, copy, and edit their wallet address
+  - Addresses stored in user profile and wallet collections
 
 ### 3. Admin Control Panel ✅
 **Credentials**: FITRUDRAH / 786786 / 0000
@@ -37,7 +41,7 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
   - Momentum calculation
 - **GLOBAL BLOCKCHAIN LEDGER** ✅ - ALL transactions from ALL users visible globally
   - Each trade records price_after_impact
-  - Real-time 24H volume stats
+  - Real-time 24H volume stats (polling every 3 seconds)
   - Market sentiment (bullish/bearish/neutral)
 - **AI Market Analysis Panel** ✅ - Shows BUY/HOLD/SELL signal counts
 - Double-tap detailed view modal
@@ -78,16 +82,27 @@ Tools unlock based on plan tier:
 12. ✅ **GLOBAL Nutrition Prices** - ALL users see same prices
 13. ✅ **PRICE IMPACT MODEL** - Trades affect global prices
 14. ✅ **AI TRADING SIGNALS** - Real-time BUY/HOLD/SELL recommendations
-15. ✅ **GLOBAL BLOCKCHAIN LEDGER** - ALL transactions visible to ALL users
+15. ✅ **GLOBAL BLOCKCHAIN LEDGER** - ALL transactions visible to ALL users (3-second polling)
 16. ✅ **SUBSCRIPTION-BASED TOOLS** - Auto-unlock based on plan tier
+17. ✅ **AUTO-GENERATED FTC WALLET ADDRESS** - Unique wallet for each user (NEW)
+18. ✅ **WALLET ADDRESS EDIT/UPDATE** - Users can customize their wallet address (NEW)
 
 ## New APIs Added (March 28, 2026)
 - `GET /api/nutrition/global-prices` - Returns prices, ai_signals, trade_volume
 - `GET /api/nutrition/ai-recommendations` - Returns categorized BUY/HOLD/SELL signals
 - `GET /api/nutrition/global-ledger` - Returns ALL transactions with stats
 - `POST /api/nutrition/global-ledger/record` - Records trade with price_after_impact
+- `GET /api/wallet/address` - Returns user's FTC wallet address (NEW)
+- `PUT /api/wallet/address` - Update user's FTC wallet address (NEW)
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, Framer Motion, Recharts
 - Backend: FastAPI, MongoDB
 - External APIs: CoinGecko, Resend (Email OTPs)
+
+## Upcoming Tasks (P1-P3)
+- **P1: WebSockets** - Replace polling with real-time WebSockets
+- **P2: Send/Receive FTC** - User-to-user FTC transfers
+- **P3: Backend Refactoring** - Split server.py (2700+ lines) into modular routers
+- **P3: Frontend Refactoring** - Extract FtcMining.js subcomponents
+- **P3: Leaderboard UI** - Display top FTC traders globally
