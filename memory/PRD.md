@@ -31,6 +31,15 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
   - UI animation updates every 100ms smoothly
   - Boost tap works - shows countdown and increased speed
   - All testing passed: 9/9 features verified by testing agent
+- **CALORIES = FTC SYNC (1:1 RATIO)** ✅ (March 29, 2026 - Session 2)
+  - Both Calories and FTC values always equal
+  - 1 Calorie burned = 1 FTC mined
+  - Both increment together in real-time
+  - Header shows "1 Calorie Kcl = 1 FTC (1:1 ratio)"
+- **AI BOOST BUTTON** ✅ (March 29, 2026 - Session 2)
+  - Button shows "🧠 TAP FOR AI BOOST!" when ready
+  - Shows "🧠 AI BOOST Xs (2x)" during boost with countdown
+  - Info text: "Tap for AI Boost - 5s (2x speed)"
 
 ### 3. Admin Control Panel ✅
 **Credentials**: FITRUDRAH / 786786 / 0000
