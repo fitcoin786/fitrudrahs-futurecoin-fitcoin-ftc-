@@ -2018,6 +2018,8 @@ async def get_global_nutrition_ledger():
     total_volume = sum(tx.get('total_ftc', 0) for tx in transactions)
     buy_count = sum(1 for tx in transactions if tx.get('trade_type') == 'BUY')
     sell_count = sum(1 for tx in transactions if tx.get('trade_type') == 'SELL')
+    send_count = sum(1 for tx in transactions if tx.get('trade_type') in ['SEND', 'ADMIN_SEND'])
+    admin_send_count = sum(1 for tx in transactions if tx.get('trade_type') == 'ADMIN_SEND')
     
     return {
         "transactions": transactions,
@@ -2026,6 +2028,8 @@ async def get_global_nutrition_ledger():
             "volume_24h": round(total_volume, 2),
             "buy_count": buy_count,
             "sell_count": sell_count,
+            "send_count": send_count,
+            "admin_send_count": admin_send_count,
             "market_sentiment": "bullish" if buy_count > sell_count else "bearish" if sell_count > buy_count else "neutral"
         },
         "last_update": datetime.now(timezone.utc).isoformat()
@@ -2037,9 +2041,10 @@ async def record_global_transaction(
     user_id: str = Depends(get_current_user)
 ):
     """Record a trade to the global blockchain ledger visible to ALL users and apply price impact"""
-    # Get user info
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "full_name": 1, "email": 1})
+    # Get user info with wallet address
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "full_name": 1, "email": 1, "ftc_wallet_address": 1})
     username = user.get('full_name', 'Anonymous') if user else 'Anonymous'
+    user_wallet = user.get('ftc_wallet_address', '') if user else ''
     
     product_id = trade_data.get('product_id')
     trade_type = trade_data.get('trade_type', 'BUY')
@@ -2065,6 +2070,7 @@ async def record_global_transaction(
         "id": tx_id,
         "user_id": user_id,
         "username": username[:10] + "..." if len(username) > 10 else username,  # Anonymized
+        "user_wallet": user_wallet[:15] + '...' if len(user_wallet) > 15 else user_wallet,
         "trade_type": trade_type,
         "product_id": product_id,
         "product_name": trade_data.get('product_name'),
@@ -3071,6 +3077,168 @@ async def calculate_fee(amount: float):
             "10,000,001-100,000,000 FTC": "5%",
             "100,000,001-1,000,000,000 FTC": "10%",
             "1,000,000,001+ FTC": "15%"
+        }
+    }
+
+# ========== ADMIN SEND FTC ==========
+
+class AdminSendFTCRequest(BaseModel):
+    recipient_wallet_address: str
+    amount: float
+    note: Optional[str] = None
+
+@api_router.post("/admin/send-ftc")
+async def admin_send_ftc(request: AdminSendFTCRequest):
+    """Admin sends FTC to any user from admin wallet (no fee deduction)"""
+    global ADMIN_WALLET
+    
+    # Validate amount
+    if request.amount <= 0:
+        raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+    
+    # Find recipient by wallet address
+    recipient = await db.users.find_one(
+        {"ftc_wallet_address": request.recipient_wallet_address},
+        {"_id": 0}
+    )
+    
+    if not recipient:
+        raise HTTPException(status_code=404, detail="Recipient wallet address not found")
+    
+    # Create transaction record
+    tx_id = str(uuid.uuid4())
+    tx_hash = f"0x{''.join(random.choices('0123456789abcdef', k=64))}"
+    block_number = 19000000 + random.randint(0, 1000000)
+    
+    transaction = {
+        'id': tx_id,
+        'tx_hash': tx_hash,
+        'sender_type': 'ADMIN',
+        'sender_wallet': ADMIN_WALLET['wallet_address'],
+        'sender_name': 'Admin Wallet',
+        'recipient_id': recipient['id'],
+        'recipient_name': recipient.get('full_name', 'Anonymous')[:15],
+        'recipient_wallet': request.recipient_wallet_address,
+        'amount': request.amount,
+        'fee_percent': 0,  # No fee for admin transfers
+        'fee_amount': 0,
+        'amount_received': request.amount,
+        'note': request.note or 'Admin Transfer',
+        'status': 'CONFIRMED',
+        'block_number': block_number,
+        'confirmations': random.randint(12, 50),
+        'created_at': datetime.now(timezone.utc).isoformat()
+    }
+    
+    # Update recipient wallet balance
+    await db.wallets.update_one(
+        {"user_id": recipient['id']},
+        {"$inc": {"ftc_balance": request.amount}}
+    )
+    
+    # Save transaction
+    await db.ftc_transfers.insert_one(transaction)
+    
+    # Record in global ledger
+    global_record = {
+        'id': tx_id,
+        'user_id': 'ADMIN',
+        'username': 'Admin Wallet',
+        'trade_type': 'ADMIN_SEND',
+        'product_id': 'ADMIN_TRANSFER',
+        'product_name': f'Admin → {recipient.get("full_name", "User")[:10]}',
+        'quantity': 1,
+        'price_per_unit': request.amount,
+        'total_ftc': request.amount,
+        'fee_amount': 0,
+        'sender_wallet': ADMIN_WALLET['wallet_address'][:15] + '...',
+        'receiver_wallet': request.recipient_wallet_address[:15] + '...',
+        'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
+        'block_number': block_number,
+        'confirmations': transaction['confirmations'],
+        'status': 'CONFIRMED',
+        'timestamp': datetime.now(timezone.utc).isoformat()
+    }
+    await db.global_nutrition_ledger.insert_one(global_record)
+    
+    return {
+        'success': True,
+        'transaction': {
+            'id': tx_id,
+            'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
+            'amount_sent': request.amount,
+            'recipient': recipient.get('full_name', 'User')[:15],
+            'recipient_wallet': request.recipient_wallet_address[:10] + '...' + request.recipient_wallet_address[-6:],
+            'status': 'CONFIRMED',
+            'block_number': block_number
+        },
+        'message': f"Successfully sent {request.amount:.4f} FTC to {recipient.get('full_name', 'User')}"
+    }
+
+@api_router.get("/admin/transfers")
+async def get_admin_transfers():
+    """Get all admin transfers (sent from admin wallet)"""
+    transfers = await db.ftc_transfers.find(
+        {"sender_type": "ADMIN"},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(100).to_list(100)
+    
+    total_sent = sum(t.get('amount', 0) for t in transfers)
+    
+    return {
+        'transfers': transfers,
+        'total_sent': total_sent,
+        'total_transactions': len(transfers)
+    }
+
+# ========== ENHANCED GLOBAL LEDGER WITH FULL DETAILS ==========
+
+@api_router.get("/global/ledger-details/{tx_id}")
+async def get_transaction_details(tx_id: str):
+    """Get full transaction details by ID for tap/double-tap view"""
+    # Check global ledger
+    tx = await db.global_nutrition_ledger.find_one({"id": tx_id}, {"_id": 0})
+    
+    if not tx:
+        # Check FTC transfers
+        tx = await db.ftc_transfers.find_one({"id": tx_id}, {"_id": 0})
+    
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    
+    # Get user details if available
+    user_info = None
+    if tx.get('user_id') and tx.get('user_id') != 'ADMIN':
+        user_doc = await db.users.find_one({"id": tx.get('user_id')}, {"_id": 0, "password_hash": 0})
+        if user_doc:
+            user_info = {
+                'full_name': user_doc.get('full_name'),
+                'email': user_doc.get('email', '')[:3] + '***@***',  # Privacy
+                'wallet_address': user_doc.get('ftc_wallet_address'),
+                'member_since': user_doc.get('created_at')
+            }
+    
+    # Get recipient details if available
+    recipient_info = None
+    if tx.get('recipient_id'):
+        recipient_doc = await db.users.find_one({"id": tx.get('recipient_id')}, {"_id": 0, "password_hash": 0})
+        if recipient_doc:
+            recipient_info = {
+                'full_name': recipient_doc.get('full_name'),
+                'wallet_address': recipient_doc.get('ftc_wallet_address')
+            }
+    
+    return {
+        'transaction': tx,
+        'sender_info': user_info,
+        'recipient_info': recipient_info,
+        'blockchain': {
+            'tx_hash': tx.get('tx_hash'),
+            'block_number': tx.get('block_number'),
+            'confirmations': tx.get('confirmations'),
+            'status': tx.get('status', 'CONFIRMED'),
+            'network': 'Solana Mainnet',
+            'gas_fee': '0.000005 SOL'
         }
     }
 

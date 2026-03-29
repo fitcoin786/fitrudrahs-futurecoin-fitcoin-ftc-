@@ -6,7 +6,7 @@ import {
   Zap, Flame, Activity, Award, Clock, Check, Star, 
   ArrowRight, Wallet, TrendingUp, Shield, ExternalLink,
   Volume2, VolumeX, Gift, Crown, Target, Rocket,
-  BookOpen, Brain, BarChart3, History, FileText, Cpu
+  BookOpen, Brain, BarChart3, History, FileText, Cpu, User
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -77,6 +77,11 @@ const FtcMining = () => {
   const [isSending, setIsSending] = useState(false);
   const [sendFeeInfo, setSendFeeInfo] = useState({ fee_percent: 0, fee_amount: 0 });
   const [transferHistory, setTransferHistory] = useState([]);
+  
+  // Transaction Details State
+  const [selectedTxDetails, setSelectedTxDetails] = useState(null);
+  const [showTxDetailsModal, setShowTxDetailsModal] = useState(false);
+  const [lastTxTap, setLastTxTap] = useState({ txId: null, time: 0 });
   
   // Sports Nutrition Trading States
   const [nutritionPrices, setNutritionPrices] = useState({});
@@ -682,6 +687,32 @@ const FtcMining = () => {
     }
   };
 
+  // Fetch transaction details (tap/double-tap)
+  const fetchTxDetails = async (txId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/global/ledger-details/${txId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedTxDetails(data);
+        setShowTxDetailsModal(true);
+      }
+    } catch (error) {
+      console.error('Error fetching tx details:', error);
+    }
+  };
+
+  // Handle transaction tap (double-tap for details)
+  const handleTxTap = (txId) => {
+    const now = Date.now();
+    if (lastTxTap.txId === txId && now - lastTxTap.time < 500) {
+      // Double tap - show details
+      fetchTxDetails(txId);
+    } else {
+      // Single tap - just highlight
+      setLastTxTap({ txId, time: now });
+    }
+  };
+
   // Save FTC balance to localStorage whenever it changes (only if > 0 or was set before)
   const balanceInitializedRef = useRef(false);
   useEffect(() => {
@@ -1282,18 +1313,76 @@ const FtcMining = () => {
             </div>
           </Link>
           
-          <div className="flex items-center gap-4">
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={() => document.getElementById('mining-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-1"
+            >
+              <Zap className="h-4 w-4" />
+              Mining
+            </button>
+            <button
+              onClick={() => document.getElementById('subscription-section')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-1"
+            >
+              <Crown className="h-4 w-4" />
+              Plans
+            </button>
+            {isLoggedIn && (
+              <>
+                <button
+                  onClick={() => setShowSendFtcModal(true)}
+                  className="px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-1"
+                >
+                  <Wallet className="h-4 w-4" />
+                  Wallet
+                </button>
+                <button
+                  onClick={() => setShowLedgerModal(true)}
+                  className="px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-1"
+                >
+                  <TrendingUp className="h-4 w-4" />
+                  Ledger
+                </button>
+              </>
+            )}
+            <Link
+              to="/admin"
+              className="px-3 py-2 text-sm text-[#FFD700]/70 hover:text-[#FFD700] hover:bg-[#FFD700]/10 rounded-lg transition-all flex items-center gap-1"
+            >
+              <Shield className="h-4 w-4" />
+              Admin
+            </Link>
+          </div>
+          
+          <div className="flex items-center gap-3">
             {isLoggedIn ? (
-              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00F090]/20 to-[#FFD700]/20 rounded-lg border border-[#FFD700]/30">
-                <Wallet className="h-4 w-4 text-[#FFD700]" />
-                <span className="font-bold text-[#FFD700]">{ftcBalance.toLocaleString()} FTC</span>
-              </div>
+              <>
+                {/* User Profile Button */}
+                <button
+                  onClick={() => document.getElementById('wallet-section')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="hidden sm:flex items-center gap-2 px-3 py-2 bg-[#9945FF]/20 hover:bg-[#9945FF]/30 rounded-lg border border-[#9945FF]/30 transition-all"
+                >
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-r from-[#9945FF] to-[#FF2E50] flex items-center justify-center text-xs font-bold">
+                    {user?.full_name?.[0]?.toUpperCase() || 'U'}
+                  </div>
+                  <span className="text-sm text-white/80">{user?.full_name?.split(' ')[0] || 'Profile'}</span>
+                </button>
+                
+                {/* Balance */}
+                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#00F090]/20 to-[#FFD700]/20 rounded-lg border border-[#FFD700]/30">
+                  <Wallet className="h-4 w-4 text-[#FFD700]" />
+                  <span className="font-bold text-[#FFD700]">{ftcBalance.toLocaleString()} FTC</span>
+                </div>
+              </>
             ) : (
               <button
                 onClick={() => navigate('/auth')}
-                className="px-6 py-2 bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all"
+                className="px-6 py-2 bg-gradient-to-r from-[#00F090] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all flex items-center gap-2"
               >
-                Login to Mine
+                <User className="h-4 w-4" />
+                Login
               </button>
             )}
           </div>
@@ -1319,7 +1408,7 @@ const FtcMining = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Mining Dashboard */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div id="mining-section" className="grid md:grid-cols-2 gap-8 mb-12">
           {/* Mining Circle */}
           <div className="glass-card p-8 flex flex-col items-center">
             <div className={`relative w-64 h-64 rounded-full border-4 ${isMining ? 'border-[#00F090] animate-pulse' : 'border-white/20'} flex items-center justify-center`}>
@@ -1530,7 +1619,7 @@ const FtcMining = () => {
 
             {/* FTC Wallet Address - Auto-generated unique key */}
             {isLoggedIn && ftcWalletAddress && (
-              <div className="glass-card p-4 border border-[#9945FF]/30">
+              <div id="wallet-section" className="glass-card p-4 border border-[#9945FF]/30">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-sm font-bold flex items-center gap-2">
                     <span className="text-lg">🔑</span>
@@ -1608,9 +1697,10 @@ const FtcMining = () => {
         </div>
 
         {/* Subscription Plans */}
-        <h2 className="text-2xl font-black mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-[#00F090] to-[#FFD700]">
-          MINING SUBSCRIPTION PLANS
-        </h2>
+        <div id="subscription-section">
+          <h2 className="text-2xl font-black mb-6 text-center bg-clip-text text-transparent bg-gradient-to-r from-[#00F090] to-[#FFD700]">
+            MINING SUBSCRIPTION PLANS
+          </h2>
         
         <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12">
           {SUBSCRIPTION_PLANS.map((plan) => (
@@ -1660,6 +1750,7 @@ const FtcMining = () => {
               </div>
             </motion.div>
           ))}
+        </div>
         </div>
 
         {/* Sports Nutrition Trading Section */}
@@ -2683,13 +2774,20 @@ const FtcMining = () => {
                     globalLedger.map((tx, index) => (
                       <div 
                         key={tx.id || index} 
-                        className="p-2 bg-gradient-to-r from-black/40 to-black/20 rounded-lg border border-[#00F090]/20 hover:border-[#00F090]/40 transition-colors"
+                        className={`p-2 bg-gradient-to-r from-black/40 to-black/20 rounded-lg border transition-all cursor-pointer ${
+                          lastTxTap.txId === tx.id ? 'border-[#FFD700]/50 bg-[#FFD700]/5' : 'border-[#00F090]/20 hover:border-[#00F090]/40'
+                        }`}
+                        onClick={() => handleTxTap(tx.id)}
+                        onDoubleClick={() => fetchTxDetails(tx.id)}
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className={`px-2 py-0.5 rounded text-xs font-bold ${
                               tx.trade_type === 'BUY' ? 'bg-[#00F090]/20 text-[#00F090]' :
-                              'bg-[#FF2E50]/20 text-[#FF2E50]'
+                              tx.trade_type === 'SELL' ? 'bg-[#FF2E50]/20 text-[#FF2E50]' :
+                              tx.trade_type === 'SEND' ? 'bg-[#00BFFF]/20 text-[#00BFFF]' :
+                              tx.trade_type === 'ADMIN_SEND' ? 'bg-[#FFD700]/20 text-[#FFD700]' :
+                              'bg-white/10 text-white'
                             }`}>
                               {tx.trade_type}
                             </span>
@@ -2698,6 +2796,9 @@ const FtcMining = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-[#FFD700] font-bold">{tx.total_ftc?.toFixed(2)} FTC</span>
+                            {tx.fee_amount > 0 && (
+                              <span className="text-xs text-white/30">(Fee: {tx.fee_amount?.toFixed(4)})</span>
+                            )}
                             <span className="text-xs text-[#00F090] flex items-center gap-1">
                               <Check className="h-3 w-3" />
                             </span>
@@ -2707,8 +2808,20 @@ const FtcMining = () => {
                           <span className="font-mono truncate max-w-[150px]">TX: {tx.tx_hash}</span>
                           <span>Block #{tx.block_number} • {tx.confirmations} conf</span>
                         </div>
-                        <div className="mt-1 text-xs text-white/20">
-                          {new Date(tx.timestamp).toLocaleString()}
+                        {tx.user_wallet && (
+                          <div className="mt-1 text-xs text-[#9945FF]/60 font-mono">
+                            Wallet: {tx.user_wallet}
+                          </div>
+                        )}
+                        {(tx.sender_wallet || tx.receiver_wallet) && (
+                          <div className="mt-1 text-xs text-white/30">
+                            {tx.sender_wallet && <span className="text-[#FF2E50]">From: {tx.sender_wallet} </span>}
+                            {tx.receiver_wallet && <span className="text-[#00F090]">To: {tx.receiver_wallet}</span>}
+                          </div>
+                        )}
+                        <div className="mt-1 flex items-center justify-between text-xs text-white/20">
+                          <span>{new Date(tx.timestamp).toLocaleString()}</span>
+                          <span className="text-[#FFD700]/40">Double-tap for details</span>
                         </div>
                       </div>
                     ))
@@ -3253,6 +3366,137 @@ const FtcMining = () => {
                   </div>
                 </div>
               )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transaction Details Modal (Double-tap) */}
+      <AnimatePresence>
+        {showTxDetailsModal && selectedTxDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTxDetailsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 50 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 50 }}
+              className="glass-card p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto border border-[#9945FF]/30"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  <span className="text-2xl">🔍</span>
+                  Transaction Details
+                </h3>
+                <button onClick={() => setShowTxDetailsModal(false)} className="text-white/60 hover:text-white text-xl">✕</button>
+              </div>
+              
+              {/* Transaction Info */}
+              <div className="space-y-4">
+                {/* TX Hash */}
+                <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                  <p className="text-xs text-white/40 mb-1">Transaction Hash</p>
+                  <p className="font-mono text-[#00F090] text-sm break-all">
+                    {selectedTxDetails.transaction?.tx_hash || selectedTxDetails.blockchain?.tx_hash}
+                  </p>
+                </div>
+                
+                {/* Block & Confirmations */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                    <p className="text-xs text-white/40">Block Number</p>
+                    <p className="font-bold text-white text-lg">{selectedTxDetails.transaction?.block_number || selectedTxDetails.blockchain?.block_number}</p>
+                  </div>
+                  <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                    <p className="text-xs text-white/40">Confirmations</p>
+                    <p className="font-bold text-[#00F090] text-lg">{selectedTxDetails.transaction?.confirmations || selectedTxDetails.blockchain?.confirmations}</p>
+                  </div>
+                </div>
+                
+                {/* Trade Type & Amount */}
+                <div className="bg-gradient-to-r from-[#FFD700]/10 to-transparent p-4 rounded-lg border border-[#FFD700]/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                      selectedTxDetails.transaction?.trade_type === 'BUY' ? 'bg-[#00F090]/20 text-[#00F090]' :
+                      selectedTxDetails.transaction?.trade_type === 'SELL' ? 'bg-[#FF2E50]/20 text-[#FF2E50]' :
+                      selectedTxDetails.transaction?.trade_type === 'SEND' ? 'bg-[#00BFFF]/20 text-[#00BFFF]' :
+                      'bg-[#FFD700]/20 text-[#FFD700]'
+                    }`}>
+                      {selectedTxDetails.transaction?.trade_type}
+                    </span>
+                    <span className="text-xs text-white/40">{selectedTxDetails.transaction?.product_name}</span>
+                  </div>
+                  <p className="text-3xl font-bold text-[#FFD700]">
+                    {selectedTxDetails.transaction?.total_ftc || selectedTxDetails.transaction?.amount} FTC
+                  </p>
+                  {selectedTxDetails.transaction?.fee_amount > 0 && (
+                    <p className="text-sm text-white/40 mt-1">
+                      Fee: {selectedTxDetails.transaction?.fee_amount} FTC ({selectedTxDetails.transaction?.fee_percent}%)
+                    </p>
+                  )}
+                </div>
+                
+                {/* Sender Info */}
+                {selectedTxDetails.sender_info && (
+                  <div className="bg-black/40 p-3 rounded-lg border border-[#FF2E50]/30">
+                    <p className="text-xs text-[#FF2E50] mb-2 flex items-center gap-1">
+                      <span>📤</span> Sender
+                    </p>
+                    <p className="font-bold text-white">{selectedTxDetails.sender_info.full_name}</p>
+                    <p className="font-mono text-xs text-[#9945FF] mt-1">{selectedTxDetails.sender_info.wallet_address}</p>
+                    {selectedTxDetails.sender_info.member_since && (
+                      <p className="text-xs text-white/30 mt-1">Member since: {new Date(selectedTxDetails.sender_info.member_since).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                )}
+                
+                {/* Recipient Info */}
+                {selectedTxDetails.recipient_info && (
+                  <div className="bg-black/40 p-3 rounded-lg border border-[#00F090]/30">
+                    <p className="text-xs text-[#00F090] mb-2 flex items-center gap-1">
+                      <span>📥</span> Recipient
+                    </p>
+                    <p className="font-bold text-white">{selectedTxDetails.recipient_info.full_name}</p>
+                    <p className="font-mono text-xs text-[#00F090] mt-1">{selectedTxDetails.recipient_info.wallet_address}</p>
+                  </div>
+                )}
+                
+                {/* Price Info */}
+                {selectedTxDetails.transaction?.price_per_unit && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                      <p className="text-xs text-white/40">Price/Unit</p>
+                      <p className="font-bold text-white">{selectedTxDetails.transaction?.price_per_unit} FTC</p>
+                    </div>
+                    {selectedTxDetails.transaction?.price_after_impact && (
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/40">Price After Impact</p>
+                        <p className="font-bold text-[#FFD700]">{selectedTxDetails.transaction?.price_after_impact?.toFixed(2)} FTC</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Timestamp */}
+                <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                  <p className="text-xs text-white/40">Timestamp</p>
+                  <p className="text-white">{new Date(selectedTxDetails.transaction?.timestamp || selectedTxDetails.transaction?.created_at).toLocaleString()}</p>
+                </div>
+                
+                {/* Status */}
+                <div className="bg-[#00F090]/10 p-4 rounded-lg border border-[#00F090]/30 text-center">
+                  <p className="text-[#00F090] font-bold text-lg flex items-center justify-center gap-2">
+                    <Check className="h-5 w-5" />
+                    {selectedTxDetails.transaction?.status || 'CONFIRMED'}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1">{selectedTxDetails.blockchain?.network || 'Solana Mainnet'}</p>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

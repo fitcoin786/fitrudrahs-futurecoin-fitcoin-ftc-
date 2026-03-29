@@ -47,6 +47,18 @@ const AdminPanel = () => {
   const [showEditWallet, setShowEditWallet] = useState(false);
   const [newWalletAddress, setNewWalletAddress] = useState('');
   const [feeHistory, setFeeHistory] = useState([]);
+  
+  // Admin Send FTC State
+  const [showAdminSendModal, setShowAdminSendModal] = useState(false);
+  const [adminSendRecipient, setAdminSendRecipient] = useState('');
+  const [adminSendAmount, setAdminSendAmount] = useState('');
+  const [adminSendNote, setAdminSendNote] = useState('');
+  const [isAdminSending, setIsAdminSending] = useState(false);
+  const [adminTransferHistory, setAdminTransferHistory] = useState([]);
+  
+  // Transaction Details Modal
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [showTxDetailsModal, setShowTxDetailsModal] = useState(false);
 
   // Check if admin is already logged in
   useEffect(() => {
@@ -109,6 +121,78 @@ const AdminPanel = () => {
       }
     } catch (error) {
       console.log('Fee history error:', error);
+    }
+  };
+
+  // Fetch admin transfer history
+  const fetchAdminTransfers = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/transfers`);
+      if (response.ok) {
+        const data = await response.json();
+        setAdminTransferHistory(data.transfers || []);
+      }
+    } catch (error) {
+      console.log('Admin transfers error:', error);
+    }
+  };
+
+  // Admin Send FTC
+  const adminSendFTC = async () => {
+    if (!adminSendRecipient.trim()) {
+      toast.error('Please enter recipient wallet address');
+      return;
+    }
+    
+    const amount = parseFloat(adminSendAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+    
+    setIsAdminSending(true);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/admin/send-ftc`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipient_wallet_address: adminSendRecipient.trim(),
+          amount: amount,
+          note: adminSendNote || 'Admin Transfer'
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`✅ Sent ${amount} FTC to ${data.transaction.recipient}`);
+        setShowAdminSendModal(false);
+        setAdminSendRecipient('');
+        setAdminSendAmount('');
+        setAdminSendNote('');
+        fetchAdminTransfers();
+        fetchAdminWallet();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to send FTC');
+      }
+    } catch (error) {
+      toast.error('Error sending FTC');
+    } finally {
+      setIsAdminSending(false);
+    }
+  };
+
+  // Fetch transaction details
+  const fetchTxDetails = async (txId) => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/global/ledger-details/${txId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setSelectedTransaction(data);
+        setShowTxDetailsModal(true);
+      }
+    } catch (error) {
+      console.log('Error fetching tx details:', error);
     }
   };
 
@@ -562,6 +646,21 @@ const AdminPanel = () => {
                 </div>
               </div>
 
+              {/* Admin Send FTC Button */}
+              <div className="mb-6">
+                <button
+                  onClick={() => { setShowAdminSendModal(true); fetchAdminTransfers(); }}
+                  className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all flex items-center justify-center gap-2 text-lg"
+                  data-testid="admin-send-ftc-btn"
+                >
+                  <span>💸</span>
+                  Send FTC to User
+                </button>
+                <p className="text-xs text-white/40 text-center mt-2">
+                  Send FTC from Admin Wallet to any user (No fee deduction)
+                </p>
+              </div>
+
               {/* Fee Structure */}
               <div className="bg-black/30 p-4 rounded-lg border border-white/10">
                 <h4 className="font-bold mb-3 flex items-center gap-2">
@@ -670,6 +769,168 @@ const AdminPanel = () => {
                     >
                       Save Wallet
                     </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Send FTC Modal */}
+            {showAdminSendModal && (
+              <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setShowAdminSendModal(false)}>
+                <div className="glass-card p-6 max-w-lg w-full border border-[#00F090]/30 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">💸</span>
+                      Admin Send FTC
+                    </h3>
+                    <button onClick={() => setShowAdminSendModal(false)} className="text-white/60 hover:text-white text-xl">✕</button>
+                  </div>
+                  
+                  {/* Admin Wallet Info */}
+                  <div className="bg-[#FFD700]/10 p-3 rounded-lg mb-4 border border-[#FFD700]/30">
+                    <p className="text-sm text-white/60">Sending from Admin Wallet</p>
+                    <p className="font-mono text-[#FFD700] text-sm truncate">{adminWallet.wallet_address}</p>
+                  </div>
+                  
+                  {/* Recipient */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-white/60 mb-2">Recipient Wallet Address</label>
+                    <input
+                      type="text"
+                      value={adminSendRecipient}
+                      onChange={(e) => setAdminSendRecipient(e.target.value)}
+                      placeholder="Enter user's FTC wallet address"
+                      className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white font-mono"
+                      data-testid="admin-send-recipient-input"
+                    />
+                  </div>
+                  
+                  {/* Amount */}
+                  <div className="mb-4">
+                    <label className="block text-sm text-white/60 mb-2">Amount (FTC)</label>
+                    <input
+                      type="number"
+                      value={adminSendAmount}
+                      onChange={(e) => setAdminSendAmount(e.target.value)}
+                      placeholder="Enter amount to send"
+                      min="0"
+                      step="0.0001"
+                      className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white"
+                      data-testid="admin-send-amount-input"
+                    />
+                    <p className="text-xs text-[#00F090] mt-1">* No fee deduction for admin transfers</p>
+                  </div>
+                  
+                  {/* Note */}
+                  <div className="mb-6">
+                    <label className="block text-sm text-white/60 mb-2">Note</label>
+                    <input
+                      type="text"
+                      value={adminSendNote}
+                      onChange={(e) => setAdminSendNote(e.target.value)}
+                      placeholder="e.g., Reward, Refund, Bonus..."
+                      className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white"
+                    />
+                  </div>
+                  
+                  {/* Send Button */}
+                  <button
+                    onClick={adminSendFTC}
+                    disabled={isAdminSending || !adminSendRecipient || !adminSendAmount}
+                    className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 text-lg"
+                    data-testid="admin-confirm-send-btn"
+                  >
+                    {isAdminSending ? 'Sending...' : `Send ${adminSendAmount || 0} FTC`}
+                  </button>
+                  
+                  {/* Admin Transfer History */}
+                  {adminTransferHistory.length > 0 && (
+                    <div className="mt-6 pt-4 border-t border-white/10">
+                      <h4 className="text-sm font-bold text-white/60 mb-3">Admin Transfer History</h4>
+                      <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {adminTransferHistory.slice(0, 10).map((tx, idx) => (
+                          <div 
+                            key={idx} 
+                            className="p-2 bg-black/30 rounded-lg border border-white/5 flex items-center justify-between cursor-pointer hover:bg-black/50"
+                            onClick={() => fetchTxDetails(tx.id)}
+                          >
+                            <div>
+                              <span className="text-xs font-bold px-2 py-0.5 rounded bg-[#00F090]/20 text-[#00F090]">SENT</span>
+                              <p className="text-xs text-white/40 mt-1">To: {tx.recipient_wallet?.slice(0,12)}...</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[#00F090] font-bold">{tx.amount} FTC</p>
+                              <p className="text-xs text-white/30">{new Date(tx.created_at).toLocaleDateString()}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Transaction Details Modal */}
+            {showTxDetailsModal && selectedTransaction && (
+              <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setShowTxDetailsModal(false)}>
+                <div className="glass-card p-6 max-w-lg w-full border border-[#9945FF]/30 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">🔍</span>
+                      Transaction Details
+                    </h3>
+                    <button onClick={() => setShowTxDetailsModal(false)} className="text-white/60 hover:text-white text-xl">✕</button>
+                  </div>
+                  
+                  {/* Transaction Info */}
+                  <div className="space-y-4">
+                    <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                      <p className="text-xs text-white/40">Transaction Hash</p>
+                      <p className="font-mono text-[#00F090] text-sm break-all">{selectedTransaction.transaction?.tx_hash || selectedTransaction.blockchain?.tx_hash}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/40">Block Number</p>
+                        <p className="font-bold text-white">{selectedTransaction.transaction?.block_number || selectedTransaction.blockchain?.block_number}</p>
+                      </div>
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/40">Confirmations</p>
+                        <p className="font-bold text-[#00F090]">{selectedTransaction.transaction?.confirmations || selectedTransaction.blockchain?.confirmations}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                      <p className="text-xs text-white/40">Amount</p>
+                      <p className="text-2xl font-bold text-[#FFD700]">{selectedTransaction.transaction?.total_ftc || selectedTransaction.transaction?.amount} FTC</p>
+                    </div>
+                    
+                    {selectedTransaction.sender_info && (
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/40 mb-2">Sender</p>
+                        <p className="font-bold text-white">{selectedTransaction.sender_info.full_name}</p>
+                        <p className="font-mono text-xs text-[#9945FF]">{selectedTransaction.sender_info.wallet_address}</p>
+                      </div>
+                    )}
+                    
+                    {selectedTransaction.recipient_info && (
+                      <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                        <p className="text-xs text-white/40 mb-2">Recipient</p>
+                        <p className="font-bold text-white">{selectedTransaction.recipient_info.full_name}</p>
+                        <p className="font-mono text-xs text-[#00F090]">{selectedTransaction.recipient_info.wallet_address}</p>
+                      </div>
+                    )}
+                    
+                    <div className="bg-black/40 p-3 rounded-lg border border-white/10">
+                      <p className="text-xs text-white/40">Timestamp</p>
+                      <p className="text-white">{new Date(selectedTransaction.transaction?.timestamp || selectedTransaction.transaction?.created_at).toLocaleString()}</p>
+                    </div>
+                    
+                    <div className="bg-[#00F090]/10 p-3 rounded-lg border border-[#00F090]/30 text-center">
+                      <p className="text-[#00F090] font-bold">✓ {selectedTransaction.transaction?.status || 'CONFIRMED'}</p>
+                      <p className="text-xs text-white/40 mt-1">{selectedTransaction.blockchain?.network || 'Solana Mainnet'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
