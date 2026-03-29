@@ -118,9 +118,155 @@ const FtcMining = () => {
     lastSyncTime: null
   });
   
+  // Boost configuration from server
+  const [boostConfig, setBoostConfig] = useState({
+    base_mining_rate: 0.001,
+    boost_duration: 5,
+    boost_multiplier: 1.5,
+    boost_cooldown: 60,
+    daily_limit: 100
+  });
+  
   // Double-tap state for details
   const [lastTap, setLastTap] = useState({ productId: null, time: 0 });
   const [showProductDetails, setShowProductDetails] = useState(null);
+
+  // Persistent mining sync interval
+  const miningSyncRef = useRef(null);
+
+  // Start persistent mining session on backend
+  const startPersistentMining = async () => {
+    if (!activeSubscription) {
+      toast.error('Please subscribe to a mining plan first');
+      setShowPlanModal(true);
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/mining/start-session`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsMining(true);
+        setBoostConfig(data.boost_config || boostConfig);
+        toast.success('⚡ Mining Started!', {
+          description: 'Mining continues even if you close this page!'
+        });
+        
+        // Start sync loop
+        startMiningSync();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to start mining');
+      }
+    } catch (error) {
+      console.error('Mining start error:', error);
+      toast.error('Failed to start mining session');
+    }
+  };
+
+  // Sync mining progress with backend
+  const syncMiningProgress = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const response = await fetch(`${BACKEND_URL}/api/mining/sync-session`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Update local state from server
+          setFtcMined(prev => prev + data.mined);
+          setFtcBalance(prev => prev + data.mined);
+          setCaloriesBurned(prev => prev + data.mined);
+          
+          // Update boost state
+          setIsBoosted(data.boost_active);
+          setBoostConfig(data.boost_config || boostConfig);
+        } else if (data.message === 'Subscription expired. Mining stopped.') {
+          setIsMining(false);
+          stopMiningSync();
+          toast.error('Subscription expired. Mining stopped.');
+        }
+      }
+    } catch (error) {
+      console.error('Mining sync error:', error);
+    }
+  };
+
+  // Start mining sync loop
+  const startMiningSync = () => {
+    if (miningSyncRef.current) {
+      clearInterval(miningSyncRef.current);
+    }
+    
+    // Sync every 2 seconds
+    miningSyncRef.current = setInterval(syncMiningProgress, 2000);
+  };
+
+  // Stop mining sync
+  const stopMiningSync = () => {
+    if (miningSyncRef.current) {
+      clearInterval(miningSyncRef.current);
+      miningSyncRef.current = null;
+    }
+  };
+
+  // Check for existing mining session on page load
+  const checkMiningSession = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const response = await fetch(`${BACKEND_URL}/api/mining/session`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.has_session) {
+          // Resume mining display
+          setIsMining(true);
+          setFtcMined(data.current_mined);
+          setCaloriesBurned(data.current_mined);
+          setBoostConfig(data.boost_config || boostConfig);
+          setIsBoosted(data.boost_active);
+          
+          if (data.boost_remaining > 0) {
+            setBoostTimeLeft(data.boost_remaining);
+          }
+          
+          // Start sync loop
+          startMiningSync();
+          
+          toast.success('⚡ Mining resumed!', {
+            description: 'Your mining session was running in background'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Check session error:', error);
+    }
+  };
+
+  // Call checkMiningSession when logged in
+  useEffect(() => {
+    if (isLoggedIn && activeSubscription) {
+      checkMiningSession();
+    }
+    
+    return () => {
+      stopMiningSync();
+    };
+  }, [isLoggedIn, activeSubscription]);
 
   // Generate blockchain-style transaction hash
   const generateTxHash = () => {
@@ -1033,80 +1179,66 @@ const FtcMining = () => {
       return;
     }
     
-    // If already mining, activate 5-second BOOST
+    // If already mining, activate boost
     if (isMining) {
       activateBoost();
       return;
     }
     
-    setIsMining(true);
-    toast.success('⚡ Mining Started!', {
-      description: 'Converting your calories to FTC in real-time'
-    });
-    
-    // Start real-time mining simulation
-    const normalSpeed = 2000; // 2 seconds normal
-    runMiningLoop(normalSpeed);
+    // Start persistent mining session
+    await startPersistentMining();
   };
 
-  // Activate 5-second boost
-  const activateBoost = () => {
+  // Activate boost - based on subscription tier
+  const activateBoost = async () => {
     if (isBoosted) {
       toast.info('Boost already active!');
       return;
     }
     
-    setIsBoosted(true);
-    setBoostTimeLeft(5);
-    toast.success('🚀 BOOST ACTIVATED! 5 seconds of 2x speed!');
-    
-    // Clear existing interval and run faster
-    if (miningIntervalRef.current) {
-      clearInterval(miningIntervalRef.current);
-    }
-    runMiningLoop(400); // 5x faster during boost
-    
-    // Boost countdown
-    const boostCountdown = setInterval(() => {
-      setBoostTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(boostCountdown);
-          setIsBoosted(false);
-          // Return to normal speed
-          if (miningIntervalRef.current) {
-            clearInterval(miningIntervalRef.current);
-          }
-          runMiningLoop(2000);
-          toast.info('Boost ended. Tap again for another boost!');
-          return 0;
-        }
-        return prev - 1;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${BACKEND_URL}/api/mining/activate-boost`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-    }, 1000);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          setIsBoosted(true);
+          setBoostTimeLeft(data.boost_duration);
+          toast.success(data.message);
+          
+          // Start boost countdown
+          const boostCountdown = setInterval(() => {
+            setBoostTimeLeft(prev => {
+              if (prev <= 1) {
+                clearInterval(boostCountdown);
+                setIsBoosted(false);
+                toast.info('Boost ended. Tap again for another boost!');
+                return 0;
+              }
+              return prev - 1;
+            });
+          }, 1000);
+        } else {
+          toast.info(data.message);
+        }
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to activate boost');
+      }
+    } catch (error) {
+      console.error('Boost error:', error);
+      toast.error('Failed to activate boost');
+    }
   };
 
-  // Mining loop function - 1 Calorie = 1 FTC (1:1 ratio)
+  // Mining loop function - uses server mining rate
   const runMiningLoop = (speed) => {
-    if (miningIntervalRef.current) {
-      clearInterval(miningIntervalRef.current);
-    }
-    
-    miningIntervalRef.current = setInterval(() => {
-      // Generate same increment for both calories and FTC (1:1 ratio)
-      const increment = isBoosted ? Math.floor(Math.random() * 15) + 10 : Math.floor(Math.random() * 8) + 3;
-      const maxLimit = activeSubscription?.calories || activeSubscription?.ftc_limit || 100;
-      
-      setCaloriesBurned(prev => {
-        const newCalories = prev + increment;
-        return Math.min(newCalories, maxLimit);
-      });
-      
-      // FTC = Calories (1:1 ratio)
-      setFtcMined(prev => {
-        const newFtc = prev + increment;
-        return Math.min(newFtc, maxLimit);
-      });
-    }, speed);
+    // This is now handled by backend sync
+    // Keep for UI animation only
   };
 
   // Cleanup on unmount
@@ -1115,21 +1247,15 @@ const FtcMining = () => {
       if (miningIntervalRef.current) {
         clearInterval(miningIntervalRef.current);
       }
+      stopMiningSync();
     };
   }, []);
 
-  // Stop mining
+  // Stop mining - Note: Mining only stops when subscription expires
   const stopMining = () => {
-    setIsMining(false);
-    setIsBoosted(false);
-    setBoostTimeLeft(0);
-    
-    if (miningIntervalRef.current) {
-      clearInterval(miningIntervalRef.current);
-      miningIntervalRef.current = null;
-    }
-    
-    toast.success(`⏹ Mining Stopped! You have ${ftcMined} FTC to transfer`);
+    // Mining never stops unless subscription expires
+    // This function is just for UI state
+    toast.info('Mining continues in background. Only stops when subscription expires!');
   };
 
   // Transfer mined FTC to total balance
@@ -1477,7 +1603,7 @@ const FtcMining = () => {
             
             {/* Mining Button */}
             <button
-              onClick={isMining ? (isBoosted ? stopMining : startMining) : startMining}
+              onClick={startMining}
               disabled={!isLoggedIn}
               className={`mt-6 px-8 py-4 rounded-full font-black text-lg transition-all ${
                 isMining 
@@ -1490,14 +1616,24 @@ const FtcMining = () => {
             >
               {isMining 
                 ? isBoosted 
-                  ? '⏹ STOP MINING' 
-                  : '🚀 TAP FOR 5s BOOST!'
+                  ? `🚀 BOOST ${boostTimeLeft}s (${boostConfig.boost_multiplier}x)` 
+                  : '🚀 TAP FOR BOOST!'
                 : '⚡ START MINING'
               }
             </button>
             
-            {isMining && !isBoosted && (
-              <p className="text-xs text-white/40 mt-2">Tap again for 5-second speed boost!</p>
+            {isMining && (
+              <div className="mt-2 text-center">
+                <p className="text-xs text-white/40">
+                  {isBoosted 
+                    ? `${boostConfig.boost_multiplier}x speed for ${boostConfig.boost_duration}s!`
+                    : `Tap for ${boostConfig.boost_duration}s boost (${boostConfig.boost_multiplier}x speed)`
+                  }
+                </p>
+                <p className="text-xs text-[#00F090] mt-1">
+                  ⚡ Mining continues even if you close this page!
+                </p>
+              </div>
             )}
             
             {/* Transfer to Balance Button */}

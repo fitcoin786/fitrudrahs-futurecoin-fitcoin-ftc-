@@ -1,0 +1,164 @@
+{
+  "summary": "Tested persistent mining session features. All 16 backend tests PASSED. Fixed bug where boost config was returning tier 0 values instead of correct tier values for 'ultra' plan (missing plan ID mapping). Mining persistence, sync, and boost activation all working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_persistent_mining.py",
+    "/app/test_reports/pytest/persistent_mining_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_persistent_mining.py",
+    "/app/backend/server.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  "test_credentials": {
+    "demo_user": "demo@trader.com / demo123 / Ultra Miner subscription (tier 6)"
+  },
+  "seed_data_creation": "Mining session created for demo user during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Persistent mining fully functional. Mining sessions stored in database and continue even after page refresh/close. Boost config correctly returns tier-based values. Demo user has Ultra Miner (tier 6) with 0.008 base rate, 20s boost duration, 3.0x multiplier, 25s cooldown, 5000 daily limit.",
+  "features_tested": [
+    {
+      "feature": "GET /api/mining/status",
+      "status": "PASS",
+      "details": "Returns user mining info, subscription, boost config with correct tier values"
+    },
+    {
+      "feature": "POST /api/mining/start-session",
+      "status": "PASS",
+      "details": "Creates persistent mining session in database, returns existing session if already active"
+    },
+    {
+      "feature": "GET /api/mining/session",
+      "status": "PASS",
+      "details": "Returns current session info with elapsed time, mined amount, boost status"
+    },
+    {
+      "feature": "POST /api/mining/sync-session",
+      "status": "PASS",
+      "details": "Syncs mining progress, updates FTC balance in mining wallet"
+    },
+    {
+      "feature": "POST /api/mining/activate-boost",
+      "status": "PASS",
+      "details": "Activates speed boost based on subscription tier, respects cooldown"
+    },
+    {
+      "feature": "Mining persistence across page refresh",
+      "status": "PASS",
+      "details": "Mining session continues after page refresh, shows 'Mining resumed!' toast"
+    },
+    {
+      "feature": "Boost config per subscription tier",
+      "status": "PASS",
+      "details": "Ultra tier (6) correctly returns: 0.008 rate, 20s duration, 3.0x multiplier, 25s cooldown, 5000 daily limit"
+    },
+    {
+      "feature": "Mining without subscription",
+      "status": "PASS",
+      "details": "Returns 403 error when trying to start mining without active subscription"
+    }
+  ],
+  "bug_fixed": {
+    "description": "Boost config was returning tier 0 values for 'ultra' plan because PLAN_TIERS mapping only had 'ultra_2026' key",
+    "root_cause": "get_subscription_boost_config() function had PLAN_TIERS mapping with only '_2026' suffixed plan IDs, but subscription stored plan_id as 'ultra' without suffix",
+    "fix_applied": "Added non-suffixed plan IDs to PLAN_TIERS mapping (e.g., 'ultra': 6, 'mega': 7, etc.)",
+    "file_modified": "/app/backend/server.py",
+    "verification": "API now returns correct tier 6 config for 'ultra' plan: base_mining_rate=0.008, boost_duration=20, boost_multiplier=3.0"
+  },
+  "api_endpoints_verified": [
+    {
+      "endpoint": "GET /api/mining/status",
+      "status": 200,
+      "response_structure": {
+        "ftc_balance": "number",
+        "calories_burned": "number",
+        "ftc_mined_today": "number",
+        "is_mining": "boolean",
+        "mining_session": "object|null",
+        "active_subscription": "object|null",
+        "boost_config": "object"
+      }
+    },
+    {
+      "endpoint": "POST /api/mining/start-session",
+      "status": 200,
+      "response_structure": {
+        "success": true,
+        "message": "string",
+        "session": "object",
+        "boost_config": "object"
+      }
+    },
+    {
+      "endpoint": "GET /api/mining/session",
+      "status": 200,
+      "response_structure": {
+        "has_session": "boolean",
+        "session": "object",
+        "elapsed_seconds": "number",
+        "current_mined": "number",
+        "mining_rate": "number",
+        "boost_active": "boolean",
+        "boost_remaining": "number",
+        "boost_config": "object"
+      }
+    },
+    {
+      "endpoint": "POST /api/mining/sync-session",
+      "status": 200,
+      "response_structure": {
+        "success": true,
+        "mined": "number",
+        "total_mined": "number",
+        "mining_rate": "number",
+        "boost_active": "boolean",
+        "boost_config": "object"
+      }
+    },
+    {
+      "endpoint": "POST /api/mining/activate-boost",
+      "status": 200,
+      "response_structure": {
+        "success": true,
+        "message": "string",
+        "boost_multiplier": "number",
+        "boost_duration": "number",
+        "boost_config": "object"
+      }
+    }
+  ],
+  "ui_verification": {
+    "mining_page": {
+      "mining_active_banner": "Shows 'MINING ACTIVE' when session is running",
+      "subscription_display": "Shows 'Ultra Miner' with 'ACTIVE' badge",
+      "daily_limit": "Shows '5000 FTC' (correct for tier 6)",
+      "boost_button": "Shows 'TAP FOR BOOST!' when mining",
+      "boost_info": "Shows '20s boost (3.0x speed)' for Ultra tier",
+      "persistence_message": "Shows 'Mining continues even if you close this page!'",
+      "mining_resumed_toast": "Shows 'Mining resumed!' toast on page reload"
+    }
+  },
+  "mocked_apis": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  },
+  "boost_config_tiers": {
+    "tier_0_free_trial": {"base_mining_rate": 0.001, "boost_duration": 5, "boost_multiplier": 1.5, "boost_cooldown": 60, "daily_limit": 100},
+    "tier_6_ultra": {"base_mining_rate": 0.008, "boost_duration": 20, "boost_multiplier": 3.0, "boost_cooldown": 25, "daily_limit": 5000},
+    "tier_12_godmode": {"base_mining_rate": 0.030, "boost_duration": 120, "boost_multiplier": 10.0, "boost_cooldown": 0, "daily_limit": 999999}
+  }
+}

@@ -2451,14 +2451,343 @@ async def get_mining_status(user_id: str = Depends(get_current_user)):
         {"_id": 0}
     )
     
+    # Get active mining session and calculate mined FTC
+    mining_session = await db.mining_sessions.find_one(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    session_mined = 0
+    session_calories = 0
+    if mining_session and active_sub:
+        # Calculate FTC mined since session started
+        started_at = datetime.fromisoformat(mining_session['started_at'].replace('Z', '+00:00'))
+        elapsed_seconds = (datetime.now(timezone.utc) - started_at).total_seconds()
+        
+        # Get boost settings based on subscription tier
+        boost_config = get_subscription_boost_config(active_sub.get('plan_id'))
+        mining_rate = boost_config['base_mining_rate']  # FTC per second
+        
+        # Apply any active boost
+        if mining_session.get('boost_active'):
+            boost_started = datetime.fromisoformat(mining_session['boost_started_at'].replace('Z', '+00:00'))
+            boost_elapsed = (datetime.now(timezone.utc) - boost_started).total_seconds()
+            if boost_elapsed < boost_config['boost_duration']:
+                mining_rate *= boost_config['boost_multiplier']
+        
+        session_mined = elapsed_seconds * mining_rate
+        session_calories = session_mined  # 1 calorie = 1 FTC
+    
     return {
-        "ftc_balance": mining_wallet.get("ftc_balance", 0),
-        "calories_burned": mining_wallet.get("calories_burned", 0),
-        "ftc_mined_today": mining_wallet.get("ftc_mined_today", 0),
-        "is_mining": mining_wallet.get("is_mining", False),
+        "ftc_balance": mining_wallet.get("ftc_balance", 0) + session_mined,
+        "calories_burned": mining_wallet.get("calories_burned", 0) + session_calories,
+        "ftc_mined_today": mining_wallet.get("ftc_mined_today", 0) + session_mined,
+        "is_mining": mining_session is not None and mining_session.get('is_active', False),
+        "mining_session": mining_session,
+        "session_mined": round(session_mined, 4),
         "active_subscription": active_sub,
         "pending_request": pending_request,
-        "subscription_tools": get_subscription_tools(active_sub.get("plan_id") if active_sub else None)
+        "subscription_tools": get_subscription_tools(active_sub.get("plan_id") if active_sub else None),
+        "boost_config": get_subscription_boost_config(active_sub.get("plan_id") if active_sub else None)
+    }
+
+def get_subscription_boost_config(plan_id: str):
+    """Get boost configuration based on subscription tier"""
+    # Tier mapping - supports both legacy and 2026 plan IDs
+    PLAN_TIERS = {
+        'free_trial': 0,
+        'starter_2026': 1, 'starter': 1,
+        'basic_2026': 2, 'basic': 2,
+        'standard_2026': 3, 'standard': 3,
+        'pro_2026': 4, 'pro': 4,
+        'elite_2026': 5, 'elite': 5,
+        'ultra_2026': 6, 'ultra': 6,
+        'mega_2026': 7, 'mega': 7,
+        'supreme_2026': 8, 'supreme': 8,
+        'titan_2026': 9, 'titan': 9,
+        'legend_2026': 10, 'legend': 10,
+        'immortal_2026': 11, 'immortal': 11,
+        'godmode_2026': 12, 'godmode': 12
+    }
+    
+    tier = PLAN_TIERS.get(plan_id, 0)
+    
+    # Boost configuration per tier
+    # Higher tier = faster mining, longer boost, higher multiplier
+    BOOST_CONFIGS = {
+        0: {'base_mining_rate': 0.001, 'boost_duration': 5, 'boost_multiplier': 1.5, 'boost_cooldown': 60, 'daily_limit': 100},
+        1: {'base_mining_rate': 0.002, 'boost_duration': 8, 'boost_multiplier': 1.8, 'boost_cooldown': 50, 'daily_limit': 500},
+        2: {'base_mining_rate': 0.003, 'boost_duration': 10, 'boost_multiplier': 2.0, 'boost_cooldown': 45, 'daily_limit': 1000},
+        3: {'base_mining_rate': 0.004, 'boost_duration': 12, 'boost_multiplier': 2.2, 'boost_cooldown': 40, 'daily_limit': 2000},
+        4: {'base_mining_rate': 0.005, 'boost_duration': 15, 'boost_multiplier': 2.5, 'boost_cooldown': 35, 'daily_limit': 3000},
+        5: {'base_mining_rate': 0.006, 'boost_duration': 18, 'boost_multiplier': 2.8, 'boost_cooldown': 30, 'daily_limit': 4000},
+        6: {'base_mining_rate': 0.008, 'boost_duration': 20, 'boost_multiplier': 3.0, 'boost_cooldown': 25, 'daily_limit': 5000},
+        7: {'base_mining_rate': 0.010, 'boost_duration': 25, 'boost_multiplier': 3.5, 'boost_cooldown': 20, 'daily_limit': 7500},
+        8: {'base_mining_rate': 0.012, 'boost_duration': 30, 'boost_multiplier': 4.0, 'boost_cooldown': 15, 'daily_limit': 10000},
+        9: {'base_mining_rate': 0.015, 'boost_duration': 35, 'boost_multiplier': 4.5, 'boost_cooldown': 10, 'daily_limit': 15000},
+        10: {'base_mining_rate': 0.020, 'boost_duration': 45, 'boost_multiplier': 5.0, 'boost_cooldown': 5, 'daily_limit': 999999},  # Unlimited
+        11: {'base_mining_rate': 0.025, 'boost_duration': 60, 'boost_multiplier': 6.0, 'boost_cooldown': 3, 'daily_limit': 999999},
+        12: {'base_mining_rate': 0.030, 'boost_duration': 120, 'boost_multiplier': 10.0, 'boost_cooldown': 0, 'daily_limit': 999999},  # GOD MODE
+    }
+    
+    config = BOOST_CONFIGS.get(tier, BOOST_CONFIGS[0])
+    config['tier'] = tier
+    config['plan_id'] = plan_id
+    return config
+
+# ========== PERSISTENT MINING SESSION ENDPOINTS ==========
+
+@api_router.post("/mining/start-session")
+async def start_mining_session(user_id: str = Depends(get_current_user)):
+    """Start a persistent mining session - runs until subscription expires"""
+    # Check if user has active subscription
+    active_sub = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "active"},
+        {"_id": 0}
+    )
+    
+    if not active_sub:
+        raise HTTPException(status_code=403, detail="No active subscription. Subscribe to start mining.")
+    
+    # Check if session already exists
+    existing_session = await db.mining_sessions.find_one(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if existing_session:
+        # Return existing session (mining never stops)
+        return {
+            "success": True,
+            "message": "Mining session already active",
+            "session": existing_session,
+            "boost_config": get_subscription_boost_config(active_sub.get('plan_id'))
+        }
+    
+    # Create new mining session
+    session_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc).isoformat()
+    
+    session = {
+        "id": session_id,
+        "user_id": user_id,
+        "subscription_id": active_sub.get('id'),
+        "plan_id": active_sub.get('plan_id'),
+        "is_active": True,
+        "started_at": now,
+        "last_sync_at": now,
+        "total_mined": 0,
+        "total_calories": 0,
+        "boost_active": False,
+        "boost_started_at": None,
+        "boost_count_today": 0
+    }
+    
+    await db.mining_sessions.insert_one(session)
+    
+    # Remove _id if added
+    session_response = {k: v for k, v in session.items() if k != '_id'}
+    
+    return {
+        "success": True,
+        "message": "Mining session started! Mining will continue until subscription expires.",
+        "session": session_response,
+        "boost_config": get_subscription_boost_config(active_sub.get('plan_id'))
+    }
+
+@api_router.post("/mining/sync-session")
+async def sync_mining_session(user_id: str = Depends(get_current_user)):
+    """Sync mining progress - call periodically to update mined FTC"""
+    # Get active session
+    session = await db.mining_sessions.find_one(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if not session:
+        return {"success": False, "message": "No active mining session", "mined": 0}
+    
+    # Check subscription is still active
+    active_sub = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "active"},
+        {"_id": 0}
+    )
+    
+    if not active_sub:
+        # Subscription expired - stop mining
+        await db.mining_sessions.update_one(
+            {"id": session['id']},
+            {"$set": {"is_active": False, "ended_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        return {"success": False, "message": "Subscription expired. Mining stopped.", "mined": 0}
+    
+    # Calculate mined FTC since last sync
+    last_sync = datetime.fromisoformat(session['last_sync_at'].replace('Z', '+00:00'))
+    now = datetime.now(timezone.utc)
+    elapsed_seconds = (now - last_sync).total_seconds()
+    
+    boost_config = get_subscription_boost_config(active_sub.get('plan_id'))
+    mining_rate = boost_config['base_mining_rate']
+    
+    # Check if boost is active
+    boost_active = session.get('boost_active', False)
+    if boost_active and session.get('boost_started_at'):
+        boost_started = datetime.fromisoformat(session['boost_started_at'].replace('Z', '+00:00'))
+        boost_elapsed = (now - boost_started).total_seconds()
+        if boost_elapsed < boost_config['boost_duration']:
+            mining_rate *= boost_config['boost_multiplier']
+        else:
+            boost_active = False
+    
+    mined = elapsed_seconds * mining_rate
+    
+    # Update session
+    await db.mining_sessions.update_one(
+        {"id": session['id']},
+        {
+            "$set": {
+                "last_sync_at": now.isoformat(),
+                "boost_active": boost_active
+            },
+            "$inc": {
+                "total_mined": mined,
+                "total_calories": mined
+            }
+        }
+    )
+    
+    # Update mining wallet
+    await db.mining_wallets.update_one(
+        {"user_id": user_id},
+        {
+            "$inc": {
+                "ftc_balance": mined,
+                "ftc_mined_today": mined,
+                "calories_burned": mined
+            },
+            "$set": {
+                "is_mining": True,
+                "last_mining_date": now.isoformat()
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "success": True,
+        "mined": round(mined, 4),
+        "total_mined": round(session.get('total_mined', 0) + mined, 4),
+        "mining_rate": mining_rate,
+        "boost_active": boost_active,
+        "boost_config": boost_config
+    }
+
+@api_router.post("/mining/activate-boost")
+async def activate_mining_boost(user_id: str = Depends(get_current_user)):
+    """Activate mining speed boost based on subscription tier"""
+    # Get active session
+    session = await db.mining_sessions.find_one(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    if not session:
+        raise HTTPException(status_code=400, detail="No active mining session. Start mining first.")
+    
+    # Get subscription
+    active_sub = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "active"},
+        {"_id": 0}
+    )
+    
+    if not active_sub:
+        raise HTTPException(status_code=403, detail="No active subscription")
+    
+    boost_config = get_subscription_boost_config(active_sub.get('plan_id'))
+    
+    # Check if boost is on cooldown
+    if session.get('boost_started_at'):
+        last_boost = datetime.fromisoformat(session['boost_started_at'].replace('Z', '+00:00'))
+        cooldown_elapsed = (datetime.now(timezone.utc) - last_boost).total_seconds()
+        cooldown_needed = boost_config['boost_duration'] + boost_config['boost_cooldown']
+        
+        if cooldown_elapsed < cooldown_needed:
+            remaining = cooldown_needed - cooldown_elapsed
+            return {
+                "success": False,
+                "message": f"Boost on cooldown. Available in {int(remaining)} seconds.",
+                "cooldown_remaining": int(remaining)
+            }
+    
+    # Activate boost
+    now = datetime.now(timezone.utc).isoformat()
+    await db.mining_sessions.update_one(
+        {"id": session['id']},
+        {
+            "$set": {
+                "boost_active": True,
+                "boost_started_at": now
+            },
+            "$inc": {"boost_count_today": 1}
+        }
+    )
+    
+    return {
+        "success": True,
+        "message": f"🚀 Boost activated! {boost_config['boost_multiplier']}x speed for {boost_config['boost_duration']} seconds!",
+        "boost_multiplier": boost_config['boost_multiplier'],
+        "boost_duration": boost_config['boost_duration'],
+        "boost_config": boost_config
+    }
+
+@api_router.get("/mining/session")
+async def get_mining_session(user_id: str = Depends(get_current_user)):
+    """Get current mining session status"""
+    session = await db.mining_sessions.find_one(
+        {"user_id": user_id, "is_active": True},
+        {"_id": 0}
+    )
+    
+    active_sub = await db.mining_subscriptions.find_one(
+        {"user_id": user_id, "status": "active"},
+        {"_id": 0}
+    )
+    
+    if not session:
+        return {
+            "has_session": False,
+            "message": "No active mining session",
+            "can_start": active_sub is not None
+        }
+    
+    # Calculate current mined amount
+    started_at = datetime.fromisoformat(session['started_at'].replace('Z', '+00:00'))
+    elapsed_seconds = (datetime.now(timezone.utc) - started_at).total_seconds()
+    
+    boost_config = get_subscription_boost_config(active_sub.get('plan_id') if active_sub else None)
+    mining_rate = boost_config['base_mining_rate']
+    
+    # Check boost
+    boost_remaining = 0
+    if session.get('boost_active') and session.get('boost_started_at'):
+        boost_started = datetime.fromisoformat(session['boost_started_at'].replace('Z', '+00:00'))
+        boost_elapsed = (datetime.now(timezone.utc) - boost_started).total_seconds()
+        if boost_elapsed < boost_config['boost_duration']:
+            mining_rate *= boost_config['boost_multiplier']
+            boost_remaining = boost_config['boost_duration'] - boost_elapsed
+    
+    current_mined = elapsed_seconds * mining_rate
+    
+    return {
+        "has_session": True,
+        "session": session,
+        "elapsed_seconds": elapsed_seconds,
+        "current_mined": round(current_mined, 4),
+        "mining_rate": mining_rate,
+        "boost_active": session.get('boost_active', False),
+        "boost_remaining": int(boost_remaining),
+        "boost_config": boost_config,
+        "subscription": active_sub
     }
 
 def get_subscription_tools(plan_id: str):
