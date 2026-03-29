@@ -422,6 +422,17 @@ security = HTTPBearer()
 app = FastAPI(title="Future Trade API")
 api_router = APIRouter(prefix="/api")
 
+# Health check endpoint (required for production deployment)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment verification"""
+    return {"status": "healthy", "service": "future-trade-api"}
+
+@api_router.get("/health")
+async def api_health_check():
+    """API health check"""
+    return {"status": "healthy", "service": "future-trade-api", "version": "2.0"}
+
 # ============ MODELS ============
 
 class UserRegister(BaseModel):
