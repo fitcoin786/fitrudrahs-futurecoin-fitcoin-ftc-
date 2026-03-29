@@ -14,61 +14,50 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 
 ### 2. FTC Mining System ✅
 - **2026 EXCLUSIVE SUBSCRIPTION PLANS** - 12 plans from $50 to $5000 ✅
-- Payment Methods: USDT, SOL, FTC
-- Admin Wallet: `A324Xq5WFkcq7Baa4poo42szFyutZCqq6MWvLHvbHVNG`
-- **AUTO-GENERATED FTC WALLET ADDRESS** ✅
-- **HEADER NAVIGATION** ✅ (NEW - March 29)
-  - Mining, Plans, Wallet, Ledger, Admin buttons
-  - User Profile button (shows name and initial)
-  - FTC Balance display
+- **PERSISTENT MINING** ✅ (NEW - March 29, 2026)
+  - Mining NEVER stops - continues even if user closes page, refreshes, changes section
+  - Mining sessions stored in database
+  - Only stops when subscription expires
+  - Frontend syncs with backend every 2 seconds
+- **SUBSCRIPTION-BASED BOOST** ✅ (NEW - March 29, 2026)
+  - 13 tiers (0-12) with different boost configurations:
+    - Tier 0 (Free): 0.001 rate, 5s boost, 1.5x multiplier
+    - Tier 6 (Ultra): 0.008 rate, 20s boost, 3.0x multiplier
+    - Tier 12 (GOD MODE): 0.030 rate, 120s boost, 10.0x multiplier
 
 ### 3. Admin Control Panel ✅
 **Credentials**: FITRUDRAH / 786786 / 0000
-- Approve/Reject subscriptions and upgrades
-- View TX hashes for verification
-- **ADMIN FEE COLLECTION WALLET** ✅
-  - Wallet Address: `ADMIN_FTC_8x7K9mNpQ2rT5wYz3aB6cD4eF1gH0iJ`
-  - **ADMIN SEND FTC** ✅ (NEW - March 29) - Send FTC to any user (no fee)
-  - Shows total fees collected and transaction count
-  - Admin transfer history display
+- **ADMIN SEND FTC** ✅ - Send FTC to any user from admin wallet (no fee)
+- **FEE COLLECTION WALLET** ✅ - Collects all transaction fees
 
-### 4. Transaction Fee System ✅
-**Price Band Based Fees:**
-- 1-100 FTC: 0.01%
-- 101-1,000 FTC: 0.05%
-- Up to 1B+ FTC: 15%
+### 4. Transaction System ✅
+- **User→Admin**: Fees from all trades
+- **User→User**: Send FTC with fee (0.01%-15% based on amount)
+- **Admin→User**: Send FTC (no fee)
+- **Global Blockchain Ledger**: All transactions visible
 
-### 5. User-to-User Send FTC ✅
-- Send FTC via recipient's wallet address
-- Real-time fee calculation
-- Transfer history (sent/received)
+### 5. Header Navigation ✅
+- Mining | Plans | Wallet | Ledger | Admin buttons
+- User Profile with name and balance
 
-### 6. Global Blockchain Ledger ✅ (ENHANCED - March 29)
-- **ALL transactions from ALL users** visible globally
-- **Transaction Types**: BUY, SELL, SEND, ADMIN_SEND
-- **Wallet Addresses**: Shows sender/receiver for transfers
-- **Fee Display**: Shows fee amount on each transaction
-- **Double-tap for Details** ✅ - Full transaction details modal
-  - TX Hash, Block Number, Confirmations
-  - Sender/Receiver info with wallet addresses
-  - Price info, timestamp
-  - Network: Solana Mainnet
-- **3-second Real-time Polling**
-- Stats: volume_24h, buy_count, sell_count, send_count, admin_send_count
+## Mining APIs (NEW - March 29)
+- `POST /api/mining/start-session` - Start persistent mining
+- `POST /api/mining/sync-session` - Sync mining progress
+- `POST /api/mining/activate-boost` - Activate speed boost
+- `GET /api/mining/session` - Get current session status
 
-## APIs
-- `POST /api/admin/send-ftc` - Admin sends FTC to user (NEW)
-- `GET /api/admin/transfers` - Admin transfer history (NEW)
-- `GET /api/global/ledger-details/{tx_id}` - Transaction details (NEW)
-- `GET /api/nutrition/global-ledger` - Global ledger with enhanced stats
+## Boost Config Per Tier
+| Tier | Plan | Mining Rate | Boost Duration | Multiplier | Cooldown | Daily Limit |
+|------|------|-------------|----------------|------------|----------|-------------|
+| 0 | Free | 0.001/s | 5s | 1.5x | 60s | 100 FTC |
+| 6 | Ultra | 0.008/s | 20s | 3.0x | 25s | 5000 FTC |
+| 12 | GOD | 0.030/s | 120s | 10.0x | 0s | Unlimited |
 
 ## Tech Stack
-- Frontend: React, Tailwind CSS, Framer Motion, Recharts
+- Frontend: React, Tailwind CSS, Framer Motion
 - Backend: FastAPI, MongoDB
-- External APIs: CoinGecko, Resend (Email OTPs)
+- External: CoinGecko, Resend
 
-## Upcoming Tasks (P1-P3)
-- **P1: WebSockets** - Replace polling with real-time push
-- **P3: Backend Refactoring** - Split server.py (3300+ lines)
-- **P3: Frontend Refactoring** - Extract FtcMining.js subcomponents
-- **P3: Leaderboard UI** - Display top FTC traders globally
+## Upcoming Tasks
+- **P1**: WebSockets (replace polling)
+- **P3**: Code refactoring
