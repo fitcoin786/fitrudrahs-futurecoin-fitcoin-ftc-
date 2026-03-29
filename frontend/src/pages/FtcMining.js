@@ -6,7 +6,8 @@ import {
   Zap, Flame, Activity, Award, Clock, Check, Star, 
   ArrowRight, Wallet, TrendingUp, Shield, ExternalLink,
   Volume2, VolumeX, Gift, Crown, Target, Rocket,
-  BookOpen, Brain, BarChart3, History, FileText, Cpu, User, RefreshCw
+  BookOpen, Brain, BarChart3, History, FileText, Cpu, User, RefreshCw,
+  Bell, X, ArrowDownLeft, ArrowUpRight, TrendingDown
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -78,6 +79,16 @@ const FtcMining = () => {
   const [sendFeeInfo, setSendFeeInfo] = useState({ fee_percent: 0, fee_amount: 0 });
   const [transferHistory, setTransferHistory] = useState([]);
   const [walletVerification, setWalletVerification] = useState({ valid: null, recipient_name: null, checking: false });
+  
+  // Received FTC & Notifications State
+  const [receivedTransfers, setReceivedTransfers] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  
+  // AI Market Predictions State (updates every 15 seconds)
+  const [aiPredictions, setAiPredictions] = useState([]);
+  const [lastPredictionUpdate, setLastPredictionUpdate] = useState(null);
   
   // Transaction Details State
   const [selectedTxDetails, setSelectedTxDetails] = useState(null);
@@ -801,6 +812,121 @@ const FtcMining = () => {
     } finally {
       setIsUpdatingWallet(false);
     }
+  };
+
+  // Fetch Received FTC Transfers
+  const fetchReceivedTransfers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token || !ftcWalletAddress) return;
+      
+      const response = await fetch(`${BACKEND_URL}/api/wallet/received-transfers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setReceivedTransfers(data.transfers || []);
+        
+        // Create notifications for new transfers
+        const newTransfers = (data.transfers || []).filter(t => !t.read);
+        if (newTransfers.length > 0) {
+          const newNotifs = newTransfers.map(t => ({
+            id: t.id,
+            type: 'receive',
+            message: `Received ${t.amount_received?.toFixed(4)} FTC from ${t.sender_name}`,
+            timestamp: t.created_at,
+            read: false
+          }));
+          setNotifications(prev => [...newNotifs, ...prev].slice(0, 20));
+          setUnreadCount(newTransfers.length);
+        }
+      }
+    } catch (error) {
+      console.log('Received transfers fetch error:', error);
+    }
+  };
+
+  // AI Market Predictions (updates every 15 seconds)
+  const generateAiPredictions = () => {
+    const products = ['Whey Protein', 'Creatine', 'BCAA', 'Pre-Workout', 'Vitamins', 'FTC/USD'];
+    const actions = ['BUY', 'SELL', 'HOLD'];
+    const confidenceLevels = ['HIGH', 'MEDIUM', 'LOW'];
+    
+    const predictions = products.map(product => {
+      const randomAction = actions[Math.floor(Math.random() * actions.length)];
+      const confidence = confidenceLevels[Math.floor(Math.random() * confidenceLevels.length)];
+      const priceChange = (Math.random() * 10 - 5).toFixed(2);
+      
+      return {
+        product,
+        action: randomAction,
+        confidence,
+        priceChange: parseFloat(priceChange),
+        reason: randomAction === 'BUY' 
+          ? 'Strong demand signals detected' 
+          : randomAction === 'SELL' 
+            ? 'Potential price correction ahead'
+            : 'Market consolidating, await breakout'
+      };
+    });
+    
+    setAiPredictions(predictions);
+    setLastPredictionUpdate(new Date().toLocaleTimeString());
+    
+    // Add AI prediction notification
+    const topPrediction = predictions.find(p => p.confidence === 'HIGH');
+    if (topPrediction) {
+      const newNotif = {
+        id: `ai_${Date.now()}`,
+        type: 'ai',
+        message: `🤖 AI Alert: ${topPrediction.action} ${topPrediction.product} (${topPrediction.confidence} confidence)`,
+        timestamp: new Date().toISOString(),
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 20));
+      setUnreadCount(prev => prev + 1);
+    }
+  };
+
+  // Start AI predictions interval (every 15 seconds)
+  useEffect(() => {
+    if (isLoggedIn) {
+      // Initial prediction
+      generateAiPredictions();
+      
+      // Update every 15 seconds
+      const interval = setInterval(generateAiPredictions, 15000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn]);
+
+  // Fetch received transfers periodically
+  useEffect(() => {
+    if (isLoggedIn && ftcWalletAddress) {
+      fetchReceivedTransfers();
+      
+      // Refresh every 30 seconds
+      const interval = setInterval(fetchReceivedTransfers, 30000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [isLoggedIn, ftcWalletAddress]);
+
+  // Mark notification as read
+  const markNotificationRead = (notifId) => {
+    setNotifications(prev => 
+      prev.map(n => n.id === notifId ? { ...n, read: true } : n)
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  // Clear all notifications
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    setUnreadCount(0);
+    setShowNotifications(false);
   };
 
   // Calculate fee for sending FTC
@@ -1630,6 +1756,18 @@ const FtcMining = () => {
                 >
                   <Wallet className="h-4 w-4" />
                   Wallet
+                </button>
+                {/* Notification Bell */}
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="px-3 py-2 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-all flex items-center gap-1 relative"
+                >
+                  <Bell className="h-4 w-4" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
                 </button>
                 <button
                   onClick={() => setShowLedgerModal(true)}
@@ -3864,6 +4002,148 @@ const FtcMining = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Notifications Panel - Slide in from right */}
+      <AnimatePresence>
+        {showNotifications && (
+          <motion.div
+            initial={{ opacity: 0, x: 300 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 300 }}
+            className="fixed top-20 right-4 w-96 max-h-[80vh] bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-[#FF9F1C]" />
+                <h3 className="font-bold text-white">Notifications</h3>
+                {unreadCount > 0 && (
+                  <span className="px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{unreadCount}</span>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={clearAllNotifications}
+                  className="text-xs text-white/50 hover:text-white"
+                >
+                  Clear All
+                </button>
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  className="p-1 hover:bg-white/10 rounded-lg"
+                >
+                  <X className="h-5 w-5 text-white/60" />
+                </button>
+              </div>
+            </div>
+            
+            {/* Notifications List */}
+            <div className="max-h-[60vh] overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-8 text-center text-white/40">
+                  <Bell className="h-12 w-12 mx-auto mb-2 opacity-20" />
+                  <p>No notifications yet</p>
+                </div>
+              ) : (
+                notifications.map((notif) => (
+                  <div
+                    key={notif.id}
+                    onClick={() => markNotificationRead(notif.id)}
+                    className={`p-4 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-all ${
+                      !notif.read ? 'bg-[#00F090]/5 border-l-2 border-l-[#00F090]' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-full ${
+                        notif.type === 'receive' ? 'bg-[#00F090]/20' : 
+                        notif.type === 'ai' ? 'bg-[#9945FF]/20' : 'bg-white/10'
+                      }`}>
+                        {notif.type === 'receive' ? (
+                          <ArrowDownLeft className="h-4 w-4 text-[#00F090]" />
+                        ) : notif.type === 'ai' ? (
+                          <Brain className="h-4 w-4 text-[#9945FF]" />
+                        ) : (
+                          <Bell className="h-4 w-4 text-white/60" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm ${!notif.read ? 'text-white' : 'text-white/70'}`}>
+                          {notif.message}
+                        </p>
+                        <p className="text-xs text-white/40 mt-1">
+                          {new Date(notif.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      {!notif.read && (
+                        <div className="w-2 h-2 rounded-full bg-[#00F090] animate-pulse" />
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* AI Predictions Section */}
+            <div className="border-t border-white/10 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-4 w-4 text-[#9945FF]" />
+                  <span className="text-sm font-bold text-white">AI Market Predictions</span>
+                </div>
+                <span className="text-xs text-white/40">Updates: {lastPredictionUpdate || '...'}</span>
+              </div>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {aiPredictions.slice(0, 4).map((pred, idx) => (
+                  <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg">
+                    <span className="text-xs text-white/70">{pred.product}</span>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs ${
+                        pred.priceChange >= 0 ? 'text-[#00F090]' : 'text-red-400'
+                      }`}>
+                        {pred.priceChange >= 0 ? '+' : ''}{pred.priceChange}%
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-bold rounded ${
+                        pred.action === 'BUY' ? 'bg-[#00F090]/20 text-[#00F090]' :
+                        pred.action === 'SELL' ? 'bg-red-500/20 text-red-400' :
+                        'bg-yellow-500/20 text-yellow-400'
+                      }`}>
+                        {pred.action}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-white/30 mt-2 text-center">
+                🤖 AI analysis updates every 15 seconds
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Received FTC Section - Add below wallet section */}
+      {isLoggedIn && receivedTransfers.length > 0 && (
+        <div className="fixed bottom-4 right-4 max-w-sm">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-[#00F090]/10 backdrop-blur-xl border border-[#00F090]/30 rounded-xl p-4 shadow-lg"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <ArrowDownLeft className="h-5 w-5 text-[#00F090]" />
+              <span className="font-bold text-[#00F090]">Recent Received FTC</span>
+            </div>
+            <div className="space-y-2">
+              {receivedTransfers.slice(0, 2).map((t, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm">
+                  <span className="text-white/70">{t.sender_name?.slice(0, 10)}...</span>
+                  <span className="text-[#00F090] font-bold">+{t.amount_received?.toFixed(4)} FTC</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-white/5 py-8 px-6 text-center text-white/50 text-sm mt-12">

@@ -3384,6 +3384,34 @@ async def get_ftc_transfers(user_id: str = Depends(get_current_user)):
         'total_fees_paid': sum(t.get('fee_amount', 0) for t in sent)
     }
 
+@api_router.get("/wallet/received-transfers")
+async def get_received_transfers(user_id: str = Depends(get_current_user)):
+    """Get only received FTC transfers for notifications"""
+    
+    # Get user's wallet address
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "ftc_wallet_address": 1})
+    if not user or not user.get('ftc_wallet_address'):
+        return {'transfers': []}
+    
+    wallet_address = user.get('ftc_wallet_address')
+    
+    # Get received transfers
+    received = await db.ftc_transfers.find(
+        {"recipient_wallet": wallet_address},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(20).to_list(20)
+    
+    # Format for frontend
+    for t in received:
+        t['type'] = 'RECEIVED'
+        t['read'] = t.get('read', False)
+    
+    return {
+        'transfers': received,
+        'total': len(received),
+        'wallet_address': wallet_address
+    }
+
 @api_router.get("/fee-calculator")
 async def calculate_fee(amount: float):
     """Calculate fee for a given amount"""
