@@ -20,10 +20,11 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
   - Only stops when subscription expires
   - Frontend syncs with backend every 2 seconds
 - **SUBSCRIPTION-BASED BOOST** ✅ (March 29, 2026)
-  - 13 tiers (0-12) with different boost configurations:
-    - Tier 0 (Free): 0.001 rate, 5s boost, 1.5x multiplier
-    - Tier 6 (Ultra): 0.008 rate, 20s boost, 3.0x multiplier
-    - Tier 12 (GOD MODE): 0.030 rate, 120s boost, 10.0x multiplier
+  - **UNIFORM BOOST FOR ALL PLANS**: 5 seconds, 2x multiplier, 10s cooldown
+  - Mining rate and daily limit still vary by tier
+  - Tier 0 (Free): 0.001/s rate, 100 FTC daily limit
+  - Tier 6 (Ultra): 0.008/s rate, 5000 FTC daily limit
+  - Tier 12 (GOD MODE): 0.030/s rate, Unlimited daily limit
 - **REAL-TIME VISUAL ANIMATION FIX** ✅ (March 29, 2026 - Session 2)
   - Fixed stale closure issue in setInterval mining animation
   - Added useRef hooks (isBoostedRef, boostConfigRef) that sync with state
@@ -52,12 +53,19 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - `POST /api/mining/activate-boost` - Activate speed boost
 - `GET /api/mining/session` - Get current session status
 
-## Boost Config Per Tier
-| Tier | Plan | Mining Rate | Boost Duration | Multiplier | Cooldown | Daily Limit |
-|------|------|-------------|----------------|------------|----------|-------------|
-| 0 | Free | 0.001/s | 5s | 1.5x | 60s | 100 FTC |
-| 6 | Ultra | 0.008/s | 20s | 3.0x | 25s | 5000 FTC |
-| 12 | GOD | 0.030/s | 120s | 10.0x | 0s | Unlimited |
+## Boost Config (UNIFORM FOR ALL PLANS)
+| Config | Value |
+|--------|-------|
+| Boost Duration | 5 seconds |
+| Boost Multiplier | 2x |
+| Boost Cooldown | 10 seconds |
+
+## Mining Rate Per Tier (varies by plan)
+| Tier | Plan | Mining Rate | Daily Limit |
+|------|------|-------------|-------------|
+| 0 | Free | 0.001/s | 100 FTC |
+| 6 | Ultra | 0.008/s | 5000 FTC |
+| 12 | GOD | 0.030/s | Unlimited |
 
 ## Tech Stack
 - Frontend: React, Tailwind CSS, Framer Motion
