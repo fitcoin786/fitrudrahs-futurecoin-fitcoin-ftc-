@@ -131,8 +131,39 @@ const FtcMining = () => {
   const [lastTap, setLastTap] = useState({ productId: null, time: 0 });
   const [showProductDetails, setShowProductDetails] = useState(null);
 
-  // Persistent mining sync interval
+  // Mining animation interval - for real-time UI updates
+  const miningAnimationRef = useRef(null);
+  // Backend sync interval - for persistence
   const miningSyncRef = useRef(null);
+
+  // Real-time mining animation - shows continuous increment
+  const startMiningAnimation = () => {
+    if (miningAnimationRef.current) {
+      clearInterval(miningAnimationRef.current);
+    }
+    
+    // Update UI every 100ms for smooth animation
+    miningAnimationRef.current = setInterval(() => {
+      const currentRate = isBoosted 
+        ? boostConfig.base_mining_rate * boostConfig.boost_multiplier 
+        : boostConfig.base_mining_rate;
+      
+      // Increment per 100ms
+      const increment = currentRate * 0.1;
+      
+      setCaloriesBurned(prev => prev + increment);
+      setFtcMined(prev => prev + increment);
+      setFtcBalance(prev => prev + increment);
+    }, 100);
+  };
+
+  // Stop mining animation
+  const stopMiningAnimation = () => {
+    if (miningAnimationRef.current) {
+      clearInterval(miningAnimationRef.current);
+      miningAnimationRef.current = null;
+    }
+  };
 
   // Start persistent mining session on backend
   const startPersistentMining = async () => {
@@ -153,12 +184,16 @@ const FtcMining = () => {
         const data = await response.json();
         setIsMining(true);
         setBoostConfig(data.boost_config || boostConfig);
+        
+        // Start real-time animation
+        startMiningAnimation();
+        
+        // Start backend sync
+        startMiningSync();
+        
         toast.success('⚡ Mining Started!', {
           description: 'Mining continues even if you close this page!'
         });
-        
-        // Start sync loop
-        startMiningSync();
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to start mining');
@@ -169,7 +204,7 @@ const FtcMining = () => {
     }
   };
 
-  // Sync mining progress with backend
+  // Sync mining progress with backend (for persistence only, not UI)
   const syncMiningProgress = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -183,16 +218,19 @@ const FtcMining = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          // Update local state from server
-          setFtcMined(prev => prev + data.mined);
-          setFtcBalance(prev => prev + data.mined);
-          setCaloriesBurned(prev => prev + data.mined);
-          
-          // Update boost state
-          setIsBoosted(data.boost_active);
+          // Update boost state from server
+          if (data.boost_active !== isBoosted) {
+            setIsBoosted(data.boost_active);
+          }
           setBoostConfig(data.boost_config || boostConfig);
+          
+          // Save to localStorage for persistence
+          localStorage.setItem('ftc_mining_balance', ftcBalance.toString());
+          localStorage.setItem('ftc_mined_today', ftcMined.toString());
+          localStorage.setItem('ftc_calories_burned', caloriesBurned.toString());
         } else if (data.message === 'Subscription expired. Mining stopped.') {
           setIsMining(false);
+          stopMiningAnimation();
           stopMiningSync();
           toast.error('Subscription expired. Mining stopped.');
         }
@@ -233,18 +271,21 @@ const FtcMining = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.has_session) {
-          // Resume mining display
+          // Resume mining display with server values
           setIsMining(true);
-          setFtcMined(data.current_mined);
-          setCaloriesBurned(data.current_mined);
+          setFtcMined(data.current_mined || 0);
+          setCaloriesBurned(data.current_mined || 0);
           setBoostConfig(data.boost_config || boostConfig);
-          setIsBoosted(data.boost_active);
+          setIsBoosted(data.boost_active || false);
           
           if (data.boost_remaining > 0) {
             setBoostTimeLeft(data.boost_remaining);
           }
           
-          // Start sync loop
+          // Start real-time animation
+          startMiningAnimation();
+          
+          // Start backend sync
           startMiningSync();
           
           toast.success('⚡ Mining resumed!', {
@@ -1208,7 +1249,11 @@ const FtcMining = () => {
         if (data.success) {
           setIsBoosted(true);
           setBoostTimeLeft(data.boost_duration);
+          setBoostConfig(data.boost_config || boostConfig);
           toast.success(data.message);
+          
+          // Restart animation with boosted rate
+          startMiningAnimation();
           
           // Start boost countdown
           const boostCountdown = setInterval(() => {
@@ -1216,6 +1261,8 @@ const FtcMining = () => {
               if (prev <= 1) {
                 clearInterval(boostCountdown);
                 setIsBoosted(false);
+                // Restart animation with normal rate
+                startMiningAnimation();
                 toast.info('Boost ended. Tap again for another boost!');
                 return 0;
               }
@@ -1247,6 +1294,7 @@ const FtcMining = () => {
       if (miningIntervalRef.current) {
         clearInterval(miningIntervalRef.current);
       }
+      stopMiningAnimation();
       stopMiningSync();
     };
   }, []);
@@ -1555,7 +1603,7 @@ const FtcMining = () => {
                   style={{ animationDuration: isBoosted ? '0.5s' : '3s' }}
                 />
                 <p className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-[#00F090] to-[#FFD700]">
-                  {ftcMined.toLocaleString()}
+                  {ftcMined.toFixed(3)}
                 </p>
                 <p className="text-white/60 text-sm">FTC MINED TODAY</p>
               </div>
@@ -1591,12 +1639,12 @@ const FtcMining = () => {
             
             <div className="flex items-center gap-4 mt-6">
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#FF9F1C]">{caloriesBurned}</p>
+                <p className="text-2xl font-bold text-[#FF9F1C]">{caloriesBurned.toFixed(2)}</p>
                 <p className="text-xs text-white/60">Calories</p>
               </div>
               <div className="text-2xl text-white/20">=</div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-[#00F090]">{ftcMined}</p>
+                <p className="text-2xl font-bold text-[#00F090]">{ftcMined.toFixed(2)}</p>
                 <p className="text-xs text-white/60">FTC</p>
               </div>
             </div>
@@ -1644,7 +1692,7 @@ const FtcMining = () => {
                 data-testid="transfer-btn"
               >
                 <Wallet className="h-5 w-5" />
-                Transfer {ftcMined} FTC to Balance
+                Transfer {ftcMined.toFixed(2)} FTC to Balance
                 <ArrowRight className="h-5 w-5" />
               </button>
             )}
