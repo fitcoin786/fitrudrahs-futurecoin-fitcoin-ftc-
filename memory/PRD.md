@@ -34,12 +34,20 @@ Building a full-stack trading application called "Future Trade" for a cryptocurr
 - **CALORIES = FTC SYNC (1:1 RATIO)** ✅ (March 29, 2026 - Session 2)
   - Both Calories and FTC values always equal
   - 1 Calorie burned = 1 FTC mined
-  - Both increment together in real-time
+  - Both increment together in real-time (100ms interval)
   - Header shows "1 Calorie Kcl = 1 FTC (1:1 ratio)"
+  - Animation syncs both values in setInterval callback
 - **AI BOOST BUTTON** ✅ (March 29, 2026 - Session 2)
   - Button shows "🧠 TAP FOR AI BOOST!" when ready
-  - Shows "🧠 AI BOOST Xs (2x)" during boost with countdown
+  - Shows "🧠 AI BOOST 5s (2x)" during countdown
   - Info text: "Tap for AI Boost - 5s (2x speed)"
+  - During boost: "AI Acceleration: 2x speed for 5s!"
+  - Toast: "🧠 AI BOOST ACTIVATED!" and "AI Boost ended"
+- **STEPSAPP INTEGRATION** ✅ (March 29, 2026 - Session 2)
+  - "Track Calories with StepsApp" section
+  - "⚡ 1 Calorie Kcl burn = 1 Fitcoin FTC Earn" message
+  - "Join StepsApp Group - Tap to Activate" button
+  - Links to https://invite.steps.app/zkK1vmJRdARK
 
 ### 3. Admin Control Panel ✅
 **Credentials**: FITRUDRAH / 786786 / 0000
