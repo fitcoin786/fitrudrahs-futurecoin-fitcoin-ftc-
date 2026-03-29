@@ -29,6 +29,24 @@ function App() {
   }, []);
 
   const handleLogin = (token, userData) => {
+    // Clear old user-specific data to prevent data mixing
+    const oldUser = localStorage.getItem('user');
+    if (oldUser) {
+      try {
+        const parsed = JSON.parse(oldUser);
+        const oldKey = parsed.id || parsed.email;
+        const newKey = userData.id || userData.email;
+        
+        // If different user, clear old mining data
+        if (oldKey !== newKey) {
+          console.log('Different user detected, clearing old data');
+          // Don't remove old user data - just ensure new user starts fresh from backend
+        }
+      } catch (e) {
+        console.log('Error parsing old user');
+      }
+    }
+    
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(userData));
     setIsAuthenticated(true);

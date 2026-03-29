@@ -686,36 +686,43 @@ const FtcMining = () => {
       const token = localStorage.getItem('token');
       const userData = localStorage.getItem('user');
       
-      // Load saved FTC balance from localStorage first
-      const savedBalance = localStorage.getItem('ftc_mining_balance');
-      const savedMined = localStorage.getItem('ftc_mined_today');
-      
-      console.log('Loading from localStorage:', { savedBalance, savedMined });
-      
-      if (savedBalance && parseFloat(savedBalance) > 0) {
-        setFtcBalance(parseFloat(savedBalance));
-      }
-      if (savedMined && parseFloat(savedMined) > 0) {
-        const minedValue = parseFloat(savedMined);
-        setFtcMined(minedValue);
-        setCaloriesBurned(minedValue); // Calories = FTC (1:1 ratio)
-      }
-      
       if (token && userData) {
         setIsLoggedIn(true);
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
+        
+        // USER-SPECIFIC localStorage keys (prevents data mixing between users)
+        const userKey = parsedUser.id || parsedUser.email;
+        const savedBalance = localStorage.getItem(`ftc_balance_${userKey}`);
+        const savedMined = localStorage.getItem(`ftc_mined_${userKey}`);
+        
+        console.log('Loading user-specific data:', { userKey, savedBalance, savedMined });
+        
+        // Only load from localStorage if data exists for THIS user
+        if (savedBalance && parseFloat(savedBalance) > 0) {
+          setFtcBalance(parseFloat(savedBalance));
+        }
+        if (savedMined && parseFloat(savedMined) > 0) {
+          const minedValue = parseFloat(savedMined);
+          setFtcMined(minedValue);
+          setCaloriesBurned(minedValue);
+        }
         
         // Set wallet address from user data if available
         if (parsedUser.ftc_wallet_address) {
           setFtcWalletAddress(parsedUser.ftc_wallet_address);
         }
         
-        // Fetch mining data from backend and merge with local
+        // ALWAYS fetch fresh data from backend to ensure accuracy
         await fetchMiningData(token);
         
         // Fetch wallet address from backend
         await fetchWalletAddress(token);
+      } else {
+        // No user logged in - reset all state to defaults
+        setFtcBalance(0);
+        setFtcMined(0);
+        setCaloriesBurned(0);
       }
     };
     
@@ -1000,7 +1007,7 @@ const FtcMining = () => {
     }
   };
 
-  // Save FTC balance to localStorage whenever it changes (only if > 0 or was set before)
+  // Save FTC balance to localStorage whenever it changes (USER-SPECIFIC)
   const balanceInitializedRef = useRef(false);
   useEffect(() => {
     // Skip initial render to avoid overwriting with 0
@@ -1008,18 +1015,22 @@ const FtcMining = () => {
       balanceInitializedRef.current = true;
       return;
     }
-    localStorage.setItem('ftc_mining_balance', ftcBalance.toString());
-    console.log('Saved balance to localStorage:', ftcBalance);
-  }, [ftcBalance]);
-
-  // Save mined FTC to localStorage (Calories auto-syncs with FTC - 1:1 ratio)
-  useEffect(() => {
-    if (ftcMined > 0) {
-      localStorage.setItem('ftc_mined_today', ftcMined.toString());
-      // Also sync calories in localStorage (1 Cal = 1 FTC)
-      localStorage.setItem('ftc_calories_burned', ftcMined.toString());
+    // Save with user-specific key
+    if (user?.id || user?.email) {
+      const userKey = user.id || user.email;
+      localStorage.setItem(`ftc_balance_${userKey}`, ftcBalance.toString());
+      console.log('Saved balance for user:', userKey, ftcBalance);
     }
-  }, [ftcMined]);
+  }, [ftcBalance, user]);
+
+  // Save mined FTC to localStorage (USER-SPECIFIC, Calories auto-syncs with FTC - 1:1 ratio)
+  useEffect(() => {
+    if (ftcMined > 0 && (user?.id || user?.email)) {
+      const userKey = user.id || user.email;
+      localStorage.setItem(`ftc_mined_${userKey}`, ftcMined.toString());
+      localStorage.setItem(`ftc_calories_${userKey}`, ftcMined.toString());
+    }
+  }, [ftcMined, user]);
 
   // CRITICAL: Ensure Calories always equals FTC (1:1 ratio safeguard)
   useEffect(() => {
@@ -1282,7 +1293,7 @@ const FtcMining = () => {
     }
   };
 
-  // Fetch mining data from backend
+  // Fetch mining data from backend - BACKEND IS ALWAYS THE SOURCE OF TRUTH
   const fetchMiningData = async (token) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/mining/status`, {
@@ -1291,27 +1302,31 @@ const FtcMining = () => {
       
       if (response.ok) {
         const data = await response.json();
+        const userData = localStorage.getItem('user');
+        const userKey = userData ? (JSON.parse(userData).id || JSON.parse(userData).email) : '';
         
-        // Get local balance and use the higher value (in case backend hasn't synced)
-        const localBalance = parseFloat(localStorage.getItem('ftc_mining_balance') || '0');
+        // ALWAYS use backend balance as source of truth
         const backendBalance = data.ftc_balance || 0;
-        const finalBalance = Math.max(localBalance, backendBalance);
+        setFtcBalance(backendBalance);
         
-        setFtcBalance(finalBalance);
-        localStorage.setItem('ftc_mining_balance', finalBalance.toString());
+        // Save to user-specific localStorage key
+        if (userKey) {
+          localStorage.setItem(`ftc_balance_${userKey}`, backendBalance.toString());
+        }
         
         // Set other data from backend
         setActiveSubscription(data.active_subscription);
         setSubscriptionRequest(data.pending_request);
         
         // Sync FTC mined and Calories (1:1 ratio - always keep them equal)
-        const ftcMinedValue = Math.max(data.ftc_mined_today || 0, ftcMined);
+        const ftcMinedValue = data.ftc_mined_today || 0;
         setFtcMined(ftcMinedValue);
         setCaloriesBurned(ftcMinedValue); // Calories = FTC (1:1 ratio)
+        
+        console.log('✅ Loaded fresh data from backend:', { balance: backendBalance, mined: ftcMinedValue });
       }
     } catch (error) {
       console.log('Mining data fetch error:', error);
-      // On error, still use localStorage data
     }
   };
 
