@@ -846,9 +846,11 @@ const FtcMining = () => {
         })
       });
       
+      // Read response body once
+      const responseData = await response.json();
+      
       if (response.ok) {
-        const data = await response.json();
-        toast.success(`✅ Sent ${data.transaction.amount_received} FTC (Fee: ${data.transaction.fee_amount} FTC)`);
+        toast.success(`✅ Sent ${responseData.transaction.amount_received} FTC (Fee: ${responseData.transaction.fee_amount} FTC)`);
         setShowSendFtcModal(false);
         setSendRecipientWallet('');
         setSendAmount('');
@@ -867,9 +869,8 @@ const FtcMining = () => {
         // Fetch transfer history
         fetchTransferHistory();
       } else {
-        const error = await response.json();
         // Show specific error message with more detail
-        const errorMsg = error.detail || 'Failed to send FTC';
+        const errorMsg = responseData.detail || 'Failed to send FTC';
         if (errorMsg.includes('not found')) {
           toast.error('❌ ' + errorMsg, {
             description: 'Please check the wallet address and try again. The recipient must be a registered user.'
