@@ -150,6 +150,7 @@ const FtcMining = () => {
   }, [boostConfig]);
 
   // Real-time mining animation - shows continuous increment
+  // 1 Calorie = 1 FTC - both increment together at same rate
   const startMiningAnimation = () => {
     if (miningAnimationRef.current) {
       clearInterval(miningAnimationRef.current);
@@ -168,8 +169,13 @@ const FtcMining = () => {
       // Increment per 100ms
       const increment = currentRate * 0.1;
       
-      setCaloriesBurned(prev => prev + increment);
-      setFtcMined(prev => prev + increment);
+      // Update FTC first, then Calories will auto-sync via useEffect
+      setFtcMined(prev => {
+        const newValue = prev + increment;
+        // Directly update calories to same value (1:1 ratio)
+        setCaloriesBurned(newValue);
+        return newValue;
+      });
       setFtcBalance(prev => prev + increment);
     }, 100);
   };
@@ -933,6 +939,10 @@ const FtcMining = () => {
       localStorage.setItem('ftc_mined_today', ftcMined.toString());
       // Also sync calories in localStorage (1 Cal = 1 FTC)
       localStorage.setItem('ftc_calories_burned', ftcMined.toString());
+      
+      // CRITICAL: Keep caloriesBurned state in sync with ftcMined (1:1 ratio)
+      // This ensures they are always equal on screen
+      setCaloriesBurned(ftcMined);
     }
   }, [ftcMined]);
 
@@ -1240,9 +1250,10 @@ const FtcMining = () => {
   };
 
   // Activate boost - based on subscription tier
+  // AI BOOST: 5 seconds, 2x speed for ALL plans
   const activateBoost = async () => {
     if (isBoosted) {
-      toast.info('Boost already active!');
+      toast.info('🧠 AI Boost already active! Wait for it to finish.');
       return;
     }
     
@@ -1260,10 +1271,11 @@ const FtcMining = () => {
           setIsBoosted(true);
           setBoostTimeLeft(data.boost_duration);
           setBoostConfig(data.boost_config || boostConfig);
-          toast.success(data.message);
           
-          // No need to restart animation - refs auto-update
-          // Animation will use boosted rate via isBoostedRef
+          // Show AI Boost success toast
+          toast.success('🧠 AI BOOST ACTIVATED!', {
+            description: `${data.boost_multiplier}x mining speed for ${data.boost_duration} seconds!`
+          });
           
           // Start boost countdown
           const boostCountdown = setInterval(() => {
@@ -1271,8 +1283,7 @@ const FtcMining = () => {
               if (prev <= 1) {
                 clearInterval(boostCountdown);
                 setIsBoosted(false);
-                // No need to restart animation - refs auto-update
-                toast.info('Boost ended. Tap again for another boost!');
+                toast.info('🧠 AI Boost ended. Tap again for another boost!');
                 return 0;
               }
               return prev - 1;
@@ -1283,11 +1294,11 @@ const FtcMining = () => {
         }
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to activate boost');
+        toast.error(error.detail || 'Failed to activate AI Boost');
       }
     } catch (error) {
-      console.error('Boost error:', error);
-      toast.error('Failed to activate boost');
+      console.error('AI Boost error:', error);
+      toast.error('Failed to activate AI Boost');
     }
   };
 
@@ -1867,24 +1878,30 @@ const FtcMining = () => {
               </div>
             )}
 
-            {/* StepsApp Integration */}
-            <div className="glass-card p-6">
+            {/* StepsApp Integration - Track Calories */}
+            <div className="glass-card p-6 border border-[#FF9F1C]/30">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Activity className="h-5 w-5 text-[#FF9F1C]" />
                 Track Calories with StepsApp
               </h3>
-              <p className="text-sm text-white/60 mb-4">
+              <p className="text-sm text-white/60 mb-2">
                 Connect StepsApp to automatically track your calories and convert to FTC
+              </p>
+              <p className="text-xs text-[#00F090] mb-4 font-bold">
+                ⚡ 1 Calorie Kcl burn = 1 Fitcoin FTC Earn
               </p>
               <a
                 href="https://invite.steps.app/zkK1vmJRdARK"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all"
+                className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-[#FF9F1C] to-[#FFD700] text-black font-bold rounded-lg hover:brightness-110 transition-all animate-pulse"
               >
                 <ExternalLink className="h-4 w-4" />
-                Join StepsApp Group
+                Join StepsApp Group - Tap to Activate
               </a>
+              <p className="text-xs text-white/40 mt-2 text-center">
+                Connect your fitness tracker for automatic calorie tracking
+              </p>
             </div>
           </div>
         </div>
