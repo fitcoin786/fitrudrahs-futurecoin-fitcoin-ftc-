@@ -6,7 +6,7 @@ import {
   Zap, Flame, Activity, Award, Clock, Check, Star, 
   ArrowRight, Wallet, TrendingUp, Shield, ExternalLink,
   Volume2, VolumeX, Gift, Crown, Target, Rocket,
-  BookOpen, Brain, BarChart3, History, FileText, Cpu, User
+  BookOpen, Brain, BarChart3, History, FileText, Cpu, User, RefreshCw
 } from 'lucide-react';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -868,11 +868,25 @@ const FtcMining = () => {
         fetchTransferHistory();
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to send FTC');
+        // Show specific error message with more detail
+        const errorMsg = error.detail || 'Failed to send FTC';
+        if (errorMsg.includes('not found')) {
+          toast.error('❌ ' + errorMsg, {
+            description: 'Please check the wallet address and try again. The recipient must be a registered user.'
+          });
+        } else if (errorMsg.includes('Insufficient')) {
+          toast.error('❌ Insufficient Balance', {
+            description: 'You do not have enough FTC to complete this transfer.'
+          });
+        } else {
+          toast.error('❌ ' + errorMsg);
+        }
       }
     } catch (error) {
       console.error('Send FTC error:', error);
-      toast.error('Failed to send FTC');
+      toast.error('❌ Failed to send FTC', {
+        description: 'Network error. Please check your connection and try again.'
+      });
     } finally {
       setIsSending(false);
     }
@@ -1672,6 +1686,24 @@ const FtcMining = () => {
                 <p className="text-xs text-white/60">FTC</p>
               </div>
             </div>
+            
+            {/* Refresh Button - Sync mining data from server */}
+            <button
+              onClick={async () => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                  toast.info('🔄 Refreshing mining data...');
+                  await fetchMiningData(token);
+                  await checkMiningSession();
+                  toast.success('✅ Mining data refreshed!');
+                }
+              }}
+              className="mt-4 px-6 py-2 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white text-sm font-medium flex items-center gap-2 mx-auto transition-all"
+              data-testid="refresh-mining-btn"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh Mining Data
+            </button>
             
             {/* Mining Button */}
             <button
