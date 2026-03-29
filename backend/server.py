@@ -3630,6 +3630,46 @@ async def get_global_ftc_ledger():
         print(f"Global FTC ledger error: {e}")
         return {'transactions': [], 'total_count': 0}
 
+# Verify wallet address exists
+@api_router.get("/wallet/verify/{wallet_address}")
+async def verify_wallet_address(wallet_address: str):
+    """Verify if a wallet address exists and belongs to a registered user"""
+    try:
+        user = await db.users.find_one(
+            {"ftc_wallet_address": wallet_address},
+            {"_id": 0, "full_name": 1, "ftc_wallet_address": 1}
+        )
+        
+        if user:
+            # Mask name for privacy (e.g., "Demo Trader" -> "De***er")
+            name = user.get('full_name', 'User')
+            if len(name) > 4:
+                masked_name = name[:2] + '***' + name[-2:]
+            else:
+                masked_name = name[:1] + '***'
+            
+            return {
+                'valid': True,
+                'recipient_name': masked_name,
+                'wallet_address': wallet_address[:8] + '...' + wallet_address[-6:],
+                'message': 'Wallet address verified'
+            }
+        else:
+            return {
+                'valid': False,
+                'recipient_name': None,
+                'wallet_address': wallet_address,
+                'message': 'Wallet address not found'
+            }
+    except Exception as e:
+        print(f"Wallet verification error: {e}")
+        return {
+            'valid': False,
+            'recipient_name': None,
+            'wallet_address': wallet_address,
+            'message': 'Verification failed'
+        }
+
 # Global trades API for real-time blockchain visibility - All users see ALL transactions
 @api_router.get("/global/trades")
 async def get_global_trades():

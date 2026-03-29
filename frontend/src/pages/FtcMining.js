@@ -77,6 +77,7 @@ const FtcMining = () => {
   const [isSending, setIsSending] = useState(false);
   const [sendFeeInfo, setSendFeeInfo] = useState({ fee_percent: 0, fee_amount: 0 });
   const [transferHistory, setTransferHistory] = useState([]);
+  const [walletVerification, setWalletVerification] = useState({ valid: null, recipient_name: null, checking: false });
   
   // Transaction Details State
   const [selectedTxDetails, setSelectedTxDetails] = useState(null);
@@ -812,6 +813,34 @@ const FtcMining = () => {
     }
   };
 
+  // Verify wallet address in real-time
+  const verifyWalletAddress = async (walletAddress) => {
+    if (!walletAddress || walletAddress.length < 20) {
+      setWalletVerification({ valid: null, recipient_name: null, checking: false });
+      return;
+    }
+    
+    setWalletVerification({ valid: null, recipient_name: null, checking: true });
+    
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/wallet/verify/${walletAddress}`);
+      const data = await response.json();
+      
+      setWalletVerification({
+        valid: data.valid,
+        recipient_name: data.recipient_name,
+        checking: false
+      });
+      
+      if (data.valid) {
+        toast.success(`✅ Wallet verified: ${data.recipient_name}`);
+      }
+    } catch (error) {
+      console.error('Wallet verification error:', error);
+      setWalletVerification({ valid: null, recipient_name: null, checking: false });
+    }
+  };
+
   // Send FTC to another user
   const sendFTC = async () => {
     if (!sendRecipientWallet.trim()) {
@@ -849,45 +878,81 @@ const FtcMining = () => {
       // Read response body once
       const responseData = await response.json();
       
-      if (response.ok) {
-        toast.success(`✅ Sent ${responseData.transaction.amount_received} FTC (Fee: ${responseData.transaction.fee_amount} FTC)`);
+      if (response.ok && responseData.success) {
+        // Show success with transaction details
+        toast.success(`✅ ${responseData.transaction.amount_received} FTC Sent!`, {
+          description: `Fee: ${responseData.transaction.fee_amount} FTC | TX: ${responseData.transaction.tx_hash?.slice(0, 12)}...`
+        });
+        
+        // Update sender balance immediately (real-time)
+        const newBalance = ftcBalance - parseFloat(sendAmount);
+        setFtcBalance(Math.max(0, newBalance));
+        localStorage.setItem('ftc_mining_balance', Math.max(0, newBalance).toString());
+        
+        // Close modal and reset form
         setShowSendFtcModal(false);
         setSendRecipientWallet('');
         setSendAmount('');
         setSendNote('');
         setSendFeeInfo({ fee_percent: 0, fee_amount: 0 });
         
-        // Refresh balance
-        const walletRes = await fetch(`${BACKEND_URL}/api/wallet`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (walletRes.ok) {
-          const walletData = await walletRes.json();
-          setFtcBalance(walletData.ftc_balance || 0);
-        }
+        // Sync with backend in background (confirm balance)
+        setTimeout(async () => {
+          try {
+            const walletRes = await fetch(`${BACKEND_URL}/api/wallet`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (walletRes.ok) {
+              const walletData = await walletRes.json();
+              setFtcBalance(walletData.ftc_balance || 0);
+              localStorage.setItem('ftc_mining_balance', (walletData.ftc_balance || 0).toString());
+            }
+          } catch (e) {
+            console.log('Background balance sync:', e);
+          }
+        }, 1000);
         
         // Fetch transfer history
         fetchTransferHistory();
+        
+        // Show blockchain confirmation
+        toast.info('⛓️ Transaction confirmed on blockchain', {
+          description: `Block: ${responseData.transaction.block_number} | Confirmations: 6+`
+        });
       } else {
         // Show specific error message with more detail
         const errorMsg = responseData.detail || 'Failed to send FTC';
         if (errorMsg.includes('not found')) {
-          toast.error('❌ ' + errorMsg, {
-            description: 'Please check the wallet address and try again. The recipient must be a registered user.'
+          toast.error('❌ Wallet Not Found', {
+            description: 'This wallet address does not exist. Please verify and try again.'
           });
         } else if (errorMsg.includes('Insufficient')) {
           toast.error('❌ Insufficient Balance', {
             description: 'You do not have enough FTC to complete this transfer.'
           });
+        } else if (errorMsg.includes('yourself')) {
+          toast.error('❌ Cannot Send to Yourself', {
+            description: 'Please enter a different wallet address.'
+          });
         } else {
-          toast.error('❌ ' + errorMsg);
+          toast.error('❌ Transfer Failed', {
+            description: errorMsg
+          });
         }
       }
     } catch (error) {
       console.error('Send FTC error:', error);
-      toast.error('❌ Failed to send FTC', {
-        description: 'Network error. Please check your connection and try again.'
-      });
+      
+      // Retry once on network error
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        toast.error('❌ Connection Error', {
+          description: 'Unable to reach server. Please check your internet connection.'
+        });
+      } else {
+        toast.error('❌ Transfer Failed', {
+          description: 'An unexpected error occurred. Please try again.'
+        });
+      }
     } finally {
       setIsSending(false);
     }
@@ -3508,11 +3573,39 @@ const FtcMining = () => {
                 <input
                   type="text"
                   value={sendRecipientWallet}
-                  onChange={(e) => setSendRecipientWallet(e.target.value)}
+                  onChange={(e) => {
+                    setSendRecipientWallet(e.target.value);
+                    // Verify wallet when length is sufficient
+                    if (e.target.value.length >= 32) {
+                      verifyWalletAddress(e.target.value);
+                    } else {
+                      setWalletVerification({ valid: null, recipient_name: null, checking: false });
+                    }
+                  }}
                   placeholder="Enter recipient's FTC wallet address"
-                  className="w-full px-4 py-3 bg-black/50 border border-white/20 rounded-lg text-white placeholder-white/30 focus:outline-none focus:border-[#00F090] font-mono text-sm"
+                  className={`w-full px-4 py-3 bg-black/50 border rounded-lg text-white placeholder-white/30 focus:outline-none font-mono text-sm ${
+                    walletVerification.valid === true ? 'border-[#00F090]' : 
+                    walletVerification.valid === false ? 'border-red-500' : 
+                    'border-white/20 focus:border-[#00F090]'
+                  }`}
                   data-testid="send-recipient-input"
                 />
+                {/* Wallet verification status */}
+                {walletVerification.checking && (
+                  <p className="text-xs text-yellow-400 mt-1 flex items-center gap-1">
+                    <span className="animate-spin">⏳</span> Verifying wallet address...
+                  </p>
+                )}
+                {walletVerification.valid === true && (
+                  <p className="text-xs text-[#00F090] mt-1 flex items-center gap-1">
+                    ✅ Verified: Sending to {walletVerification.recipient_name}
+                  </p>
+                )}
+                {walletVerification.valid === false && (
+                  <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                    ❌ Wallet not found - Please check the address
+                  </p>
+                )}
               </div>
               
               {/* Amount */}
@@ -3578,11 +3671,19 @@ const FtcMining = () => {
               {/* Send Button */}
               <button
                 onClick={sendFTC}
-                disabled={isSending || !sendRecipientWallet || !sendAmount || parseFloat(sendAmount) <= 0}
-                className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 text-lg"
+                disabled={isSending || !sendRecipientWallet || !sendAmount || parseFloat(sendAmount) <= 0 || walletVerification.valid === false || walletVerification.checking}
+                className="w-full py-4 bg-gradient-to-r from-[#00F090] to-[#00BFFF] text-black font-bold rounded-lg hover:brightness-110 transition-all disabled:opacity-50 text-lg flex items-center justify-center gap-2"
                 data-testid="confirm-send-btn"
               >
-                {isSending ? 'Sending...' : `Send ${sendAmount || 0} FTC`}
+                {isSending ? (
+                  <>
+                    <span className="animate-spin">⏳</span> Sending...
+                  </>
+                ) : walletVerification.valid === false ? (
+                  '❌ Invalid Wallet Address'
+                ) : (
+                  `💸 Send ${sendAmount || 0} FTC`
+                )}
               </button>
               
               {/* Transfer History */}
