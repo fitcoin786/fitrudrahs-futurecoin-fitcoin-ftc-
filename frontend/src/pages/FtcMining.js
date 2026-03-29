@@ -151,12 +151,15 @@ const FtcMining = () => {
 
   // Real-time mining animation - shows continuous increment
   // 1 Calorie = 1 FTC - both increment together at same rate
+  // Updates every 50ms for smooth microsecond-like fluctuation on screen
   const startMiningAnimation = () => {
     if (miningAnimationRef.current) {
       clearInterval(miningAnimationRef.current);
     }
     
-    // Update UI every 100ms for smooth animation
+    console.log('🚀 Starting mining animation...');
+    
+    // Update UI every 50ms for smooth real-time animation (microsecond feel)
     miningAnimationRef.current = setInterval(() => {
       // Use refs to get current values (not stale closure values)
       const currentBoosted = isBoostedRef.current;
@@ -166,18 +169,14 @@ const FtcMining = () => {
         ? currentConfig.base_mining_rate * currentConfig.boost_multiplier 
         : currentConfig.base_mining_rate;
       
-      // Increment per 100ms
-      const increment = currentRate * 0.1;
+      // Increment per 50ms (0.05 seconds)
+      const increment = currentRate * 0.05;
       
-      // Update FTC first, then Calories will auto-sync via useEffect
-      setFtcMined(prev => {
-        const newValue = prev + increment;
-        // Directly update calories to same value (1:1 ratio)
-        setCaloriesBurned(newValue);
-        return newValue;
-      });
+      // Update all three values simultaneously
+      setFtcMined(prev => prev + increment);
+      setCaloriesBurned(prev => prev + increment);
       setFtcBalance(prev => prev + increment);
-    }, 100);
+    }, 50);
   };
 
   // Stop mining animation
@@ -939,10 +938,6 @@ const FtcMining = () => {
       localStorage.setItem('ftc_mined_today', ftcMined.toString());
       // Also sync calories in localStorage (1 Cal = 1 FTC)
       localStorage.setItem('ftc_calories_burned', ftcMined.toString());
-      
-      // CRITICAL: Keep caloriesBurned state in sync with ftcMined (1:1 ratio)
-      // This ensures they are always equal on screen
-      setCaloriesBurned(ftcMined);
     }
   }, [ftcMined]);
 
