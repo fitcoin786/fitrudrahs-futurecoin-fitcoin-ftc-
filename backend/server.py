@@ -2513,21 +2513,22 @@ def get_subscription_boost_config(plan_id: str):
     tier = PLAN_TIERS.get(plan_id, 0)
     
     # Boost configuration per tier
-    # Higher tier = faster mining, longer boost, higher multiplier
+    # BOOST IS SAME FOR ALL PLANS: 5 seconds, 2x multiplier, 10s cooldown
+    # Only mining rate and daily limit differ by tier
     BOOST_CONFIGS = {
-        0: {'base_mining_rate': 0.001, 'boost_duration': 5, 'boost_multiplier': 1.5, 'boost_cooldown': 60, 'daily_limit': 100},
-        1: {'base_mining_rate': 0.002, 'boost_duration': 8, 'boost_multiplier': 1.8, 'boost_cooldown': 50, 'daily_limit': 500},
-        2: {'base_mining_rate': 0.003, 'boost_duration': 10, 'boost_multiplier': 2.0, 'boost_cooldown': 45, 'daily_limit': 1000},
-        3: {'base_mining_rate': 0.004, 'boost_duration': 12, 'boost_multiplier': 2.2, 'boost_cooldown': 40, 'daily_limit': 2000},
-        4: {'base_mining_rate': 0.005, 'boost_duration': 15, 'boost_multiplier': 2.5, 'boost_cooldown': 35, 'daily_limit': 3000},
-        5: {'base_mining_rate': 0.006, 'boost_duration': 18, 'boost_multiplier': 2.8, 'boost_cooldown': 30, 'daily_limit': 4000},
-        6: {'base_mining_rate': 0.008, 'boost_duration': 20, 'boost_multiplier': 3.0, 'boost_cooldown': 25, 'daily_limit': 5000},
-        7: {'base_mining_rate': 0.010, 'boost_duration': 25, 'boost_multiplier': 3.5, 'boost_cooldown': 20, 'daily_limit': 7500},
-        8: {'base_mining_rate': 0.012, 'boost_duration': 30, 'boost_multiplier': 4.0, 'boost_cooldown': 15, 'daily_limit': 10000},
-        9: {'base_mining_rate': 0.015, 'boost_duration': 35, 'boost_multiplier': 4.5, 'boost_cooldown': 10, 'daily_limit': 15000},
-        10: {'base_mining_rate': 0.020, 'boost_duration': 45, 'boost_multiplier': 5.0, 'boost_cooldown': 5, 'daily_limit': 999999},  # Unlimited
-        11: {'base_mining_rate': 0.025, 'boost_duration': 60, 'boost_multiplier': 6.0, 'boost_cooldown': 3, 'daily_limit': 999999},
-        12: {'base_mining_rate': 0.030, 'boost_duration': 120, 'boost_multiplier': 10.0, 'boost_cooldown': 0, 'daily_limit': 999999},  # GOD MODE
+        0: {'base_mining_rate': 0.001, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 100},
+        1: {'base_mining_rate': 0.002, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 500},
+        2: {'base_mining_rate': 0.003, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 1000},
+        3: {'base_mining_rate': 0.004, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 2000},
+        4: {'base_mining_rate': 0.005, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 3000},
+        5: {'base_mining_rate': 0.006, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 4000},
+        6: {'base_mining_rate': 0.008, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 5000},
+        7: {'base_mining_rate': 0.010, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 7500},
+        8: {'base_mining_rate': 0.012, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 10000},
+        9: {'base_mining_rate': 0.015, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 15000},
+        10: {'base_mining_rate': 0.020, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 999999},
+        11: {'base_mining_rate': 0.025, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 999999},
+        12: {'base_mining_rate': 0.030, 'boost_duration': 5, 'boost_multiplier': 2.0, 'boost_cooldown': 10, 'daily_limit': 999999},
     }
     
     config = BOOST_CONFIGS.get(tier, BOOST_CONFIGS[0])

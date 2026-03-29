@@ -118,12 +118,12 @@ const FtcMining = () => {
     lastSyncTime: null
   });
   
-  // Boost configuration from server
+  // Boost configuration from server - SAME FOR ALL PLANS: 5s, 2x
   const [boostConfig, setBoostConfig] = useState({
     base_mining_rate: 0.001,
     boost_duration: 5,
-    boost_multiplier: 1.5,
-    boost_cooldown: 60,
+    boost_multiplier: 2.0,
+    boost_cooldown: 10,
     daily_limit: 100
   });
   
