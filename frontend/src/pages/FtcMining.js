@@ -683,18 +683,16 @@ const FtcMining = () => {
       // Load saved FTC balance from localStorage first
       const savedBalance = localStorage.getItem('ftc_mining_balance');
       const savedMined = localStorage.getItem('ftc_mined_today');
-      const savedCalories = localStorage.getItem('ftc_calories_burned');
       
-      console.log('Loading from localStorage:', { savedBalance, savedMined, savedCalories });
+      console.log('Loading from localStorage:', { savedBalance, savedMined });
       
       if (savedBalance && parseFloat(savedBalance) > 0) {
         setFtcBalance(parseFloat(savedBalance));
       }
       if (savedMined && parseFloat(savedMined) > 0) {
-        setFtcMined(parseFloat(savedMined));
-      }
-      if (savedCalories && parseFloat(savedCalories) > 0) {
-        setCaloriesBurned(parseFloat(savedCalories));
+        const minedValue = parseFloat(savedMined);
+        setFtcMined(minedValue);
+        setCaloriesBurned(minedValue); // Calories = FTC (1:1 ratio)
       }
       
       if (token && userData) {
@@ -929,10 +927,12 @@ const FtcMining = () => {
     console.log('Saved balance to localStorage:', ftcBalance);
   }, [ftcBalance]);
 
-  // Save mined FTC to localStorage
+  // Save mined FTC to localStorage (Calories auto-syncs with FTC - 1:1 ratio)
   useEffect(() => {
     if (ftcMined > 0) {
       localStorage.setItem('ftc_mined_today', ftcMined.toString());
+      // Also sync calories in localStorage (1 Cal = 1 FTC)
+      localStorage.setItem('ftc_calories_burned', ftcMined.toString());
     }
   }, [ftcMined]);
 
@@ -1015,12 +1015,7 @@ const FtcMining = () => {
     }
   }, [subscriptionRequest, activeSubscription, isLoggedIn]);
 
-  // Save calories to localStorage
-  useEffect(() => {
-    if (caloriesBurned > 0) {
-      localStorage.setItem('ftc_calories_burned', caloriesBurned.toString());
-    }
-  }, [caloriesBurned]);
+  // Calories sync with FTC is handled in ftcMined effect above (1:1 ratio)
 
   // FTC Live Price Feed - GLOBAL Real-time fluctuation (same for all users)
   useEffect(() => {
@@ -1215,13 +1210,10 @@ const FtcMining = () => {
         setActiveSubscription(data.active_subscription);
         setSubscriptionRequest(data.pending_request);
         
-        // If backend has higher values, use those
-        if (data.ftc_mined_today > ftcMined) {
-          setFtcMined(data.ftc_mined_today);
-        }
-        if (data.calories_burned > caloriesBurned) {
-          setCaloriesBurned(data.calories_burned);
-        }
+        // Sync FTC mined and Calories (1:1 ratio - always keep them equal)
+        const ftcMinedValue = Math.max(data.ftc_mined_today || 0, ftcMined);
+        setFtcMined(ftcMinedValue);
+        setCaloriesBurned(ftcMinedValue); // Calories = FTC (1:1 ratio)
       }
     } catch (error) {
       console.log('Mining data fetch error:', error);
@@ -1681,8 +1673,8 @@ const FtcMining = () => {
             >
               {isMining 
                 ? isBoosted 
-                  ? `🚀 BOOST ${boostTimeLeft}s (${boostConfig.boost_multiplier}x)` 
-                  : '🚀 TAP FOR BOOST!'
+                  ? `🧠 AI BOOST ${boostTimeLeft}s (${boostConfig.boost_multiplier}x)` 
+                  : '🧠 TAP FOR AI BOOST!'
                 : '⚡ START MINING'
               }
             </button>
@@ -1691,8 +1683,8 @@ const FtcMining = () => {
               <div className="mt-2 text-center">
                 <p className="text-xs text-white/40">
                   {isBoosted 
-                    ? `${boostConfig.boost_multiplier}x speed for ${boostConfig.boost_duration}s!`
-                    : `Tap for ${boostConfig.boost_duration}s boost (${boostConfig.boost_multiplier}x speed)`
+                    ? `🧠 AI Acceleration: ${boostConfig.boost_multiplier}x speed for ${boostConfig.boost_duration}s!`
+                    : `Tap for AI Boost - ${boostConfig.boost_duration}s (${boostConfig.boost_multiplier}x speed)`
                   }
                 </p>
                 <p className="text-xs text-[#00F090] mt-1">
