@@ -135,6 +135,19 @@ const FtcMining = () => {
   const miningAnimationRef = useRef(null);
   // Backend sync interval - for persistence
   const miningSyncRef = useRef(null);
+  
+  // Refs to hold current values for interval callbacks (avoids stale closure)
+  const isBoostedRef = useRef(isBoosted);
+  const boostConfigRef = useRef(boostConfig);
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    isBoostedRef.current = isBoosted;
+  }, [isBoosted]);
+  
+  useEffect(() => {
+    boostConfigRef.current = boostConfig;
+  }, [boostConfig]);
 
   // Real-time mining animation - shows continuous increment
   const startMiningAnimation = () => {
@@ -144,9 +157,13 @@ const FtcMining = () => {
     
     // Update UI every 100ms for smooth animation
     miningAnimationRef.current = setInterval(() => {
-      const currentRate = isBoosted 
-        ? boostConfig.base_mining_rate * boostConfig.boost_multiplier 
-        : boostConfig.base_mining_rate;
+      // Use refs to get current values (not stale closure values)
+      const currentBoosted = isBoostedRef.current;
+      const currentConfig = boostConfigRef.current;
+      
+      const currentRate = currentBoosted 
+        ? currentConfig.base_mining_rate * currentConfig.boost_multiplier 
+        : currentConfig.base_mining_rate;
       
       // Increment per 100ms
       const increment = currentRate * 0.1;
@@ -1247,13 +1264,14 @@ const FtcMining = () => {
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
+          // Update state - refs will auto-sync via useEffect
           setIsBoosted(true);
           setBoostTimeLeft(data.boost_duration);
           setBoostConfig(data.boost_config || boostConfig);
           toast.success(data.message);
           
-          // Restart animation with boosted rate
-          startMiningAnimation();
+          // No need to restart animation - refs auto-update
+          // Animation will use boosted rate via isBoostedRef
           
           // Start boost countdown
           const boostCountdown = setInterval(() => {
@@ -1261,8 +1279,7 @@ const FtcMining = () => {
               if (prev <= 1) {
                 clearInterval(boostCountdown);
                 setIsBoosted(false);
-                // Restart animation with normal rate
-                startMiningAnimation();
+                // No need to restart animation - refs auto-update
                 toast.info('Boost ended. Tap again for another boost!');
                 return 0;
               }
