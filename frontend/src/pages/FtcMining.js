@@ -941,6 +941,15 @@ const FtcMining = () => {
     }
   }, [ftcMined]);
 
+  // CRITICAL: Ensure Calories always equals FTC (1:1 ratio safeguard)
+  useEffect(() => {
+    // If caloriesBurned is significantly different from ftcMined, sync them
+    if (ftcMined > 0 && Math.abs(caloriesBurned - ftcMined) > 0.001) {
+      console.log('🔄 Syncing Calories to FTC:', ftcMined);
+      setCaloriesBurned(ftcMined);
+    }
+  }, [ftcMined, caloriesBurned]);
+
   // Load transaction ledger and portfolio from localStorage on mount
   useEffect(() => {
     const savedLedger = localStorage.getItem('ftc_transaction_ledger');

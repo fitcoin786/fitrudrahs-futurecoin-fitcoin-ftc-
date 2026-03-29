@@ -3588,6 +3588,48 @@ async def get_global_ftc_price():
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
+# Global FTC Transfers Ledger - ALL FTC transfers between users (Blockchain transparency)
+@api_router.get("/ftc/global-ledger")
+async def get_global_ftc_ledger():
+    """Get ALL FTC transfers for global blockchain transparency - shows all wallet-to-wallet transfers"""
+    try:
+        # Get all FTC transfers sorted by most recent
+        transfers = await db.ftc_transfers.find(
+            {},
+            {"_id": 0}
+        ).sort("created_at", -1).limit(100).to_list(100)
+        
+        # Format for display
+        formatted_transfers = []
+        for tx in transfers:
+            formatted_transfers.append({
+                'id': tx.get('id'),
+                'tx_hash': tx.get('tx_hash'),
+                'type': tx.get('tx_type', 'TRANSFER'),
+                'sender_name': tx.get('sender_name', 'Unknown'),
+                'sender_wallet': tx.get('sender_wallet', ''),
+                'recipient_name': tx.get('recipient_name', 'Unknown'),
+                'recipient_wallet': tx.get('recipient_wallet', ''),
+                'amount': tx.get('amount', 0),
+                'fee_amount': tx.get('fee_amount', 0),
+                'amount_received': tx.get('amount_received', tx.get('amount', 0)),
+                'status': tx.get('status', 'CONFIRMED'),
+                'block_number': tx.get('block_number'),
+                'confirmations': tx.get('confirmations', 100),
+                'timestamp': tx.get('created_at') or tx.get('timestamp'),
+                'note': tx.get('note', '')
+            })
+        
+        return {
+            'transactions': formatted_transfers,
+            'total_count': len(formatted_transfers),
+            'network': 'Solana Mainnet',
+            'last_updated': datetime.now(timezone.utc).isoformat()
+        }
+    except Exception as e:
+        print(f"Global FTC ledger error: {e}")
+        return {'transactions': [], 'total_count': 0}
+
 # Global trades API for real-time blockchain visibility - All users see ALL transactions
 @api_router.get("/global/trades")
 async def get_global_trades():
