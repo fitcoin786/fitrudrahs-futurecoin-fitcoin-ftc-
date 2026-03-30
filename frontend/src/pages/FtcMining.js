@@ -914,6 +914,78 @@ const FtcMining = () => {
     }
   }, [isLoggedIn, ftcWalletAddress]);
 
+  // SSE Realtime Connection for wallet updates
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    let eventSource = null;
+    
+    const connectSSE = () => {
+      try {
+        // Create SSE connection
+        eventSource = new EventSource(`${BACKEND_URL}/api/wallet/stream?token=${token}`);
+        
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            
+            if (data.type === 'WALLET_UPDATE') {
+              // Update balance in real-time
+              setFtcBalance(data.balance || 0);
+              
+              // Update notification count
+              if (data.unread_notifications > 0) {
+                setUnreadCount(data.unread_notifications);
+              }
+              
+              // Show notification for new transaction
+              if (data.latest_notification && !data.latest_notification.read) {
+                const notif = data.latest_notification;
+                setNotifications(prev => {
+                  if (prev.some(n => n.id === notif.id)) return prev;
+                  return [notif, ...prev].slice(0, 20);
+                });
+                
+                // Show toast for new FTC received
+                if (notif.type === 'FTC_RECEIVED') {
+                  toast.success(notif.message, {
+                    description: '⛓️ Blockchain confirmed'
+                  });
+                }
+              }
+              
+              console.log('📡 SSE Update:', data);
+            }
+          } catch (e) {
+            console.log('SSE parse error:', e);
+          }
+        };
+        
+        eventSource.onerror = (error) => {
+          console.log('SSE connection error, reconnecting...');
+          eventSource.close();
+          // Reconnect after 5 seconds
+          setTimeout(connectSSE, 5000);
+        };
+        
+      } catch (error) {
+        console.log('SSE setup error:', error);
+      }
+    };
+    
+    // Connect SSE
+    connectSSE();
+    
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [isLoggedIn]);
+
   // Mark notification as read
   const markNotificationRead = (notifId) => {
     setNotifications(prev => 

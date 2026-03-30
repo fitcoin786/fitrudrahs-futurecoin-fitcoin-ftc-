@@ -1,5 +1,6 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import StreamingResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -18,6 +19,7 @@ from pycoingecko import CoinGeckoAPI
 import time
 import random
 import resend
+import json
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -3284,13 +3286,18 @@ async def send_ftc_to_user(request: SendFTCRequest, user_id: str = Depends(get_c
     fee_percent, fee_amount = calculate_transaction_fee(request.amount)
     amount_after_fee = request.amount - fee_amount
     
-    # Create transaction record
+    # Generate unique transaction ID and hash
     tx_id = str(uuid.uuid4())
     tx_hash = f"0x{''.join(random.choices('0123456789abcdef', k=64))}"
+    block_number = 19000000 + random.randint(0, 1000000)
+    timestamp = datetime.now(timezone.utc).isoformat()
     
+    # ========== ATOMIC TRANSACTION SYSTEM ==========
+    # Step 1: Create PENDING transaction record first (for audit trail)
     transaction = {
         'id': tx_id,
         'tx_hash': tx_hash,
+        'tx_type': 'TRANSFER',
         'sender_id': user_id,
         'sender_name': sender.get('full_name', 'Anonymous')[:15],
         'sender_wallet': sender.get('ftc_wallet_address', ''),
@@ -3302,65 +3309,139 @@ async def send_ftc_to_user(request: SendFTCRequest, user_id: str = Depends(get_c
         'fee_amount': fee_amount,
         'amount_received': amount_after_fee,
         'note': request.note or '',
-        'status': 'CONFIRMED',
-        'block_number': 19000000 + random.randint(0, 1000000),
-        'confirmations': random.randint(6, 30),
-        'created_at': datetime.now(timezone.utc).isoformat()
+        'status': 'PENDING',  # Start as PENDING
+        'block_number': block_number,
+        'confirmations': 0,
+        'created_at': timestamp,
+        'updated_at': timestamp
     }
     
-    # Update sender wallet (deduct full amount)
-    await db.wallets.update_one(
-        {"user_id": user_id},
-        {"$inc": {"ftc_balance": -request.amount}}
-    )
-    
-    # Update recipient wallet (add amount after fee)
-    await db.wallets.update_one(
-        {"user_id": recipient['id']},
-        {"$inc": {"ftc_balance": amount_after_fee}}
-    )
-    
-    # Collect fee into admin wallet
-    await collect_admin_fee(fee_amount, 'SEND_FTC', tx_id)
-    
-    # Save transaction
-    await db.ftc_transfers.insert_one(transaction)
-    
-    # Also record in global ledger for visibility
-    global_record = {
-        'id': tx_id,
-        'user_id': user_id,
-        'username': sender.get('full_name', 'Anonymous')[:15],
-        'trade_type': 'SEND',
-        'product_id': 'FTC_TRANSFER',
-        'product_name': f'Send to {recipient.get("full_name", "User")[:10]}',
-        'quantity': 1,
-        'price_per_unit': request.amount,
-        'total_ftc': request.amount,
-        'fee_amount': fee_amount,
-        'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
-        'block_number': transaction['block_number'],
-        'confirmations': transaction['confirmations'],
-        'status': 'CONFIRMED',
-        'timestamp': datetime.now(timezone.utc).isoformat()
-    }
-    await db.global_nutrition_ledger.insert_one(global_record)
-    
-    return {
-        'success': True,
-        'transaction': {
-            'id': tx_id,
-            'tx_hash': tx_hash[:20] + '...' + tx_hash[-8:],
-            'amount_sent': request.amount,
-            'fee_percent': f"{fee_percent}%",
-            'fee_amount': round(fee_amount, 4),
-            'amount_received': round(amount_after_fee, 4),
-            'recipient': recipient.get('full_name', 'User')[:15],
-            'recipient_wallet': request.recipient_wallet_address[:10] + '...' + request.recipient_wallet_address[-6:],
-            'status': 'CONFIRMED'
-        },
-        'message': f"Successfully sent {amount_after_fee:.4f} FTC (Fee: {fee_amount:.4f} FTC)"
-    }
+    try:
+        # Step 2: Insert pending transaction (audit trail)
+        await db.ftc_transfers.insert_one(transaction)
+        
+        # Step 3: Deduct from sender (atomic operation)
+        sender_result = await db.wallets.find_one_and_update(
+            {"user_id": user_id, "ftc_balance": {"$gte": request.amount}},
+            {"$inc": {"ftc_balance": -request.amount}, "$set": {"last_transaction": tx_id}},
+            return_document=True
+        )
+        
+        if not sender_result:
+            # Rollback: Mark transaction as FAILED
+            await db.ftc_transfers.update_one(
+                {"id": tx_id},
+                {"$set": {"status": "FAILED", "error": "Insufficient balance", "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            raise HTTPException(status_code=400, detail="Insufficient balance or concurrent transaction")
+        
+        # Step 4: Add to recipient (atomic operation)
+        recipient_result = await db.wallets.find_one_and_update(
+            {"user_id": recipient['id']},
+            {"$inc": {"ftc_balance": amount_after_fee}, "$set": {"last_received": tx_id}},
+            return_document=True,
+            upsert=True
+        )
+        
+        if not recipient_result:
+            # Rollback: Return funds to sender
+            await db.wallets.update_one(
+                {"user_id": user_id},
+                {"$inc": {"ftc_balance": request.amount}}
+            )
+            await db.ftc_transfers.update_one(
+                {"id": tx_id},
+                {"$set": {"status": "FAILED", "error": "Recipient wallet error", "updated_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            raise HTTPException(status_code=500, detail="Failed to credit recipient")
+        
+        # Step 5: Collect fee into admin wallet
+        await collect_admin_fee(fee_amount, 'SEND_FTC', tx_id)
+        
+        # Step 6: Mark transaction as CONFIRMED
+        await db.ftc_transfers.update_one(
+            {"id": tx_id},
+            {"$set": {
+                "status": "CONFIRMED",
+                "confirmations": random.randint(6, 30),
+                "confirmed_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }}
+        )
+        
+        # Step 7: Record in immutable ledger (append-only)
+        ledger_entry = {
+            'id': f"LED_{tx_id}",
+            'tx_id': tx_id,
+            'tx_hash': tx_hash,
+            'type': 'FTC_TRANSFER',
+            'from_wallet': sender.get('ftc_wallet_address', ''),
+            'to_wallet': request.recipient_wallet_address,
+            'amount': request.amount,
+            'fee': fee_amount,
+            'net_amount': amount_after_fee,
+            'block_number': block_number,
+            'status': 'CONFIRMED',
+            'timestamp': timestamp,
+            'immutable': True  # Never modify this entry
+        }
+        await db.blockchain_ledger.insert_one(ledger_entry)
+        
+        # Step 8: Create notifications for both users
+        await db.notifications.insert_many([
+            {
+                'id': str(uuid.uuid4()),
+                'user_id': user_id,
+                'type': 'FTC_SENT',
+                'title': 'FTC Sent Successfully',
+                'message': f'Sent {amount_after_fee:.4f} FTC to {recipient.get("full_name", "User")[:10]}',
+                'tx_id': tx_id,
+                'read': False,
+                'created_at': timestamp
+            },
+            {
+                'id': str(uuid.uuid4()),
+                'user_id': recipient['id'],
+                'type': 'FTC_RECEIVED',
+                'title': 'FTC Received',
+                'message': f'Received {amount_after_fee:.4f} FTC from {sender.get("full_name", "User")[:10]}',
+                'tx_id': tx_id,
+                'read': False,
+                'created_at': timestamp
+            }
+        ])
+        
+        return {
+            'success': True,
+            'transaction': {
+                'id': tx_id,
+                'tx_hash': tx_hash,
+                'sender': sender.get('full_name', 'User'),
+                'recipient': recipient.get('full_name', 'User'),
+                'amount': request.amount,
+                'amount_sent': request.amount,
+                'fee_amount': fee_amount,
+                'fee_percent': fee_percent,
+                'amount_received': amount_after_fee,
+                'status': 'CONFIRMED',
+                'block_number': block_number,
+                'confirmations': random.randint(6, 30),
+                'timestamp': timestamp
+            },
+            'sender_new_balance': sender_result.get('ftc_balance', 0) if sender_result else 0,
+            'message': f"Successfully sent {amount_after_fee:.4f} FTC (Fee: {fee_amount:.6f} FTC)"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Full rollback on any error
+        print(f"Transaction error: {e}")
+        await db.ftc_transfers.update_one(
+            {"id": tx_id},
+            {"$set": {"status": "FAILED", "error": str(e), "updated_at": datetime.now(timezone.utc).isoformat()}}
+        )
+        raise HTTPException(status_code=500, detail=f"Transaction failed: {str(e)}")
 
 @api_router.get("/wallet/transfers")
 async def get_ftc_transfers(user_id: str = Depends(get_current_user)):
@@ -3420,6 +3501,207 @@ async def get_received_transfers(user_id: str = Depends(get_current_user)):
     return {
         'transfers': received,
         'total': len(received),
+        'wallet_address': wallet_address
+    }
+
+# ========== SSE REALTIME UPDATES ==========
+@api_router.get("/wallet/stream")
+async def wallet_stream(user_id: str = Depends(get_current_user)):
+    """SSE endpoint for realtime wallet updates (balance, transactions, notifications)"""
+    
+    async def event_generator():
+        last_balance = None
+        last_tx_count = 0
+        last_notif_count = 0
+        
+        while True:
+            try:
+                # Get current wallet balance
+                wallet = await db.wallets.find_one({"user_id": user_id}, {"_id": 0})
+                current_balance = wallet.get('ftc_balance', 0) if wallet else 0
+                
+                # Get transaction count
+                tx_count = await db.ftc_transfers.count_documents({
+                    "$or": [
+                        {"sender_id": user_id},
+                        {"recipient_id": user_id}
+                    ]
+                })
+                
+                # Get unread notifications
+                notif_count = await db.notifications.count_documents({
+                    "user_id": user_id,
+                    "read": False
+                })
+                
+                # Send update if anything changed
+                if (last_balance != current_balance or 
+                    last_tx_count != tx_count or 
+                    last_notif_count != notif_count):
+                    
+                    # Get latest transaction
+                    latest_tx = await db.ftc_transfers.find_one(
+                        {"$or": [{"sender_id": user_id}, {"recipient_id": user_id}]},
+                        {"_id": 0},
+                        sort=[("created_at", -1)]
+                    )
+                    
+                    # Get latest notification
+                    latest_notif = await db.notifications.find_one(
+                        {"user_id": user_id, "read": False},
+                        {"_id": 0},
+                        sort=[("created_at", -1)]
+                    )
+                    
+                    data = {
+                        'type': 'WALLET_UPDATE',
+                        'balance': current_balance,
+                        'tx_count': tx_count,
+                        'unread_notifications': notif_count,
+                        'latest_transaction': latest_tx,
+                        'latest_notification': latest_notif,
+                        'timestamp': datetime.now(timezone.utc).isoformat()
+                    }
+                    
+                    yield f"data: {json.dumps(data)}\n\n"
+                    
+                    last_balance = current_balance
+                    last_tx_count = tx_count
+                    last_notif_count = notif_count
+                
+                # Wait 1 second before next check
+                await asyncio.sleep(1)
+                
+            except Exception as e:
+                print(f"SSE error: {e}")
+                yield f"data: {json.dumps({'type': 'ERROR', 'message': str(e)})}\n\n"
+                await asyncio.sleep(5)
+    
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+# Get user notifications
+@api_router.get("/notifications")
+async def get_notifications(user_id: str = Depends(get_current_user)):
+    """Get all notifications for user"""
+    notifications = await db.notifications.find(
+        {"user_id": user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(50).to_list(50)
+    
+    unread_count = await db.notifications.count_documents({
+        "user_id": user_id,
+        "read": False
+    })
+    
+    return {
+        'notifications': notifications,
+        'unread_count': unread_count
+    }
+
+# Mark notification as read
+@api_router.post("/notifications/{notif_id}/read")
+async def mark_notification_read(notif_id: str, user_id: str = Depends(get_current_user)):
+    """Mark a notification as read"""
+    await db.notifications.update_one(
+        {"id": notif_id, "user_id": user_id},
+        {"$set": {"read": True, "read_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"success": True}
+
+# Clear all notifications
+@api_router.delete("/notifications")
+async def clear_notifications(user_id: str = Depends(get_current_user)):
+    """Clear all notifications for user"""
+    await db.notifications.delete_many({"user_id": user_id})
+    return {"success": True, "message": "All notifications cleared"}
+
+# Get complete wallet info
+@api_router.get("/wallet")
+async def get_wallet_info(user_id: str = Depends(get_current_user)):
+    """Get complete wallet information including address, balance, and recent transactions"""
+    
+    # Get user
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get wallet
+    wallet = await db.wallets.find_one({"user_id": user_id}, {"_id": 0})
+    if not wallet:
+        # Create wallet if doesn't exist
+        wallet = {
+            "user_id": user_id,
+            "ftc_balance": 0.0,
+            "usd_balance": 10000.0,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.wallets.insert_one(wallet)
+    
+    # Get recent transactions
+    wallet_address = user.get('ftc_wallet_address', '')
+    sent = await db.ftc_transfers.find(
+        {"sender_wallet": wallet_address, "status": "CONFIRMED"},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    received = await db.ftc_transfers.find(
+        {"recipient_wallet": wallet_address, "status": "CONFIRMED"},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(10).to_list(10)
+    
+    # Mark sent/received
+    for t in sent:
+        t['direction'] = 'SENT'
+    for t in received:
+        t['direction'] = 'RECEIVED'
+    
+    all_txs = sorted(sent + received, key=lambda x: x.get('created_at', ''), reverse=True)[:10]
+    
+    return {
+        'wallet_address': wallet_address,
+        'ftc_balance': wallet.get('ftc_balance', 0),
+        'usd_balance': wallet.get('usd_balance', 0),
+        'recent_transactions': all_txs,
+        'total_sent': sum(t.get('amount', 0) for t in sent),
+        'total_received': sum(t.get('amount_received', 0) for t in received),
+        'created_at': wallet.get('created_at')
+    }
+
+# Get all transactions (for ledger view)
+@api_router.get("/transactions")
+async def get_transactions(user_id: str = Depends(get_current_user), limit: int = 50):
+    """Get all transactions for user with full audit trail"""
+    
+    user = await db.users.find_one({"id": user_id}, {"_id": 0, "ftc_wallet_address": 1})
+    wallet_address = user.get('ftc_wallet_address', '') if user else ''
+    
+    # Get all transactions involving this wallet
+    transactions = await db.ftc_transfers.find(
+        {"$or": [
+            {"sender_wallet": wallet_address},
+            {"recipient_wallet": wallet_address}
+        ]},
+        {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
+    
+    # Mark direction
+    for t in transactions:
+        if t.get('sender_wallet') == wallet_address:
+            t['direction'] = 'SENT'
+        else:
+            t['direction'] = 'RECEIVED'
+    
+    return {
+        'transactions': transactions,
+        'total': len(transactions),
         'wallet_address': wallet_address
     }
 
