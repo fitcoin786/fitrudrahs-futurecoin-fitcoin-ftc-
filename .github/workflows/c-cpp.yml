@@ -1,0 +1,45 @@
+name: Fitcoin (FTC) C/C++ CI
+
+on:
+  push:
+    branches:
+      - master
+      - main
+
+  pull_request:
+    branches:
+      - master
+      - main
+
+jobs:
+  build:
+
+    name: Build & Test Fitcoin (FTC)
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Display Build Information
+        run: |
+          echo "🚀 Building Fitcoin (FTC)"
+          echo "Project: FitRudrah's Futurecoin"
+          echo "Environment: Ubuntu Latest"
+
+      - name: Configure
+        run: ./configure
+
+      - name: Build
+        run: make
+
+      - name: Run Tests
+        run: make check
+
+      - name: Distribution Check
+        run: make distcheck
+
+      - name: Build Completed
+        run: |
+          echo "✅ Fitcoin (FTC) build completed successfully."
